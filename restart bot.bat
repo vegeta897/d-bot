@@ -1,0 +1,1 @@
+forever restart main.js --spinSleepTime 15000

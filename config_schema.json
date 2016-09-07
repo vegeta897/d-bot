@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "required": [
+    "token",
+    "owner",
+    "prefixes"
+  ],
+  "properties": {
+    "token": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "prefixes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1
+      }
+    },
+    "privateChannels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9]+$"
+      }
+    },
+    "noLogServers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9]+$"
+      }
+    },
+    "noLogChannels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9]+$"
+      }
+    },
+    "allowCustomColors": {
+      "type": "boolean"
+    },
+    "minecraft": {
+      "type": "object",
+      "properties": {
+        "ip": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
+    },
+    "mumble": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "apiKey": {
+          "type": "string"
+        }
+      }
+    },
+    "starbound": {
+      "type": "object",
+      "properties": {
+        "statusImage": {
+          "type": "url"
+        }
+      }
+    }
+  }
+}

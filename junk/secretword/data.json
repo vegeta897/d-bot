@@ -1,0 +1,139 @@
+{
+    "users": {
+        "86913608335773696": {
+            "occurrences": 0,
+            "points": 7405,
+            "guesses": 1,
+            "lastScribed": 1459525376496
+        },
+        "87317932991844352": {
+            "occurrences": 0,
+            "points": 1161,
+            "guesses": 0,
+            "lastScribed": 1458108326205
+        },
+        "87026915507982336": {
+            "occurrences": 0,
+            "points": 749,
+            "guesses": 0,
+            "lastScribed": 1459518428157
+        },
+        "86924106120830976": {
+            "occurrences": 0,
+            "points": 197,
+            "guesses": 0,
+            "lastScribed": 1458544528510
+        },
+        "86928421359198208": {
+            "occurrences": 0,
+            "points": 24546,
+            "guesses": 0,
+            "lastScribed": 1459428171780
+        },
+        "118865653644918786": {
+            "occurrences": 0,
+            "points": 2,
+            "guesses": 0,
+            "lastScribed": 0
+        },
+        "137362316088836096": {
+            "occurrences": 0,
+            "points": 27966,
+            "guesses": 0,
+            "lastScribed": 1457457030188
+        },
+        "89081737656696832": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 0
+        },
+        "87403321215705088": {
+            "occurrences": 0,
+            "points": 35,
+            "guesses": 0,
+            "lastScribed": 0
+        },
+        "86919912156573696": {
+            "occurrences": 0,
+            "points": 19,
+            "guesses": 0,
+            "lastScribed": 1459525376496
+        },
+        "86995157651566592": {
+            "occurrences": 0,
+            "points": 186,
+            "guesses": 0,
+            "lastScribed": 1459400571033
+        },
+        "91362370168823808": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 1457845526023
+        },
+        "147978040805163008": {
+            "occurrences": 0,
+            "points": 120,
+            "guesses": 0,
+            "lastScribed": 1459501927710
+        },
+        "103730024510685184": {
+            "occurrences": 0,
+            "points": 38,
+            "guesses": 0,
+            "lastScribed": 0
+        },
+        "87684126378844160": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 0
+        },
+        "93514934649901056": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 0
+        },
+        "112459599642177536": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 1457846726043
+        },
+        "114588180144979972": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 0
+        },
+        "137327607464198144": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 1458088839732
+        },
+        "Raziaar": {
+            "occurrences": 0,
+            "points": 0,
+            "guesses": 0,
+            "lastScribed": 0
+        }
+    },
+    "scribe": "86913608335773696",
+    "scribeUsage": [],
+    "hints": [
+        4
+    ],
+    "wordValue": 36,
+    "began": 1459518894206,
+    "hintInterval": 90,
+    "timeToLive": 4,
+    "hintText": "_ _ _ _ D _ _ _",
+    "clue": "shut it down",
+    "guessPool": 0,
+    "guesses": [
+        "shutdown"
+    ]
+}

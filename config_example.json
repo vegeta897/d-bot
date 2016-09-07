@@ -1,0 +1,23 @@
+{
+  "token": "your_bot_token",
+  "owner": "your_discord_id",
+  "prefixes": [
+    "/",
+    "!"
+  ],
+  "privateChannels": [],
+  "noLogServers": [],
+  "noLogChannels": [],
+  "allowCustomColors": true,
+  "minecraft": {
+    "ip": "123.123.123.123",
+    "port": 27015
+  },
+  "mumble": {
+    "email": "cooldude@example.com",
+    "apiKey": "your_commandchannel_mumble_api_key"
+  },
+  "starbound": {
+    "statusImage": "https://clanforge.multiplay.co.uk/"
+  }
+}
