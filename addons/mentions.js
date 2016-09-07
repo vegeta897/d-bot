@@ -88,7 +88,7 @@ module.exports = {
             if(!subs[mention.id]) return;
             if(subs[mention.id] != 'all' && !subs[mention.id].includes(data.channel)) return;
             var userStatus = discord.bot.servers[data.server].members[mention.id].status;
-            if(!userStatus || userStatus == 'offline') return;
+            if(userStatus && userStatus != 'offline') return;
             var pm = '**' + data.user + '** mentioned you!\n' + findHelper.formatMessage({
                     user: data.userID, time: new Date(data.rawEvent.d.timestamp).getTime(), content: data.message
                 }, 0, true);
