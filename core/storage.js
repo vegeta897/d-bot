@@ -8,6 +8,7 @@ function JSONFile(filename) {
     this.filename = filename;
     try {
         fs.readFileSync(filename);
+        JSON.parse(fs.readFileSync(filename));
     } catch(err) {
         fs.writeFileSync(this.filename, '{}\n');
     } finally {
