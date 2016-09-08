@@ -27,24 +27,28 @@
       "items": {
         "type": "string",
         "pattern": "^[0-9]+$"
-      }
+      },
+      "default": []
     },
     "noLogServers": {
       "type": "array",
       "items": {
         "type": "string",
         "pattern": "^[0-9]+$"
-      }
+      },
+      "default": []
     },
     "noLogChannels": {
       "type": "array",
       "items": {
         "type": "string",
         "pattern": "^[0-9]+$"
-      }
+      },
+      "default": []
     },
     "allowCustomColors": {
-      "type": "boolean"
+      "type": "boolean",
+      "default": false
     },
     "minecraft": {
       "type": "object",
@@ -55,7 +59,8 @@
         "port": {
           "type": "integer"
         }
-      }
+      },
+      "default": null
     },
     "mumble": {
       "type": "object",
@@ -66,7 +71,8 @@
         "apiKey": {
           "type": "string"
         }
-      }
+      },
+      "default": null
     },
     "starbound": {
       "type": "object",
@@ -74,7 +80,8 @@
         "statusImage": {
           "type": "url"
         }
-      }
+      },
+      "default": null
     }
   }
 }

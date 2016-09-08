@@ -1,5 +1,7 @@
 // Loads, validates, and provides config values
+var schema = require('./../config_schema.json');
 var validator = new (require('jsonschema').Validator)();
+var schemaDefaults = require('json-schema-defaults');
 
 var config;
 try {
@@ -9,7 +11,7 @@ try {
     process.exit(); // Exit if config did not load successfully
 }
 
-var validation = validator.validate(config, require('./../config_schema.json'));
+var validation = validator.validate(config, schema);
 
 if(validation.errors.length > 0) {
     console.log('Config validation failed, see errors below:');
@@ -21,7 +23,7 @@ if(validation.errors.length > 0) {
 }
 
 // Create missing config properties with default values
-var defaults = require('./../config_defaults.json');
+var defaults = schemaDefaults(schema);
 for(var d in defaults) {
     if(!defaults.hasOwnProperty(d) || config[d]) continue;
     config[d] = defaults[d];
