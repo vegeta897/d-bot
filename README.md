@@ -16,7 +16,7 @@ This bot logs messages, and has several commands that interact with those logs. 
 ##Config
 Rename `config_example.json` to `config.json`
 
-The config file is mostly optional things, but currently you need to keep empty properties in there or the bot may break.
+The config file is mostly optional things. You can remove any optional property you don't need.
 
 ###Required
 * `token` *string* - Your bot's token. A long string of letters and numbers.

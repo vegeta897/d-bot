@@ -11,7 +11,6 @@ var _commands = {};
 // TODO: Use promises or observables
 
 _commands.mumble = function(data) {
-    console.log(config.mumble);
     if(!config.mumble || !config.mumble.email || !config.mumble.apiKey) return;
     var url = 'http://api.commandchannel.com/cvp.json?email='+ config.mumble.email +'&apiKey=' + config.mumble.apiKey;
     request(url, function(err, response, body) {

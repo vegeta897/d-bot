@@ -20,6 +20,11 @@ if(validation.errors.length > 0) {
     process.exit(); // Exit if config does not validate
 }
 
-// TODO: Pad empty values for optional fields that were not included, such as privateChannels
+// Create missing config properties with default values
+var defaults = require('./../config_defaults.json');
+for(var d in defaults) {
+    if(!defaults.hasOwnProperty(d) || config[d]) continue;
+    config[d] = defaults[d];
+}
 
 module.exports = config;
