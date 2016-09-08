@@ -19,10 +19,20 @@ _commands.earliest = function(data) {
     });
 };
 
+_commands.youtube = function(data) {
+    var ytrx = /(http[s]?:\/\/\S*youtu\S*\.\S*)(?= |$)/gi; // I made this myself!
+    messages.wrap(messages.db.find({ content: ytrx }), function(messages) {
+        var msg = util.pickInArray(messages);
+        var yt = util.pickInArray(util.getRegExpMatches(msg.content, ytrx));
+        discord.sendMessage(data.channel, yt, true);
+    });
+};
+
 module.exports = {
     commands: _commands,
     help: {
         earliest: ['Get the time and date of the earliest recorded message'],
-        me: ['Make D-Bot narrate your life', 'is eating cotton candy']
+        me: ['Make D-Bot narrate your life', 'is eating cotton candy'],
+        youtube: ['Grab a random YouTube video from the chat log']
     }
 };
