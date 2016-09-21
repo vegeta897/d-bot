@@ -7,8 +7,8 @@ var bot = new Discord.Client({
     autorun: true
 });
 
-bot.on("err", function(error) {
-    bot.sendMessage({ to: config.owner, message: "An error has occurred: " + error });
+bot.on('err', function(error) {
+    _sendMessages(config.owner, 'An error has occurred: ' + error);
     console.log(new Date(),error);
 });
 
@@ -21,7 +21,7 @@ var msgQueue = [], // Message buffer
 
 module.exports = {
     bot: bot,
-    pmDev: function(message) { bot.sendMessage({to:'86913608335773696',message:message});},
+    pmOwner: function(message) { _sendMessages(config.owner, message); },
     sendMessage: _sendMessages,
     sendMessages: _sendMessages,
     editMessage: _editMessage,
@@ -85,15 +85,15 @@ function suppressMentionsLinks(message) {
     });
 }
 
-bot.on("presence", function(user, userID, status, game, rawEvent) {
+bot.on('presence', function(user, userID, status, game, rawEvent) {
     /*console.log(user + " is now: " + status);*/
 });
 
-bot.on("any", function(rawEvent) {
+bot.on('any', function(rawEvent) {
     //console.log(rawEvent) //Logs every event
 });
 
-bot.on("disconnect", function() {
+bot.on('disconnect', function() {
     console.log("Bot disconnected");
     setTimeout(function(){
         bot.connect(); //Auto reconnect after 5 seconds
