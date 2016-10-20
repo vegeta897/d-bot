@@ -33,7 +33,8 @@ module.exports = {
             if(bot.users[uKey].username.toLowerCase() == username.toLowerCase()) return uKey;
         }
         return false;
-    }
+    },
+    getTimeFromID: _getTimeFromID
 };
 
 function _sendMessages(ID, messageArr, polite, callback) {
@@ -74,6 +75,10 @@ function _editMessage(channel, id, message, polite, callback) {
 
 function _getUsernameFromID(id) {
     return bot.users[id] ? bot.users[id].username : false;
+}
+
+function _getTimeFromID(id) { // Converts Discord snowflake ID to timestamp, thanks /u/Natsulus!
+    return new Date((id / 4194304) + 1420070400000);
 }
 
 function suppressMentionsLinks(message) {
