@@ -31,6 +31,7 @@ The config file is mostly optional things. You can remove any optional property 
 * `minecraft` *object* - Contains IP and port for a Minecraft server to check the status of
 * `mumble` *object* - If you have a CommandChannel Mumble server, input your e-mail and API key to check the status
 * `starbound` *object* - If you have a Starbound server with Multiplay, paste in your server status image URL
+* `7d` *object* - If you have a 7 Days to Die server, input the server IP and telnet info (see serverconfig.xml)
 
 ##And Also
 Eternal thanks and respect to Izy521 for his awesome library, [discord.io](https://github.com/izy521/discord.io), and all the assistance he has provided

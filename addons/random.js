@@ -6,29 +6,29 @@ var _commands = {};
 
 _commands.roll = function(data) {
     if(!data.params.length && data.params[0][1] != 'd') return;
-    var rolls = [];
     var diceCount = +data.params[0][0];
     var sides = +(data.params[0].substr(2, 20));
     var total = 0;
+    var rolls = ['Rolling a **' + sides + '** sided die **' + diceCount + '** time' + (diceCount > 1 ? 's' : '') + '!'];
     if(diceCount > 0 && sides > 0) {
         for(var i = 0; i < diceCount; i++) {
             var roll = util.randomIntRange(1, sides);
             total += roll;
-            rolls.push('*D' + sides + '* roll: **' + roll + '**');
+            rolls.push('**' + roll + '**');
         }
         if(diceCount > 1) rolls.push('Total: **' + total + '**');
-        discord.sendMessage(data.channel, rolls);
+        discord.sendMessage(data.channel, rolls.join('\n'));
     }
 };
 
 _commands.flip = function(data) {
-    var flips = [];
     var coinCount = data.params.length ? Math.min(10, +data.params[0]) : 1;
+    var flips = ['Flipping a coin **' + coinCount + '** time' + (coinCount > 1 ? 's' : '') + '!'];
     if(coinCount > 0) {
         for(var j = 0; j < coinCount; j++) {
             flips.push('**' + (util.flip() ? 'Heads' : 'Tails') + '**');
         }
-        discord.sendMessage(data.channel,flips);
+        discord.sendMessage(data.channel,flips.join('\n'));
     }
 };
 

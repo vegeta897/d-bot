@@ -5,6 +5,7 @@ var discord = require(__base+'core/discord.js');
 var config = require(__base+'core/config.js');
 var request = require('request');
 var download = require('download');
+var telnet = require('expect-telnet');
 
 var _commands = {};
 
@@ -72,11 +73,28 @@ _commands.starbound = function(data) {
     });
 };
 
+_commands['7d'] = function(data) {
+    if(!config['7d'] || !config['7d'].ip || !config['7d'].telnetPort || !config['7d'].telnetPass) return;
+    telnet(config['7d'].ip + ':' + config['7d'].telnetPort, [
+        {expect: 'Please enter password:', send: config['7d'].telnetPass + '\r' },
+        {expect: '\u0000\u0000',  send: "gt\r" },
+        {expect: /successful/,  send: "\r" },
+        {expect: /version/, send: "\r" },
+        {expect: /Day /, out: function(output) {
+            output = output.split('\n')[1];
+            discord.sendMessage(data.channel, 'It is **' + output + '** on the 7D server');
+        }, send: "exit\r"}
+    ], function(err) {
+        if (err) discord.sendMessage(data.channel, '*Sorry, the 7D server is unavailable.*');
+    });
+};
+
 module.exports = {
     commands: _commands,
     help: {
         minecraft: ['Get the Minecraft server status (if configured)'],
         mumble: ['Get the Numble server status (if configured)'],
-        starbound: ['Get the Starbound server status (if configured)']
+        starbound: ['Get the Starbound server status (if configured)'],
+        '7d': ['Get the 7 Days to Die server status (if configured)']
     }
 };

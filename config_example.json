@@ -19,5 +19,10 @@
   },
   "starbound": {
     "statusImage": "https://clanforge.multiplay.co.uk/"
+  },
+  "7d": {
+    "ip": "123.123.123.123",
+    "telnetPort": 25436,
+    "telnetPass": "rosebud"
   }
 }

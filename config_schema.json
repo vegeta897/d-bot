@@ -82,6 +82,21 @@
         }
       },
       "default": null
+    },
+    "7d": {
+      "type": "object",
+      "properties": {
+        "ip": {
+          "type": "string"
+        },
+        "telnetPort": {
+          "type": "integer"
+        },
+        "telnetPass": {
+          "type": "string"
+        }
+      },
+      "default": null
     }
   }
 }
