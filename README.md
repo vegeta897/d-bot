@@ -29,7 +29,7 @@ The config file is mostly optional things. You can remove any optional property 
 * `noLogChannels` *array* - Array of channel ID strings that D-Bot will not log messages for
 * `allowCustomColors` *boolean* - If true, users can set their username color with the `color` command
 * `minecraft` *object* - Contains IP and port for a Minecraft server to check the status of
-* `mumble` *object* - If you have a CommandChannel Mumble server, input your e-mail and API key to check the status
+* `mumble` *object* - If you have a CommandChannel Mumble server, input your e-mail, API key, and Discord webhook URL to check the status
 * `starbound` *object* - If you have a Starbound server with Multiplay, paste in your server status image URL
 * `7d` *object* - If you have a 7 Days to Die server, input the server IP and telnet info (see serverconfig.xml)
 

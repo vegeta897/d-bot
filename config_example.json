@@ -15,7 +15,8 @@
   },
   "mumble": {
     "email": "cooldude@example.com",
-    "apiKey": "your_commandchannel_mumble_api_key"
+    "apiKey": "your_commandchannel_mumble_api_key",
+    "webhookURL": "https://ptb.discordapp.com/api/webhooks/CHANNEL_ID/WEBHOOK_TOKEN"
   },
   "starbound": {
     "statusImage": "https://clanforge.multiplay.co.uk/"

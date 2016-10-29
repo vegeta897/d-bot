@@ -12,23 +12,22 @@ var _commands = {};
 // TODO: Use promises or observables
 
 _commands.mumble = function(data) {
-    if(!config.mumble || !config.mumble.email || !config.mumble.apiKey) return;
-    var url = 'http://api.commandchannel.com/cvp.json?email='+ config.mumble.email +'&apiKey=' + config.mumble.apiKey;
+    if(!config.mumble || !config.mumble.email || !config.mumble.apiKey || !config.mumble.webhookURL) return;
+    var url = 'http://api.commandchannel.com/cvp.json?email=' + config.mumble.email + '&apiKey=' + config.mumble.apiKey;
     request(url, function(err, response, body) {
         if(err) {
             console.log(err);
             return discord.sendMessage(data.channel, 'Error getting Mumble status...');
         }
         body = JSON.parse(body);
-        var status = '__**Mumble Status**__';
-        var nobodyOnline = true;
+        var channels = [];
         var checkChannel = function(channel) {
             if(channel.users.length > 0) {
-                status += '\n  **' + channel.name + ':**';
+                var users = '';
                 for(var u = 0; u < channel.users.length; u++) {
-                    status += (u == 0 ? ' ' : ', ') + channel.users[u].name;
-                    nobodyOnline = false;
+                    users += (u == 0 ? ' ' : ', ') + channel.users[u].name;
                 }
+                channels.push({ name: channel.name, users: users });
             }
             if(channel.channels.length > 0) {
                 for(var sc = 0; sc < channel.channels.length; sc++) {
@@ -37,8 +36,25 @@ _commands.mumble = function(data) {
             }
         };
         checkChannel(body.root);
-        if(nobodyOnline) status = 'Nobody is in Mumble :(';
-        discord.sendMessage(data.channel, status);
+        var whData = { username: 'Mumble', channel_id: data.channel, attachments: [{ color: '#DDDDDD' }] };
+        if(channels.length == 0) {
+            whData.attachments[0].footer = 'Nobody is in Mumble :(';
+            whData.attachments[0].color = '#AAAAAA';
+        } else {
+            whData.attachments[0].fields = [];
+            channels.sort(function(a, b) { return a.users.length < b.users.length; }); // Sort longest to shortest
+            channels.forEach(function(channel, index) {
+                var field = { title: channel.name, value: channel.users };
+                if(channels.length % 2 || index > 0) { // Short channels if even count or not biggest channel
+                    field.short = true;
+                }
+                whData.attachments[0].fields.push(field);
+            });
+        }
+        request({
+            url: config.mumble.webhookURL + '/slack',
+            method: 'POST', json: true, body: whData
+        });
     });
 };
 
@@ -82,7 +98,7 @@ _commands['7d'] = function(data) {
         {expect: /version/, send: "\r" },
         {expect: /Day /, out: function(output) {
             output = output.split('\n')[1];
-            discord.sendMessage(data.channel, 'It is **' + output + '** on the 7D server');
+            discord.sendMessage(data.channel, 'It is **' + output.trim() + '** on the 7D server');
         }, send: "exit\r"}
     ], function(err) {
         if (err) discord.sendMessage(data.channel, '*Sorry, the 7D server is unavailable.*');
