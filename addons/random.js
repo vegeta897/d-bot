@@ -9,32 +9,32 @@ _commands.roll = function(data) {
     var diceCount = +data.params[0][0];
     var sides = +(data.params[0].substr(2, 20));
     var total = 0;
-    var rolls = ['Rolling a **' + sides + '** sided die **' + diceCount + '** time' + (diceCount > 1 ? 's' : '') + '!'];
+    var rolls = [`Rolling a **${sides}** sided die **${diceCount}** time${diceCount > 1 ? 's' : ''}!`];
     if(diceCount > 0 && sides > 0) {
         for(var i = 0; i < diceCount; i++) {
             var roll = util.randomIntRange(1, sides);
             total += roll;
-            rolls.push('**' + roll + '**');
+            rolls.push(`**${roll}**`);
         }
-        if(diceCount > 1) rolls.push('Total: **' + total + '**');
+        if(diceCount > 1) rolls.push(`Total: **${total}**`);
         discord.sendMessage(data.channel, rolls.join('\n'));
     }
 };
 
 _commands.flip = function(data) {
     var coinCount = data.params.length ? Math.min(10, +data.params[0]) : 1;
-    var flips = ['Flipping a coin **' + coinCount + '** time' + (coinCount > 1 ? 's' : '') + '!'];
+    var flips = [`Flipping a coin **${coinCount}** time${coinCount > 1 ? 's' : ''}!`];
     if(coinCount > 0) {
         for(var j = 0; j < coinCount; j++) {
-            flips.push('**' + (util.flip() ? 'Heads' : 'Tails') + '**');
+            flips.push(`**${util.flip() ? 'Heads' : 'Tails'}**`);
         }
         discord.sendMessage(data.channel,flips.join('\n'));
     }
 };
 
 _commands.whataretheodds = function(data) {
-    discord.sendMessage(data.channel, '1 in ' +
-        (Math.pow(10,util.randomIntRange(1,8))*util.randomIntRange(1,9)).toLocaleString()+'!');
+    var odds = Math.pow(10,util.randomIntRange(1,8))*util.randomIntRange(1,9);
+    discord.sendMessage(data.channel, `1 in ${odds.toLocaleString()}!`);
 };
 
 module.exports = {

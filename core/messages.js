@@ -12,7 +12,7 @@ function wrapFind(command, callback) {
     command.exec(function(err, results) {
         if (err) {
             console.log(err);
-            discord.pmOwner('A message database error occurred while executing a command\n`' + err.message + '`');
+            discord.pmOwner(`A message database error occurred while executing a command\n\`${err.message}\``);
             return;
         }
         if (!results || results.length == 0

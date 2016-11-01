@@ -57,7 +57,7 @@ function tick() {
                 });
                 wwData.state = 'postround';
                 wwData.stateBegan = new Date().getTime();
-                discord.sendMessage(wwData.channel, 'Round ' + wwData.round + ' has ended!');
+                discord.sendMessage(wwData.channel, `Round ${wwData.round} has ended!`);
                 wwStorage.save();
                 break;
             case 'postround':
@@ -117,7 +117,7 @@ function endRound() {
         discord.bot.uploadFile({
             to: wwData.channel,
             file: imgData, filename: 'wikihow.jpg',
-            message: '**Round '+wwData.round+' begins!** Submit your guesses!'
+            message: `**Round ${wwData.round} begins!** Submit your guesses!`
         },function(err,res){
             wwData.stateBegan = new Date().getTime();
             wwStorage.save();
@@ -129,20 +129,20 @@ function endGame(winningGuess) {
     if(winningGuess) {
         var winner = discord.getUsernameFromID(winningGuess.user);
         discord.sendMessage(wwData.channel, 'We have a winner!\n'
-            + '**' + winner + '** has correctly guessed the title of the article:\n'
-            + '**' + wwData.answer + '**');
+            + `**${winner}** has correctly guessed the title of the article:\n`
+            + `**${wwData.answer}**`);
     } else {
         var roundSummary = '';
         wwData.bestGuesses.forEach(function(elem, index, arr) {
             if(elem.score < 0) return;
-            roundSummary += 'Round ' + (index+1) + ':   **' + util.toProperCase(elem.guess)
-                + '** _by ' + discord.getUsernameFromID(elem.user) + '_';
+            roundSummary += `Round ${index+1}:   **${util.toProperCase(elem.guess)}`
+                + `** _by ${discord.getUsernameFromID(elem.user)}_`;
             if(index < arr.length-1) roundSummary += '\n';
         });
         discord.sendMessage(wwData.channel, 'The game is over, nobody guessed the title!\n'
-            + 'These were the best guesses for each round:\n' + roundSummary+'\n'
-            + 'The article was actually called: __' + wwData.answer + '__\n'
-            + 'http://www.wikihow.com/' + wwData.answer.split(' ').join('-'), true);
+            + `These were the best guesses for each round:\n${roundSummary}\n`
+            + `The article was actually called: __${wwData.answer}__\n`
+            + `http://www.wikihow.com/${wwData.answer.split(' ').join('-')}`, true);
     }
     resetData();
 }
@@ -233,8 +233,8 @@ _commands.wikiwhat = function(data) {
         wwData.players = {};
         wwData.players[data.userID] = {};
         wwData.bestGuesses = [];
-        discord.sendMessage(wwData.channel, '**' + discord.getUsernameFromID(data.userID)
-            + '** wants to play **WikiWhat**! The game will begin shortly.');
+        discord.sendMessage(wwData.channel, `**${discord.getUsernameFromID(data.userID)}**`
+            + ' wants to play **WikiWhat**! The game will begin shortly.');
         getArticle(function(article) {
             wwData.answer = article.title;
             wwData.images = article.images;

@@ -15,11 +15,11 @@ _commands.virtual = function(data) {
     var id = discord.getIDFromUsername(data.paramStr) || data.userID;
     var name = discord.getUsernameFromID(id);
     virtualUser = {
-        name: name, id: id, channel: data.channel, pre: '**Virtual ' + name + '**: ',
+        name: name, id: id, channel: data.channel, pre: `**Virtual ${name}**: `,
         exchanges: [], fuzzy: FuzzySet(), responses: 0
     };
-    discord.sendMessage(data.channel, virtualUser.pre + 'Hello! I\'m _virtual ' + virtualUser.name
-        + '._ Say some stuff to me, dude.');
+    discord.sendMessage(data.channel, 
+        `${virtualUser.pre}Hello! I'm _virtual ${virtualUser.name}._ Say some stuff to me, dude.`);
     setTimeout(createVirtualUser, 100);
 };
 
@@ -27,7 +27,7 @@ function createVirtualUser() {
     var msgQuery = {};
     findHelper.addChannelQuery(msgQuery, virtualUser.channel);
     messages.wrap(messages.db.find(msgQuery).sort({time:1}), function(allMessages) {
-        if(!allMessages) return discord.sendMessage(virtualUser.channel, 'Can\'t do that, no messages logged here!');
+        if(!allMessages) return discord.sendMessage(virtualUser.channel, `Can't do that, no messages logged here!`);
         for(var i = 1; i < allMessages.length; i++) {
             if(allMessages[i-1].user != virtualUser.id && allMessages[i].user == virtualUser.id) {
                 virtualUser.exchanges.push([allMessages[i-1].content.toLowerCase(), allMessages[i].content]);
@@ -35,7 +35,7 @@ function createVirtualUser() {
             }
         }
         if(!virtualUser.exchanges[0]) {
-            discord.sendMessage(virtualUser.channel, virtualUser.pre + 'Actually, never mind. I\'m leaving.');
+            discord.sendMessage(virtualUser.channel, virtualUser.pre + `Actually, never mind. I'm leaving.`);
             virtualUser = false;
         }
     });
@@ -60,7 +60,7 @@ function listen(data) {
     if(virtualUser.responses == 5) {
         virtualUser.done = true;
         setTimeout(function(){
-            discord.sendMessage(data.channel, virtualUser.pre + 'I have to go now. See you later!');
+            discord.sendMessage(data.channel, virtualUser.pre + `I have to go now. See you later!`);
             virtualUser = false;
         }, 3000);
     }

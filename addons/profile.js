@@ -24,14 +24,14 @@ var infoPieces = {
             if(best.ties) {
                 var bestAvg = Math.round(util.arrayAverage(best.ties));
                 if(util.arrayHighest(best.ties) - util.arrayLowest(best.ties) > 3) {
-                    return util.pickInArray(['Could be ','May be ','Might be ']) + bestAvg + ' years old, but we don\'t know';
+                    return util.pickInArray(['Could be ','May be ','Might be ']) + bestAvg + ` years old, but we don't know`;
                 } else {
                     return util.pickInArray(['Could be ','May be ','Might be ']) + bestAvg + ' years old';
                 }
             } else if(best.count > 1) {
                 return util.pickInArray(['Most likely ','Likely ']) + best.value + ' years old';
             } else {
-                return util.pickInArray(['Could be ','May be ','Might be ']) + best.value + ' years old, but we don\'t know';
+                return util.pickInArray(['Could be ','May be ','Might be ']) + best.value + ` years old, but we don't know`;
             }
         },
         exclude: []
@@ -42,7 +42,7 @@ var infoPieces = {
             var message = '';
             var best = getBest(values);
             if(!best.ties) {
-                message = util.pickInArray(['Most often ','More often than not he\'s ','Almost always ']) + best.value + '\n• ';
+                message = util.pickInArray(['Most often ',`More often than not he's `,'Almost always ']) + best.value + '\n• ';
             }
             var random = getWeightedRandom(values);
             if(values[random] > 5) {
@@ -50,7 +50,7 @@ var infoPieces = {
             } else if(values[random] > 1) {
                 message += util.pickInArray(['Occasionally ','Every now and then ','Once in a while he\'s ']) + random;
             } else {
-                message += util.pickInArray(['Once said he\'s ','Admitted he was ','At one time, he was ']) + random;
+                message += util.pickInArray([`Once said he's `,'Admitted he was ','At one time, he was ']) + random;
             }
             return message.split(/\bi\b/gi).join('he').split(/\bmy\b/gi).join('his');
         },

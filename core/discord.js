@@ -1,14 +1,13 @@
 // Discord.io!
 var config = require('./config.js');
-
-var Discord = require("discord.io");
+var Discord = require('discord.io');
 var bot = new Discord.Client({
     token: config.token,
     autorun: true
 });
 
 bot.on('err', function(error) {
-    _sendMessages(config.owner, 'An error has occurred: ' + error);
+    _sendMessages(config.owner, `An error has occurred: ${error}`);
     console.log(new Date(),error);
 });
 
@@ -99,7 +98,7 @@ bot.on('any', function(rawEvent) {
 });
 
 bot.on('disconnect', function() {
-    console.log("Bot disconnected");
+    console.log('Bot disconnected');
     setTimeout(function(){
         bot.connect(); //Auto reconnect after 5 seconds
     },5000);

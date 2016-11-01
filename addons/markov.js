@@ -26,7 +26,7 @@ _commands.markov = function(data) {
     for(var t = inputWords.length - 1; t >= 0; t--) {
         sequence.push(wordMap.wordIndices[inputWords[t].toLowerCase()]);
     }
-    if(!sequence[0]) return discord.sendMessage(data.channel, 'Couldn\'t start a chain with that.');
+    if(!sequence[0]) return discord.sendMessage(data.channel, `Couldn't start a chain with that.`);
     var sentenceLength = 12; // Ideal max sentence word length, seek new words until this is reached
     var messageLength = 24; // Ideal max message length;
     var curSentenceLen = sequence.length;
@@ -129,7 +129,7 @@ function buildWordMap() {
     // Get all messages containing at least 2 consecutive words
     var multiWordRX = /(?: |^)([a-z1-9'-]+) ([a-z1-9'-]+)(?=$|[ ,.!?])/gi;
     messages.wrap(messages.db.find({ content: multiWordRX }).sort({ time: 1 }), function(allMessages) {
-        if(!allMessages) return console.log('Can\'t create word map, no messages in log!');
+        if(!allMessages) return console.log(`Can't create word map, no messages in log!`);
         for(var i = 0; i < allMessages.length; i++) {
             parseMessage(allMessages[i].content);
         }

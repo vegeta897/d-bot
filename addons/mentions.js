@@ -32,8 +32,8 @@ _commands.mentions = function(data) {
     var query = {content: rx};
     findHelper.addChannelQuery(query, data.channel);
     messages.wrap(messages.db.find(query).limit(mCount).sort({time: -1}), function(results) {
-        if(!results) return discord.sendMessage(data.channel, 'Sorry, I don\'t have any record of you being mentioned.');
-        var mentionRecap = '__Your last ' + results.length + 'mentions__';
+        if(!results) return discord.sendMessage(data.channel, `Sorry, I don't have any record of you being mentioned.`);
+        var mentionRecap = `__Your last ${results.length}mentions__`;
         results.reverse();
         for(var m = 0; m < results.length; m++) {
             mentionRecap += '\n' + findHelper.formatMessage(results[m]);
@@ -59,13 +59,13 @@ function addSub(id, channel) {
 }
 
 function removeSub(id, channel) {
-    if(!subs[id]) return 'You aren\'t subscribed to any channel!';
+    if(!subs[id]) return `You aren't subscribed to any channel!`;
     if(channel == 'all') {
         delete subs[id];
         return 'You have unsubscribed from all channels.';
     }
     if(subs[id] != 'all' && !subs[id].includes(channel)) {
-        return 'You aren\'t subscribed to this channel!';
+        return `You aren't subscribed to this channel!`;
     }
     if(subs[id] == 'all') {
         var server = discord.bot.channels[channel].guild_id;
@@ -89,7 +89,7 @@ module.exports = {
             if(subs[mention.id] != 'all' && !subs[mention.id].includes(data.channel)) return;
             var userStatus = discord.bot.servers[data.server].members[mention.id].status;
             if(userStatus && userStatus != 'offline') return;
-            var pm = '**' + data.user + '** mentioned you!\n' + findHelper.formatMessage({
+            var pm = `**${data.user}** mentioned you!\n` + findHelper.formatMessage({
                     user: data.userID, time: new Date(data.rawEvent.d.timestamp).getTime(), content: data.message
                 }, 0, true);
             discord.sendMessage(mention.id, pm, true);

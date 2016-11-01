@@ -34,11 +34,11 @@ module.exports = {
         var timestamp = DateFormat(new Date(message.time), 'mmmm dS, yyyy - h:MM:ss TT') + ' EST ';
         if(new Date() - new Date(message.time) < 86400000) {
             var timeSince = util.getTimeUnits(new Date() - new Date(message.time));
-            timestamp =  timeSince[0] + ' ' + timeSince[1] + ' ago ';
+            timestamp =  `${timeSince[0]} ${timeSince[1]} ago `;
         }
         if(hideTimestamp) timestamp = '';
         var username = discord.getUsernameFromID(message.user);
-        var skipNotice = skipped ? ('(Skipped ' + skipped + ' result' + (skipped > 1 ? 's' : '') + ') ') : '';
+        var skipNotice = skipped ? `(Skipped ${skipped} result${skipped > 1 ? 's' : ''}) ` : '';
         return skipNotice + timestamp + '**' + username + ':** ' + message.content;
     }
 };

@@ -38,8 +38,7 @@ function loadAddon(name) {
     for(var cKey in addon.commands) {
         if(!addon.commands.hasOwnProperty(cKey)) continue;
         if(commands[cKey] && commands[cKey] != name) {
-            console.error('Addon "'+name+'" tried to add command "'+cKey+
-                '" already added by addon "'+commands[cKey]+'"');
+            console.error(`Addon "${name}" tried to add command "${cKey}" already added by addon "${commands[cKey]}"`);
             continue;
         }
         commands[cKey] = name;
@@ -59,11 +58,11 @@ function reload(name, channel) {
     if(name) {
         try {
             loadAddon(name);
-            discord.sendMessage(channel,'Successfully reloaded addon `'+name+'`');
+            discord.sendMessage(channel, `Successfully reloaded addon \`${name}\``);
         }
         catch(e) {
             console.log(e);
-            discord.sendMessage(channel,'Couldn\'t load addon `'+name+'`, see log for details');
+            discord.sendMessage(channel, `Couldn't load addon \`${name}\`, see log for details`);
         }
     } else {
         scanAddons();

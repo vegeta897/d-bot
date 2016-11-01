@@ -16,8 +16,8 @@ function getContext(data, direction) {
         var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };
         findHelper.addChannelQuery(command.query, data.channel);
         messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
-            if(!results) return discord.sendMessage(data.channel, 'Couldn\'t find any messages matching _' +
-                params.string + '_');
+            if(!results) return discord.sendMessage(data.channel, 
+                `Couldn't find any messages matching _${params.string}_`);
             var foundMessage = results[results.length-1];
             contexts[data.channel] = {
                 pivotMessage: foundMessage,
@@ -39,7 +39,7 @@ function traverse(channel, direction) {
     }
     messages.wrap(messages.db.find(findOptions).sort({time:sortDir}).limit(3), function(results) {
         if(!results) {
-            discord.sendMessage(channel,'Sorry, couldn\'t find any messages ' + direction + ' that');
+            discord.sendMessage(channel, `Sorry, couldn't find any messages ${direction} that`);
             return;
         }
         if(contexts[channel].pivotMessage) {

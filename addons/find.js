@@ -16,8 +16,7 @@ _commands.find = function(data) {
     var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };
     findHelper.addChannelQuery(command.query, data.channel);
     messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
-        if(!results) return discord.sendMessage(data.channel, 'Couldn\'t find any messages matching _' +
-            params.string + '_', true);
+        if(!results) return discord.sendMessage(data.channel, `Couldn't find any messages matching _${params.string}_`, true);
         var message = findHelper.formatMessage(results[results.length-1], results.length-1);
         discord.sendMessage(data.channel, message, true, function(err, res) {
             command.responseID = res.id;
@@ -29,16 +28,12 @@ _commands.find = function(data) {
 _commands.last = function(data) {
     var params = findHelper.parseParams(data.params);
     var userID = params ? discord.getIDFromUsername(params.string) : 'any';
-    if(!userID) {
-        discord.sendMessage(data.channel, 'That user doesn\'t seem to exist.');
-        return;
-    }
+    if(!userID) return discord.sendMessage(data.channel, `That user doesn't seem to exist.`);
     var command = { query: { user: userID }, limit: params.limit || 1 };
     if(userID == 'any') delete command.query.user;
     findHelper.addChannelQuery(command.query, data.channel);
     messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
-        if(!results) return discord.sendMessage(data.channel, 'Couldn\'t find any messages from **' +
-            params.string + '**', true);
+        if(!results) return discord.sendMessage(data.channel, `Couldn't find any messages from **${params.string}**`, true);
         var message = findHelper.formatMessage(results[results.length-1], results.length-1);
         discord.sendMessage(data.channel, message, true, function(err, res) {
             command.responseID = res.id;
@@ -58,7 +53,7 @@ _commands.skip = function(data) {
     }
     lastCommand.limit += +data.params[0];
     messages.wrap(messages.db.find(lastCommand.query).sort({time:-1}).limit(lastCommand.limit), function(results) {
-        if(!results) return discord.sendMessage(data.channel, 'If you\'re seeing this message, something went wrong');
+        if(!results) return discord.sendMessage(data.channel, `If you're seeing this message, something went wrong`);
         var message = findHelper.formatMessage(results[results.length-1], results.length-1);
         discord.editMessage(data.channel, lastCommand.responseID, message, true,
             // Delete skip command after edit complete

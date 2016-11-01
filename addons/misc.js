@@ -15,7 +15,7 @@ _commands.me = function(data) {
 _commands.earliest = function(data) {
     messages.wrap(messages.db.find().sort({ time: 1 }).limit(1), function(firstMessage) {
         var firstMsgTimestamp = DateFormat(new Date(firstMessage[0].time), 'mmmm dS, yyyy - h:MM:ss TT') + ' EST';
-        discord.sendMessage(data.channel, 'Earliest message in log was on: ' + firstMsgTimestamp);
+        discord.sendMessage(data.channel, `Earliest message in log was on: ${firstMsgTimestamp}`);
     });
 };
 

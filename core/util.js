@@ -122,7 +122,7 @@ module.exports = {
         if(input == 'left') return 'right';
         if(input == 'right') return 'left';
         if(!isNaN(parseFloat(input)) && isFinite(input)) return input * -1;
-        console.error('bad use of flip function!',input);
+        console.error('bad use of flip function!', input);
     },
     regExpify: function(str) {
         var rxParser = /^\/(.*)\/([gmi]{0,3})?$/;

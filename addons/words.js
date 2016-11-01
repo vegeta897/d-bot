@@ -19,9 +19,9 @@ _commands.words = function(data) {
             return;
         }
         var topWords = getTopWords(allMessages, maxWords);
-        var finalMessage = '__Top '+maxWords+' words' + (userID ? ' by ' + data.paramStr : '') + '__';
+        var finalMessage = `__Top ${maxWords} words${userID ? ' by ' + data.paramStr : ''}__`;
         for(var tw = 0; tw < topWords.length; tw++) {
-            finalMessage += '\n**'+topWords[tw].c.toLocaleString()+'** - '+topWords[tw].w+'';
+            finalMessage += `\n**${topWords[tw].c.toLocaleString()}** - ${topWords[tw].w}`;
         }
         discord.sendMessage(data.channel, finalMessage);
     });

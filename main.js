@@ -9,7 +9,7 @@ var addons = require('./core/addons.js');
 
 discord.bot.on('ready', function() {
     console.log((new Date()).toString().substr(0,24),
-        'Logged in as: ' + discord.bot.username + ' - (' + discord.bot.id + ')');
+        `Logged in as: ${discord.bot.username} - (${discord.bot.id})`);
     require('fs').writeFile('./debug/bot.json', JSON.stringify(discord.bot, null, '\t'));
 });
 

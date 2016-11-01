@@ -71,7 +71,7 @@ _commands.minecraft = function(data) {
         if(body.online) {
             status = '**Minecraft** server is **online**  -  ';
             if(body.players.now) {
-                status += '**' + body.players.now + '** people are playing!';
+                status += `**${body.players.now}** people are playing!`;
             } else {
                 status += '*Nobody is playing!*';
             }
@@ -98,7 +98,7 @@ _commands['7d'] = function(data) {
         {expect: /version/, send: "\r" },
         {expect: /Day /, out: function(output) {
             output = output.split('\n')[1];
-            discord.sendMessage(data.channel, 'It is **' + output.trim() + '** on the 7D server');
+            discord.sendMessage(data.channel, `It is **${output.trim()}** on the 7D server`);
         }, send: "exit\r"}
     ], function(err) {
         if (err) discord.sendMessage(data.channel, '*Sorry, the 7D server is unavailable.*');
