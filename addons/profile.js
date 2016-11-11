@@ -115,7 +115,7 @@ function Profile(channel,userID) {
             completedSearches++;
             if(result) profileText += '\n• ' + result;
             if(completedSearches == totalSearches) { // If all searches complete, send message
-                discord.sendMessage(channel,profileText);
+                discord.sendMessage(channel, profileText);
             }
         });
     }
@@ -150,6 +150,7 @@ Profile.prototype.search = function(userID, info, cb) {
 var _commands = {};
 _commands.profile = function(data) {
     var profileUserID = data.params.length > 0 ? discord.getIDFromUsername(data.paramStr) : false;
+    discord.bot.simulateTyping(data.channel);
     new Profile(data.channel, profileUserID || data.userID);
 };
 

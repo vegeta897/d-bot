@@ -8,6 +8,7 @@ var _commands = {};
 
 _commands.king = function(data) {
     if(!data.paramStr.length) return discord.sendMessage(data.channel, 'Please specify a word or phrase');
+    discord.bot.simulateTyping(data.channel);
     var kingRX = util.regExpify(data.paramStr);
     messages.wrap(messages.db.find({ content: kingRX }), function(allMessages) {
         if(!allMessages) return discord.sendMessage(data.channel, `Nobody is the king of _${data.paramStr}_`);

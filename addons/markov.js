@@ -15,6 +15,7 @@ if(!wordMap.words) {
 var _commands = {};
 
 _commands.markov = function(data) {
+    discord.bot.simulateTyping(data.channel);
     var wordMapStorage = storage.json('word-map');
     var wordMap = wordMapStorage.data;
     if(!wordMap.words) return discord.sendMessage(data.channel, 'The word map needs to be built with `markovbuild`');

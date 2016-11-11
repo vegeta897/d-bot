@@ -52,6 +52,7 @@ function listen(data) {
             responses.push(i);
         }
     }
+    discord.bot.simulateTyping(data.channel);
     var response = virtualUser.exchanges[util.pickInArray(responses)][1];
     setTimeout(function(){
         discord.sendMessage(data.channel, virtualUser.pre + response, true);

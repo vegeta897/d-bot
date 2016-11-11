@@ -34,6 +34,7 @@ function tick() {
     if(new Date().getTime() >= wwData.stateBegan + stateDurations[wwData.state]*1000) {
         switch(wwData.state) {
             case 'starting':
+                discord.bot.simulateTyping(wwData.channel);
                 wwData.state = 'playing';
                 wwData.stateBegan = new Date().getTime();
                 wwData.round = 1;
@@ -110,6 +111,7 @@ function endRound() {
     } else if(wwData.round == rounds) {
         endGame();
     } else {
+        discord.bot.simulateTyping(wwData.channel);
         wwData.round++;
         wwData.state = 'playing';
         wwData.stateBegan = new Date().getTime();

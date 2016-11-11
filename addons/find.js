@@ -13,6 +13,7 @@ _commands.find = function(data) {
         discord.sendMessage(data.channel, 'Please specify a search string');
         return;
     }
+    discord.bot.simulateTyping(data.channel);
     var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };
     findHelper.addChannelQuery(command.query, data.channel);
     messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
@@ -29,6 +30,7 @@ _commands.last = function(data) {
     var params = findHelper.parseParams(data.params);
     var userID = params ? discord.getIDFromUsername(params.string) : 'any';
     if(!userID) return discord.sendMessage(data.channel, `That user doesn't seem to exist.`);
+    discord.bot.simulateTyping(data.channel);
     var command = { query: { user: userID }, limit: params.limit || 1 };
     if(userID == 'any') delete command.query.user;
     findHelper.addChannelQuery(command.query, data.channel);

@@ -5,6 +5,7 @@ var discord = require(__base+'core/discord.js');
 var _commands = {};
 
 _commands.members = function(data) {
+    discord.bot.simulateTyping(data.channel);
     messages.wrap(messages.db.find(),function(allMessages) {
         if(!allMessages) return;
         var members = {};

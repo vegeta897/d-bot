@@ -8,6 +8,7 @@ var findHelper = requireNew('./helpers/find.js');
 var contexts = {};
 
 function getContext(data, direction) {
+    discord.bot.simulateTyping(data.channel);
     if(data.params.length == 0) {
         if(!contexts[data.channel]) return discord.sendMessage(data.channel, 'Please specify a search string');
         traverse(data.channel,direction);

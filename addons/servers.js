@@ -60,6 +60,7 @@ _commands.mumble = function(data) {
 
 _commands.minecraft = function(data) {
     if(!config.minecraft || !config.minecraft.ip || !config.minecraft.port) return;
+    discord.bot.simulateTyping(data.channel);
     var url = 'http://mcapi.us/server/status?ip=' + config.minecraft.ip + '&port=' + config.minecraft.port;
     request(url, function(err, response, body) {
         if(err) {
@@ -82,6 +83,7 @@ _commands.minecraft = function(data) {
 
 _commands.starbound = function(data) {
     if(!config.starbound || !config.starbound.statusImage) return;
+    discord.bot.simulateTyping(data.channel);
     download(config.starbound.statusImage).then(img => {
         discord.bot.uploadFile({
             to: data.channel, file: img, filename: 'sb.png', message: '**Starbound Server Status**'
@@ -91,6 +93,7 @@ _commands.starbound = function(data) {
 
 _commands['7d'] = function(data) {
     if(!config['7d'] || !config['7d'].ip || !config['7d'].telnetPort || !config['7d'].telnetPass) return;
+    discord.bot.simulateTyping(data.channel);
     telnet(config['7d'].ip + ':' + config['7d'].telnetPort, [
         {expect: 'Please enter password:', send: config['7d'].telnetPass + '\r' },
         {expect: '\u0000\u0000',  send: "gt\r" },

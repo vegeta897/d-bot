@@ -8,6 +8,7 @@ var _commands = {};
 
 _commands.blank = function(data) {
     var blankMessage = 'You gave no parameters!';
+    // discord.bot.simulateTyping(data.channel); // Use for async commands!
     if(data.params.length) blankMessage = 'Your parameters are ' + data.paramStr;
     discord.sendMessage(data.channel, blankMessage);
 };

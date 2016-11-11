@@ -28,6 +28,7 @@ _commands.mentions = function(data) {
         discord.sendMessage(data.channel, 'Please provide the number of mentions to retrieve, eg. `/mentions 3`');
         return;
     }
+    discord.bot.simulateTyping(data.channel);
     var rx = new RegExp('<@!?' + data.userID + '>','g');
     var query = {content: rx};
     findHelper.addChannelQuery(query, data.channel);

@@ -20,6 +20,7 @@ _commands.earliest = function(data) {
 };
 
 _commands.youtube = function(data) {
+    discord.bot.simulateTyping(data.channel);
     var ytrx = /(http[s]?:\/\/\S*youtu\S*\.\S*)(?= |$)/gi; // I made this myself!
     messages.wrap(messages.db.find({ content: ytrx }), function(messages) {
         var msg = util.pickInArray(messages);

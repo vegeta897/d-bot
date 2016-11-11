@@ -6,6 +6,7 @@ var request = require('request');
 var _commands = {};
 
 _commands.gif = function(data) {
+    discord.bot.simulateTyping(data.channel);
     var command = data.params.length == 0 ? 'random?' : (`search?q=${data.params.join('+')}&`);
     var url = `http://api.giphy.com/v1/gifs/${command}api_key=dc6zaTOxFJmzC`;
     request(url, function(err, response, body) {

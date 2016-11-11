@@ -6,6 +6,7 @@ var discord = require(__base+'core/discord.js');
 var _commands = {};
 
 _commands.words = function(data) {
+    discord.bot.simulateTyping(data.channel);
     var maxWords = 10;
     if(data.params.length && data.params[0] > 0) {
         maxWords = util.clamp(Math.round(+data.params.shift()),1,25);
