@@ -45,7 +45,7 @@ _commands.mumble = function(data) {
             channels.sort(function(a, b) { return a.users.length < b.users.length; }); // Sort longest to shortest
             channels.forEach(function(channel, index) {
                 var field = { title: channel.name, value: channel.users };
-                if(channels.length % 2 || index > 0) { // Short channels if even count or not biggest channel
+                if(!(channels.length % 2) || index > 0) { // Short channels if even count or not biggest channel
                     field.short = true;
                 }
                 whData.attachments[0].fields.push(field);
