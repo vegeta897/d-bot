@@ -70,9 +70,6 @@
         },
         "apiKey": {
           "type": "string"
-        },
-        "webhookURL": {
-          "type": "url"
         }
       },
       "default": null

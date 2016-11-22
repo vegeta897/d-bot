@@ -12,7 +12,7 @@ var _commands = {};
 // TODO: Use promises or observables
 
 _commands.mumble = function(data) {
-    if(!config.mumble || !config.mumble.email || !config.mumble.apiKey || !config.mumble.webhookURL) return;
+    if(!config.mumble || !config.mumble.email || !config.mumble.apiKey) return;
     var url = 'http://api.commandchannel.com/cvp.json?email=' + config.mumble.email + '&apiKey=' + config.mumble.apiKey;
     request(url, function(err, response, body) {
         if(err) {
@@ -36,24 +36,23 @@ _commands.mumble = function(data) {
             }
         };
         checkChannel(body.root);
-        var whData = { username: 'Mumble', channel_id: data.channel, attachments: [{ color: '#DDDDDD' }] };
+        var embed = { color: 0xDDDDDD };
         if(channels.length == 0) {
-            whData.attachments[0].footer = 'Nobody is in Mumble :(';
-            whData.attachments[0].color = '#AAAAAA';
+            embed.footer = { text: 'Nobody is in Mumble :(' };
+            embed.color = 0xAAAAAA;
         } else {
-            whData.attachments[0].fields = [];
+            embed.fields = [];
             channels.sort(function(a, b) { return a.users.length < b.users.length; }); // Sort longest to shortest
             channels.forEach(function(channel, index) {
-                var field = { title: channel.name, value: channel.users };
+                var field = { name: channel.name, value: channel.users };
                 if(!(channels.length % 2) || index > 0) { // Short channels if even count or not biggest channel
-                    field.short = true;
+                    field.inline = true;
                 }
-                whData.attachments[0].fields.push(field);
+                embed.fields.push(field);
             });
         }
-        request({
-            url: config.mumble.webhookURL + '/slack',
-            method: 'POST', json: true, body: whData
+        discord.bot.sendMessage({
+            to: data.channel, message: '**Mumble Status**', embed
         });
     });
 };
