@@ -15,9 +15,10 @@ _commands.find = function(data) {
     }
     var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };
     findHelper.addChannelQuery(command.query, data.channel);
-    messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
+    messages.wrap(messages.db.find(command.query).sort({time:-1}), function(results) {
         if(!results) return discord.sendMessage(data.channel, `Couldn't find any messages matching _${params.string}_`, true);
-        var message = findHelper.formatMessage(results[results.length-1], results.length-1);
+        var msgNum = Math.min(results.length, params.limit);
+        var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
         discord.sendMessage(data.channel, message, true, function(err, res) {
             command.responseID = res.id;
             lastCommands[data.channel] = command;
@@ -32,9 +33,10 @@ _commands.last = function(data) {
     var command = { query: { user: userID }, limit: params.limit || 1 };
     if(userID == 'any') delete command.query.user;
     findHelper.addChannelQuery(command.query, data.channel);
-    messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
+    messages.wrap(messages.db.find(command.query).sort({time:-1}), function(results) {
         if(!results) return discord.sendMessage(data.channel, `Couldn't find any messages from **${params.string}**`, true);
-        var message = findHelper.formatMessage(results[results.length-1], results.length-1);
+        var msgNum = Math.min(results.length, params.limit);
+        var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
         discord.sendMessage(data.channel, message, true, function(err, res) {
             command.responseID = res.id;
             lastCommands[data.channel] = command;
@@ -52,9 +54,10 @@ _commands.skip = function(data) {
         return discord.sendMessage(data.channel, 'Skip number must be an integer, you silly');
     }
     lastCommand.limit += +data.params[0];
-    messages.wrap(messages.db.find(lastCommand.query).sort({time:-1}).limit(lastCommand.limit), function(results) {
+    messages.wrap(messages.db.find(lastCommand.query).sort({time:-1}), function(results) {
         if(!results) return discord.sendMessage(data.channel, `If you're seeing this message, something went wrong`);
-        var message = findHelper.formatMessage(results[results.length-1], results.length-1);
+        var msgNum = Math.min(results.length, lastCommand.limit);
+        var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
         discord.editMessage(data.channel, lastCommand.responseID, message, true,
             // Delete skip command after edit complete
             function() { discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id }); });

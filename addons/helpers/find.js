@@ -30,7 +30,7 @@ module.exports = {
             query['$not'] = { channel: { $in: config.privateChannels } }; // Search all non-private channels
         }
     },
-    formatMessage: function(message, skipped, hideTimestamp) {
+    formatMessage: function(message, result, hideTimestamp) {
         var timestamp = DateFormat(new Date(message.time), 'mmmm dS, yyyy - h:MM:ss TT') + ' EST ';
         if(new Date() - new Date(message.time) < 86400000) {
             var timeSince = util.getTimeUnits(new Date() - new Date(message.time));
@@ -38,7 +38,7 @@ module.exports = {
         }
         if(hideTimestamp) timestamp = '';
         var username = discord.getUsernameFromID(message.user);
-        var skipNotice = skipped ? `(Skipped ${skipped} result${skipped > 1 ? 's' : ''}) ` : '';
+        var skipNotice = result ? `\`${result[0].toLocaleString()} of ${result[1].toLocaleString()}\` ` : '';
         return skipNotice + timestamp + '**' + username + ':** ' + message.content;
     }
 };
