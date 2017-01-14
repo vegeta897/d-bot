@@ -58,7 +58,7 @@ function listen(data) {
         discord.sendMessage(data.channel, virtualUser.pre + response, true);
     }, Math.min(2000,response.length * 25));
     virtualUser.responses++;
-    if(virtualUser.responses == 5) {
+    if(virtualUser.responses == 6) {
         virtualUser.done = true;
         setTimeout(function(){
             discord.sendMessage(data.channel, virtualUser.pre + `I have to go now. See you later!`);

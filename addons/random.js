@@ -5,7 +5,7 @@ var discord = require(__base+'core/discord.js');
 var _commands = {};
 
 _commands.roll = function(data) {
-    if(!data.params.length && data.params[0][1] != 'd') return;
+    if(!data.params.length || data.params[0][1] != 'd') return;
     var diceCount = +data.params[0][0];
     var sides = +(data.params[0].substr(2, 20));
     var total = 0;

@@ -7,7 +7,7 @@ var addons = require('./core/addons.js');
 
 // TODO: Delete original command and error message when a command is retried successfully immediately after
 
-discord.bot.on('ready', function() {
+discord.bot.on('ready', function(event) {
     console.log((new Date()).toString().substr(0,24),
         `Logged in as: ${discord.bot.username} - (${discord.bot.id})`);
     require('fs').writeFile('./debug/bot.json', JSON.stringify(discord.bot, null, '\t'));

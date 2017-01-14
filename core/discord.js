@@ -97,8 +97,8 @@ bot.on('any', function(rawEvent) {
     //console.log(rawEvent) //Logs every event
 });
 
-bot.on('disconnect', function() {
-    console.log('Bot disconnected');
+bot.on('disconnect', function(errMsg, code) {
+    console.log('Bot disconnected', errMsg, code);
     setTimeout(function(){
         bot.connect(); //Auto reconnect after 5 seconds
     },5000);

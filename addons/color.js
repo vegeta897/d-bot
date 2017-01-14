@@ -9,7 +9,7 @@ _commands.color = function(data) {
     if(!config.allowCustomColors) return;
     var hexColorRX = /^#(?:[0-9a-f]{6})$/i;
     if(!data.params[0] || !hexColorRX.test(data.params[0])) {
-        discord.sendMessage(channelID, 'You must specify a hex color, e.g. #897897');
+        discord.sendMessage(data.channel, 'You must specify a hex color, e.g. #897897');
         return;
     }
     var userRole = false;
