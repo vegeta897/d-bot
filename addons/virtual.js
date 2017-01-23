@@ -35,7 +35,7 @@ function listen(data) {
     if(virtual.responses == 6) {
         virtual.done = true;
         setTimeout(function(){
-            discord.sendMessage(data.channel, virtual.pre + `I have to go now. See you later!`);
+            discord.sendMessage(data.channel, virtual.pre + virtual.goodbye);
             virtual = false;
         }, 3000);
     }

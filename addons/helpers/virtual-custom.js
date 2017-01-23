@@ -3,14 +3,14 @@ var util = require(__base+'core/util.js');
 var discord = require(__base+'core/discord.js');
 var storage = require(__base+'core/storage.js');
 
-var virtualStorage = storage.json('customs', { profiles: {}, maintenance: {} });
+var virtualStorage = storage.json('customs', { profiles: {}, maintenance: {} }, '\t');
 var profiles = virtualStorage.data.profiles;
 var maintenance = virtualStorage.data.maintenance;
 
 var timeouts = {};
 
 const EXPLAIN = 'Send responses to me, **one per line**. You can send as many as you want in one message, but make sure each one is on a new line.' +
-    '\n\nSet a custom greeting with `/greet <message>`' +
+    '\n\nSet a custom greeting with `/greet <message>` and a goodbye with `/bye <message>`' +
     '\nYou can remove the last submitted response with `/undo`' +
     '\n\nI\'ll stop listening after 1 minute of silence.';
 
@@ -48,7 +48,8 @@ module.exports = {
                 creator: data.userID,
                 usedResponses: [],
                 maintained: data.userID,
-                greeting: `Hello! I'm _virtual ${util.toProperCase(name)}._ Say some stuff to me, dude.`
+                greeting: `Hello! I'm _virtual ${util.toProperCase(name)}._ Say some stuff to me, dude.`,
+                goodbye: 'I have to go now, see you later!'
             };
             maintenance[data.userID] = name;
             discord.sendMessage(data.channel, `Let's create _virtual ${properName}!_ ` + EXPLAIN);
@@ -62,7 +63,10 @@ module.exports = {
             if(data.command == 'greet') {
                 profile.greeting = data.paramStr;
                 discord.sendMessage(data.channel, `Greeting updated`);
-            } else if(data.command == 'undo') {
+            } else if(data.command == 'bye') {
+                profile.goodbye = data.paramStr;
+                discord.sendMessage(data.channel, `Goodbye updated`);
+            }else if(data.command == 'undo') {
                 var removed = profile.responses.pop();
                 discord.sendMessage(data.channel, `Removed _"${removed}"_`);
             } else if(!data.command) {

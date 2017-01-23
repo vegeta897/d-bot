@@ -7,7 +7,7 @@ var storage = require(__base+'core/storage.js');
 var requireNew = require('require-new');
 var findHelper = requireNew('./helpers/find.js');
 
-var subsStorage = storage.json('subscriptions');
+var subsStorage = storage.json('subscriptions', {}, '\t');
 var subs = subsStorage.data;
 
 var _commands = {};

@@ -8,7 +8,7 @@ var request = require('request');
 var download = require('download');
 
 const rounds = 3;
-var wwStorage = storage.json('game');
+var wwStorage = storage.json('game', {}, '\t');
 var wwData = wwStorage.data;
 var imgData;
 var apiRequest = {
