@@ -14,6 +14,7 @@ function VirtualUser(params) {
     this.exchanges = [];
     this.fuzzy = FuzzySet();
     this.responses = 0;
+    this.greeting = `Hello! I'm _virtual ${this.name}._ Say some stuff to me, dude.`;
 }
 
 VirtualUser.prototype.prepare = function() {

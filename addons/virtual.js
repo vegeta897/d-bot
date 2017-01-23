@@ -20,8 +20,7 @@ _commands.virtual = function(data) {
     };
     virtual = id ? new VirtualUser(virtualParams) : VirtualCustom.newSession(virtualParams);
     if(!virtual) return discord.sendMessage(data.channel, `I don't know anyone named "${data.paramStr}"`);
-    discord.sendMessage(data.channel, 
-        `${virtual.pre}Hello! I'm _virtual ${util.toProperCase(virtual.name)}._ Say some stuff to me, dude.`);
+    discord.sendMessage(data.channel, virtual.pre + virtual.greeting);
     virtual.prepare();
 };
 

@@ -10,8 +10,9 @@ var maintenance = virtualStorage.data.maintenance;
 var timeouts = {};
 
 const EXPLAIN = 'Send responses to me, **one per line**. You can send as many as you want in one message, but make sure each one is on a new line.' +
-    '\n\nYou can remove the last submitted response with `/undo`' +
-    '\nI\'ll stop listening after 1 minute of silence.';
+    '\n\nSet a custom greeting with `/greet <message>`' +
+    '\nYou can remove the last submitted response with `/undo`' +
+    '\n\nI\'ll stop listening after 1 minute of silence.';
 
 function refreshTime(profile) {
     if(timeouts[profile]) clearTimeout(timeouts[profile]);
@@ -38,7 +39,7 @@ module.exports = {
             if(profile.maintained && profile.maintained != data.userID) {
                 return discord.sendMessage(data.channel, `Virtual ${properName} is currently being edited by someone.`);
             }
-            discord.sendMessage(data.channel, `_virtual ${properName}_ already exists, but you can add more responses! ` + EXPLAIN + `\nYou can add more responses later by invoking \`/virtual ${name}\` in this conversation again.`);
+            discord.sendMessage(data.channel, `_Virtual ${properName}_ already exists, but you can add more responses! ` + EXPLAIN + `\nYou can add more responses later by invoking \`/virtual ${name}\` in this conversation again.`);
             profiles[name].maintained = data.userID;
             maintenance[data.userID] = name;
         } else if(name) { // New virtual person
@@ -46,7 +47,8 @@ module.exports = {
                 responses: [],
                 creator: data.userID,
                 usedResponses: [],
-                maintained: data.userID
+                maintained: data.userID,
+                greeting: `Hello! I'm _virtual ${util.toProperCase(name)}._ Say some stuff to me, dude.`
             };
             maintenance[data.userID] = name;
             discord.sendMessage(data.channel, `Let's create _virtual ${properName}!_ ` + EXPLAIN);
@@ -57,11 +59,13 @@ module.exports = {
     maintain(data) {
         if(maintenance[data.userID]) {
             var profile = profiles[maintenance[data.userID]];
-            if(data.command == 'undo') {
+            if(data.command == 'greet') {
+                profile.greeting = data.paramStr;
+                discord.sendMessage(data.channel, `Greeting updated`);
+            } else if(data.command == 'undo') {
                 var removed = profile.responses.pop();
                 discord.sendMessage(data.channel, `Removed _"${removed}"_`);
-            }
-            else if(!data.command) {
+            } else if(!data.command) {
                 var addedResponses = data.message.split('\n');
                 var added = 0, skipped = 0;
                 for(var i = 0; i < addedResponses.length; i++) {
@@ -89,6 +93,7 @@ module.exports = {
             channel: params.channel,
             pre: `**Virtual ${util.toProperCase(params.name)}**: `,
             responses: 0,
+            greeting: profiles[params.name.toLowerCase()].greeting,
             prepare() { },
             getResponse(data) {
                 var pickedResponse = util.randomIntRange(0, profiles[this.name].responses.length - 1);
