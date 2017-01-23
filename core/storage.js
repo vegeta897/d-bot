@@ -4,13 +4,14 @@ var fs = require('fs');
 var Nedb = require('nedb');
 var callsite = require('callsite'); // For getting filename of calling module
 
-function JSONFile(filename) {
+function JSONFile(filename, initData) {
     this.filename = filename;
     try {
         fs.readFileSync(filename);
         JSON.parse(fs.readFileSync(filename));
     } catch(err) {
-        fs.writeFileSync(this.filename, '{}\n');
+        initData = JSON.stringify(initData || {});
+        fs.writeFileSync(this.filename, `${initData}\n`);
     } finally {
         this.data = JSON.parse(fs.readFileSync(filename));
     }
@@ -32,9 +33,9 @@ module.exports = {
             autoload: true
         });
     },
-    json: function(name) {
+    json: function(name, initData) {
         var dir = getDirectory('storage/' + path.basename(callsite()[1].getFileName(),'.js'));
-        return new JSONFile(dir + '/' + name + '.json');
+        return new JSONFile(dir + '/' + name + '.json', initData);
     }
 };
 
