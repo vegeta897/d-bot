@@ -34,7 +34,8 @@ _commands.rhyme = function(data) {
         }
         if(!bestWord.word) bestWord = results[1];
         updateBlacklist(bestWord.word);
-        discord.sendMessage(data.channel, `${util.capitalize(bestWord.word)}!`);
+        var sentence = data.paramStr.substr(0, data.paramStr.length - rhymeWord.length) + bestWord.word;
+        discord.sendMessage(data.channel, `${util.capitalize(sentence)}!`);
     });
     refreshBlacklist();
 };
