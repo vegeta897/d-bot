@@ -12,7 +12,7 @@ const EXPIRE_TIME = 15 * 60 * 1000;
 var _commands = {};
 
 _commands.rhyme = function(data) {
-    var rhymeWord = encodeURIComponent(data.params[data.params.length - 1]);
+    var rhymeWord = encodeURIComponent(/\w+.?\w+/g.exec(data.params[data.params.length - 1])[0]);
     if(!rhymeWord) return discord.sendMessage(data.channel, `I can't rhyme that, man!`);
     var punctuation = '!';
     discord.bot.simulateTyping(data.channel);
