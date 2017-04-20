@@ -34,9 +34,9 @@ module.exports = {
             autoload: true
         });
     },
-    json: function(name, initData) {
+    json: function(name, initData, space) {
         var dir = getDirectory('storage/' + path.basename(callsite()[1].getFileName(),'.js'));
-        return new JSONFile(dir + '/' + name + '.json', initData);
+        return new JSONFile(dir + '/' + name + '.json', initData, space);
     }
 };
 
