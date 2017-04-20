@@ -7,7 +7,7 @@ var request = require('request');
 var rhymeStorage = storage.json('rhymes', { words: [] }, '\t');
 var usedWords = rhymeStorage.data.words;
 
-const EXPIRE_TIME = 10 * 60 * 1000;
+const EXPIRE_TIME = 15 * 60 * 1000;
 
 var _commands = {};
 
@@ -15,30 +15,53 @@ _commands.rhyme = function(data) {
     var rhymeWord = encodeURIComponent(data.params[data.params.length - 1]);
     if(!rhymeWord) return discord.sendMessage(data.channel, `I can't rhyme that, man!`);
     discord.bot.simulateTyping(data.channel);
-    var errorMsg = `Sorry, I can't think about rhymes right now.`;
-    var url = `https://api.datamuse.com/words?rel_rhy=${rhymeWord}&qe=rel_rhy&md=s`;
+    var url = `https://api.datamuse.com/words?rel_rhy=${rhymeWord}&qe=rel_rhy&md=sf`;
     request(url, function(err, response, results) {
         if(err) {
             console.log(err);
-            return discord.sendMessage(data.channel, errorMsg);
+            return discord.sendMessage(data.channel, `Sorry, I can't think about rhymes right now.`);
         }
         results = JSON.parse(results);
         rhymeWord = results[0].word;
         if(results.length < 2) return discord.sendMessage(data.channel, `I ain't got any rhymes for that.`);
-        var targetSyllables = results[0].numSyllables;
-        var bestWord = {};
-        for(var i = 1; i < results.length; i++) {
-            if(inBlacklist(results[i].word)) continue;
-            if(!bestWord.numSyllables ||
-                Math.abs(results[i].numSyllables - targetSyllables) < Math.abs(bestWord.numSyllables - targetSyllables)) bestWord = results[i];
-        }
-        if(!bestWord.word) bestWord = results[1];
+        var bestWord = chooseBest(results) || chooseBest(results, true);
         updateBlacklist(bestWord.word);
-        var sentence = data.paramStr.substr(0, data.paramStr.length - rhymeWord.length) + bestWord.word;
-        discord.sendMessage(data.channel, `${util.capitalize(sentence)}!`);
+        var sentence = '';
+        if(data.params.length > 1) {
+            bestWord.word = fixPreceding(data.params[data.params.length - 2], bestWord.word);
+            sentence = data.params.slice(0, data.params.length - 2).join(' ') + ' ';
+        }
+        discord.sendMessage(data.channel, `${util.capitalize(sentence + bestWord.word)}!`);
     });
     refreshBlacklist();
 };
+
+function fixPreceding(pre, word) {
+    if(pre.toLowerCase() === 'an' && util.consonants.includes(word.substr(0, 1).toLowerCase())) {
+        return pre.substr(0, 1) + ' ' + word;
+    } else if(pre.toLowerCase() === 'a' && util.vowels.includes(word.substr(0, 1).toLowerCase())) {
+        return pre + 'n ' + word;
+    }
+    return pre + ' ' + word;
+}
+
+function chooseBest(words, ignoreBlacklist) {
+    var targetSyllables = words[0].numSyllables;
+    var bestWord = {};
+    for(var i = 1; i < words.length; i++) {
+        if(!ignoreBlacklist && inBlacklist(words[i].word)) continue;
+        if(bestWord.numSyllables) {
+            var bestDiff = Math.abs(bestWord.numSyllables - targetSyllables);
+            var thisDiff = Math.abs(words[i].numSyllables - targetSyllables);
+            var bestFreq = +bestWord.tags[0].substr(2);
+            var thisFreq = +words[i].tags[0].substr(2);
+            if(thisDiff < bestDiff) bestWord = words[i];
+            else if (thisDiff === bestDiff && thisFreq > bestFreq) bestWord = words[i];
+        } else bestWord = words[i];
+    }
+    if(!bestWord.word) return false;
+    return bestWord;
+}
 
 function refreshBlacklist() {
     for(var i = 0; i < usedWords.length; i++) {

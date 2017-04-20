@@ -15,12 +15,11 @@ if(!wordMap.words) {
 var _commands = {};
 
 _commands.markov = function(data) {
-    discord.bot.simulateTyping(data.channel);
     var wordMapStorage = storage.json('word-map');
     var wordMap = wordMapStorage.data;
     if(!wordMap.words) return discord.sendMessage(data.channel, 'The word map needs to be built with `markovbuild`');
     var inputWords = util.getRegExpMatches(data.paramStr, util.matchWordsRX);
-    if(inputWords.length == 0) {
+    if(inputWords.length === 0) {
         inputWords = [util.pickInArray(wordMap.words)];
     }
     var sequence = [];
@@ -44,8 +43,8 @@ _commands.markov = function(data) {
         var next = wordMap.links[sequence[0]][1];
         var great = [], good = [], poor = [];
         for(var l = 0; l < prev.length; l++) {
-            if(prev[l] != (sequence[1] || 0)) continue;
-            if(((curSentenceLen >= sentenceLength || sequence.length >= messageLength) && next[l] == 0) ||
+            if(prev[l] !== (sequence[1] || 0)) continue;
+            if(((curSentenceLen >= sentenceLength || sequence.length >= messageLength) && next[l] === 0) ||
                 (curSentenceLen < sentenceLength && next[l] > 0)) {
                 if(wordMap.links[next[l]] && curSentenceLen + 1 < sentenceLength && !wordMap.links[next[l]][1].includes(0)) {
                     great.push(next[l]);
@@ -79,7 +78,7 @@ _commands.markov = function(data) {
         if(sequence[f]) {
             output += ' ' + (newSentence || ['i','im','i\'m'].includes(word) ? util.capitalize(word) : word);
             newSentence = false;
-        } else if(sequence[f] == 0) {
+        } else if(sequence[f] === 0) {
             output += '.';
             newSentence = true;
         } else {
