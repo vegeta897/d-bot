@@ -148,6 +148,11 @@ module.exports = {
         }
         return matches;
     },
+    commonArrayElement: function(a, b) {
+        for(var i = 0; i < a.length; i++) {
+            if(b.includes(a[i])) return a[i];
+        }
+    },
     matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?])/gi,
     alphabet: ['a','b','c','d','e','f','g','h','i','j','k','l','m',
         'n','o','p','q','r','s','t','u','v','w','x','y','z'],

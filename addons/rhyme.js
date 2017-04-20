@@ -16,17 +16,22 @@ _commands.rhyme = function(data) {
     if(!rhymeWord) return discord.sendMessage(data.channel, `I can't rhyme that, man!`);
     var punctuation = '!';
     discord.bot.simulateTyping(data.channel);
-    getRhyme(rhymeWord).then(results => {
-            if(results.length < 2) {
-                if(results[0].tags[2]) { // If there is a spelling suggestion
-                    punctuation = '?'; // We're unsure about this rhyme!
-                    return getRhyme(results[0].tags[1].substr(9)); // Try again with corrected word
-                } else return Promise.reject(`I ain't got any rhymes for that.`);
+    getRhyme(rhymeWord)
+        .then(results => { // Retry once
+            parseTags(results[0]);
+            if(results.length === 1 && results[0].spellcor[0]) { // If there is a spelling suggestion
+                punctuation = '?'; // We're unsure about this rhyme!
+                return getRhyme(results[0].spellcor[0]); // Try again with corrected word
             }
             return results;
         })
-        .then(results => {
-            var bestWord = chooseBest(results) || chooseBest(results, true);
+        .then(results => { // Check for rhymes
+            if(results.length < 2) return Promise.reject(`I ain't got any rhymes for that.`);
+            else return results;
+        })
+        .then(results => { // Pick one and send it
+            var isSentence = data.params.length > 1;
+            var bestWord = chooseBest(results, isSentence) || chooseBest(results, isSentence, true);
             updateBlacklist(bestWord.word);
             var sentence = '';
             if(data.params.length > 1) {
@@ -39,27 +44,43 @@ _commands.rhyme = function(data) {
 };
 
 function getRhyme(word) {
-    return rp(`https://api.datamuse.com/words?rel_rhy=${word}&qe=rel_rhy&md=sf`)
+    return rp(`https://api.datamuse.com/words?rel_rhy=${word}&qe=rel_rhy&md=sfp`)
         .then(results => JSON.parse(results))
         .catch(err => Promise.reject(`Sorry, I can't think about rhymes right now.`));
 }
 
-function chooseBest(words, ignoreBlacklist) {
-    var targetSyllables = words[0].numSyllables;
+function chooseBest(words, inSentence, ignoreBlacklist) {
+    var targetWord = parseTags(words[0]);
     var bestWord = {};
+    var bestMatchesType = false;
     for(var i = 1; i < words.length; i++) {
+        parseTags(words[i]);
         if(!ignoreBlacklist && inBlacklist(words[i].word)) continue;
         if(bestWord.numSyllables) {
-            var bestDiff = Math.abs(bestWord.numSyllables - targetSyllables);
-            var thisDiff = Math.abs(words[i].numSyllables - targetSyllables);
-            var bestFreq = +bestWord.tags[0].substr(2);
-            var thisFreq = +words[i].tags[0].substr(2);
-            if(thisDiff < bestDiff) bestWord = words[i];
-            else if (thisDiff === bestDiff && thisFreq > bestFreq) bestWord = words[i];
-        } else bestWord = words[i];
+            if(inSentence && util.commonArrayElement(words[i].types, targetWord.types)) {
+                if(!bestMatchesType) bestWord = words[i];
+                bestMatchesType = true;
+            } else if(bestMatchesType) continue;
+            var bestSylDiff = Math.abs(bestWord.numSyllables - targetWord.numSyllables);
+            var thisSylDiff = Math.abs(words[i].numSyllables - targetWord.numSyllables);
+            if(thisSylDiff < bestSylDiff) bestWord = words[i];
+            else if(thisSylDiff === bestSylDiff && words[i].f > bestWord.f) bestWord = words[i];
+        } else bestWord = words[i]; // Best by default
     }
     if(!bestWord.word) return false;
     return bestWord;
+}
+
+function parseTags(word) {
+    if(!word) return;
+    word.types = [];
+    word.spellcor = [];
+    for(var i = 0; i < word.tags.length; i++) {
+        if(word.tags[i].substr(0, 2) === 'f:') word.f = +word.tags[i].substr(2);
+        if(['n','v','adj','adv','u'].includes(word.tags[i])) word.types.push(word.tags[i]);
+        if(word.tags[i].substr(0, 9) === 'spellcor:') word.spellcor.push(word.tags[i].substr(9));
+    }
+    return word;
 }
 
 function fixPreceding(pre, word) {
