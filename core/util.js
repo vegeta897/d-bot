@@ -1,17 +1,15 @@
 // Helper functions!
 
 module.exports = {
-    contains: function(a,b) { // Check if string A contains string B, case insensitive
+    contains: function(a, b) { // Check if string A contains string B, case insensitive
         return a.toLowerCase().indexOf(b.toLowerCase()) > -1;
     },
-    randomIntRange: function(min,max) {
-        return Math.floor(Math.random() * (+max - +min + 1)) + +min ;
-    },
-    capitalize: function(s) { return s[0].toUpperCase()+s.substring(1); },
+    randomIntRange: (min, max) => Math.floor(Math.random() * (+max - +min + 1)) + +min,
+    capitalize: s => s[0].toUpperCase() + s.substring(1),
     toProperCase: function(s) {
         var newstr = s.split(' ');
         for(var i = 0; i < newstr.length; i++){
-            if(newstr[i] == '') continue;
+            if(newstr[i] === '') continue;
             var copy = newstr[i].substring(1).toLowerCase();
             newstr[i] = newstr[i][0].toUpperCase() + copy;
         }
@@ -25,7 +23,7 @@ module.exports = {
         else if(seconds < 3600) { timeUnit = [Math.floor(seconds/60),'minute']; }
         else if(seconds < 86400) { timeUnit = [Math.floor(seconds/3600),'hour']; }
         else { timeUnit = [Math.floor(seconds/86400),'day']; }
-        if(timeUnit[0] != 1) timeUnit[1] += 's'; // Pluralize
+        if(timeUnit[0] !== 1) timeUnit[1] += 's'; // Pluralize
         return timeUnit;
     },
     pickInArray: function(arr/*, splice */) {
@@ -55,14 +53,14 @@ module.exports = {
     arrayHighest: function(arr) {
         var highest = false;
         for(var i = 0; i < arr.length; i++) {
-            if(highest == false || arr[i] > highest) highest = arr[i];
+            if(highest === false || arr[i] > highest) highest = arr[i];
         }
         return highest;
     },
     arrayLowest: function(arr) {
         var lowest = false;
         for(var i = 0; i < arr.length; i++) {
-            if(lowest == false || arr[i] < lowest) lowest = arr[i];
+            if(lowest === false || arr[i] < lowest) lowest = arr[i];
         }
         return lowest;
     },
@@ -74,8 +72,8 @@ module.exports = {
             }
         }
     },
-    right: function(text, length) { return text.substring(text.length-length,text.length); },
-    clamp: function(val, min, max) { return Math.min(max,Math.max(min,val)); },
+    right: (text, length) => text.substring(text.length-length,text.length),
+    clamp: (val, min, max) => Math.min(max,Math.max(min,val)),
     clampWrap: function(val, min, max) { // Clamp to range by wrapping value
         var wrap = (val-min) % (max+1-min);
         return wrap >= 0 ? min + wrap : max + 1 + wrap;
@@ -152,6 +150,14 @@ module.exports = {
         for(var i = 0; i < a.length; i++) {
             if(b.includes(a[i])) return a[i];
         }
+    },
+    fixIndefiniteArticle(pre, word) {
+        if(pre.toLowerCase() === 'an' && util.consonants.includes(word.substr(0, 1).toLowerCase())) {
+            return pre.substr(0, 1) + ' ' + word;
+        } else if(pre.toLowerCase() === 'a' && util.vowels.includes(word.substr(0, 1).toLowerCase())) {
+            return pre + 'n ' + word;
+        }
+        return pre + ' ' + word;
     },
     matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?])/gi,
     alphabet: ['a','b','c','d','e','f','g','h','i','j','k','l','m',
