@@ -1,4 +1,4 @@
-'use strict';
+// Serving it up fresh
 var util = require(__base+'core/util.js');
 var storage = require(__base+'core/storage.js');
 var rp = require('request-promise');
@@ -6,7 +6,7 @@ var rp = require('request-promise');
 var rhymeStorage = storage.json('rhymes', { words: [] }, '\t');
 var usedWords = rhymeStorage.data.words;
 
-const EXPIRE_TIME = 15 * 60 * 1000;
+const EXPIRE_TIME = 30 * 60 * 1000;
 
 var Rhyme = {
     getRhyme(word) {

@@ -25,7 +25,7 @@ function scanAddons() {
     }
     var addonFiles = fs.readdirSync(__base+'addons');
     addonFiles.forEach(function(add) {
-        if(path.extname(add) != '.js') return;
+        if(path.extname(add) !== '.js') return;
         var addonName = path.basename(add,'.js');
         loadAddon(addonName);
     });
@@ -37,7 +37,7 @@ function loadAddon(name) {
     addons[name] = addon;
     for(var cKey in addon.commands) {
         if(!addon.commands.hasOwnProperty(cKey)) continue;
-        if(commands[cKey] && commands[cKey] != name) {
+        if(commands[cKey] && commands[cKey] !== name) {
             console.error(`Addon "${name}" tried to add command "${cKey}" already added by addon "${commands[cKey]}"`);
             continue;
         }
@@ -81,7 +81,7 @@ function generateHelpMessage() {
         if(!help.hasOwnProperty(hKey)) continue;
         var command = '\n**' + hKey + '** - ' + help[hKey].desc;
         for(var e = 0; e < help[hKey].examples.length; e++) {
-            if(e == 0) command += ' — _ex._';
+            if(e === 0) command += ' — _ex._';
             command += '  `' + config.prefixes[0] + hKey + ' ' + help[hKey].examples[e] + '`';
         }
         if(msg[msg.length-1].length + command.length > 2000) {
@@ -104,7 +104,7 @@ module.exports = {
             rawEvent: rawEvent
         };
         if(commandPrefixes.indexOf(message[0]) >= 0) { // Command
-            var command = message.substring(1,message.length).split(' ')[0];
+            var command = message.substring(1, message.length).split(' ')[0];
             msgData.command = command;
             var params = message.trim().split(' ');
             params.shift();

@@ -1,6 +1,5 @@
 // Helper functions!
-
-module.exports = {
+var util = {
     contains: function(a, b) { // Check if string A contains string B, case insensitive
         return a.toLowerCase().indexOf(b.toLowerCase()) > -1;
     },
@@ -166,6 +165,8 @@ module.exports = {
     consonants: ['b','c','d','f','g','h','j','k','l','m','n','p','q','r','s','t','v','w','x','y','z'],
     hex: ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
 };
+
+module.exports = util;
 
 // Polyfill
 if (!Array.prototype.includes) {

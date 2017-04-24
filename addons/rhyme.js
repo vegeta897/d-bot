@@ -1,21 +1,32 @@
 // Hey it's the rapping man!
 var util = require(__base+'core/util.js');
 var discord = require(__base+'core/discord.js');
+var messages = require(__base+'core/messages.js');
 var requireNew = require('require-new');
 var rhyme = requireNew('./helpers/rhyme.js');
 
 var _commands = {};
 
 _commands.rhyme = function(data) {
-    var rhymeWord = encodeURIComponent(/\w+.?\w+/g.exec(data.params[data.params.length - 1])[0]);
+    if(data.params.length === 0) {
+        messages.wrap(messages.db.find({ channel: data.channel }).sort({time:-1}).limit(1), function(results) {
+            data.params = results[0] ? results[0].content.split(' ') : [];
+            doRhyme(data);
+        });
+    } else doRhyme(data);
+};
+
+function doRhyme(data) {
+    var rhymeWord = data.params[data.params.length - 1];
+    var punctuation = rhymeWord.slice(-1) === '?' ? '?' : '!';
+    rhymeWord = rhymeWord ? encodeURIComponent(/\w+.?\w+/g.exec(rhymeWord)[0]) : false;
     if(!rhymeWord) return discord.sendMessage(data.channel, `I can't rhyme that, man!`);
-    var punctuation = '!';
     discord.bot.simulateTyping(data.channel);
     rhyme.getRhyme(rhymeWord)
         .then(results => { // Retry once
             if(results.length === 1 && results[0].spellcor[0]) { // If there is a spelling suggestion
                 punctuation = '?'; // We're unsure about this rhyme!
-                return getRhyme(results[0].spellcor[0]); // Try again with corrected word
+                return rhyme.getRhyme(results[0].spellcor[0]); // Try again with corrected word
             }
             return results;
         })
@@ -35,7 +46,7 @@ _commands.rhyme = function(data) {
             discord.sendMessage(data.channel, `${util.capitalize(sentence + bestWord.word)}${punctuation}`);
         })
         .catch(err => discord.sendMessage(data.channel, err));
-};
+}
 
 module.exports = {
     commands: _commands,
