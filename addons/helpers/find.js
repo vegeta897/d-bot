@@ -37,7 +37,7 @@ module.exports = {
             timestamp =  `${timeSince[0]} ${timeSince[1]} ago `;
         }
         if(hideTimestamp) timestamp = '';
-        var username = discord.getUsernameFromID(message.user);
+        var username = discord.getUsernameFromID(message.user) || '<Missing User>';
         var skipNotice = result ? `\`${result[0].toLocaleString()} of ${result[1].toLocaleString()}\` ` : '';
         return skipNotice + timestamp + '**' + username + ':** ' + message.content;
     }
