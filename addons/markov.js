@@ -25,7 +25,7 @@ _commands.markov = function(data) {
         if(sequence[sequence.length - 1] < 1) sequence.push(pickWord());
     }
     sequence.reverse();
-    var messageLength = Math.max(inputWords.length + 1, util.randomIntRange(12, 20)); // Ideal max message length;
+    var messageLength = Math.max(inputWords.length + 1, 15); // Ideal max message length;
     var safety = 0;
     do {
         safety++;
@@ -34,14 +34,15 @@ _commands.markov = function(data) {
         var choices = prevWords.map((prevWord, index) => {
             let nextWord = nextWords[index];
             let score = 0;
-            if(prevWord === sequence[1]) score += 2;
+            if(prevWord === sequence[1]) score += 3;
             if(sequence.length < messageLength) {
                 if(nextWord > 0) {
-                    score += 1;
-                    if(wordMap.links[nextWord][1].some(elem => elem > 0)) score += 1;
-                }
+                    if(wordMap.links[nextWord][1].some(elem => elem > 0)) score += 3; // Not an ending word
+                } else {
+                    score -= 1 + (messageLength - sequence.length); // More penalty for ending farther under max length
+                } 
             } else if(nextWord === 0) {
-                score += 5;
+                score += 1 + (sequence.length - messageLength); // More points for ending farther above max length
             }
             return { word: nextWord, score };
         });
