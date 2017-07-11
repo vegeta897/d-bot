@@ -42,17 +42,24 @@ function _sendMessages(ID, messageArr, polite, callback) {
     // TODO: Get rid of this queue thing, implement proper rate limiting
 
     for(var i = 0; i < messageArr.length; i++) { // Add messages to buffer
+        if(polite) messageArr[i] = suppressMentionsLinks(messageArr[i]);
+        if(messageArr[i].length > 2000) {
+            // TODO: Auto-split messages over 2000 chars
+            console.log('Trimming message over 2000 chars');
+            messageArr[i] = messageArr[i].substr(0, 2000);
+        }
         msgQueue.push({
-            ID: ID, msg: messageArr[i], polite: polite,
-            callback: i == messageArr.length-1 ? callback : false // If callback specified, only add to last message
+            ID: ID, msg: messageArr[i],
+            callback: i === messageArr.length-1 ? callback : false // If callback specified, only add to last message
         })
     }
     function _sendMessage() {
         sending = true; // We're busy
         bot.sendMessage({
             to: msgQueue[0].ID,
-            message: msgQueue[0].polite ? suppressMentionsLinks(msgQueue[0].msg) : msgQueue[0].msg
+            message: msgQueue[0].msg
         }, function(err,res) {
+            if(err) console.log('Error sending message:', err);
             var sent = msgQueue.shift(); // Remove message from buffer
             if(sent.callback) sent.callback(err,res); // Activate callback if exists
             if(msgQueue.length < 1) { // Stop when message buffer is empty
