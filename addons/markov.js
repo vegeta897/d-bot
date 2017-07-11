@@ -46,7 +46,7 @@ _commands.markov = function(data) {
             }
             return { word: nextWord, score };
         });
-        choices.sort((a, b) => b.score - a.score);
+        choices.sort((a, b) => b.score - a.score + util.randomIntRange(-2, 2));
         sequence.unshift(choices[0].word);
         if(sequence[0] === 0) break;
     } while(safety < 1000);
