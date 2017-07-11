@@ -17,17 +17,15 @@ var _commands = {};
 _commands.markov = function(data) {
     if(!wordMap.words) return discord.sendMessage(data.channel, 'The word map needs to be built with `markovbuild`');
     var inputWords = util.getRegExpMatches(data.paramStr, util.matchWordsRX);
+    let sequence;
     if(inputWords.length === 0) {
-        do {
-            var beginWordIndex = util.randomIntRange(1, wordMap.words.length - 1);
-            var beginWordLink = wordMap.links[beginWordIndex];
-        } while (!beginWordLink[0].includes(0) || beginWordLink[1].includes(0));
-        inputWords = [wordMap.words[beginWordIndex]];
+        sequence = [pickWord(true)];
+    } else {
+        sequence = inputWords.map(word => wordMap.words.indexOf(word.toLowerCase()));
+        if(sequence[sequence.length - 1] < 1) sequence.push(pickWord());
     }
-    var sequence = inputWords.map(word => wordMap.words.indexOf(word.toLowerCase()));
     sequence.reverse();
-    if(sequence[0] < 1) return discord.sendMessage(data.channel, `Couldn't start a chain with that.`);
-    var messageLength = 12; // Ideal max message length;
+    var messageLength = Math.max(inputWords.length + 1, util.randomIntRange(12, 20)); // Ideal max message length;
     var safety = 0;
     do {
         safety++;
@@ -55,23 +53,27 @@ _commands.markov = function(data) {
     // Output
     sequence.reverse();
     var output = '';
-    var newSentence = true;
     for(var f = 0; f < sequence.length; f++) {
         var word = wordMap.words[sequence[f]];
-        if(sequence[f]) {
-            output += ' ' + (newSentence || ['i','im','i\'m'].includes(word) ? util.capitalize(word) : word);
-            newSentence = false;
+        if(word) {
+            output += ' ' + (['i','im','i\'m'].includes(word) ? util.capitalize(word) : word);
         } else if(sequence[f] === 0) {
             output += '.';
-            newSentence = true;
         } else {
             word = data.params[f];
-            output += ' ' + (newSentence ? util.capitalize(word) : word);
-            newSentence = false;
+            output += ' ' + word;
         }
     }
-    discord.sendMessage(data.channel, output);
+    discord.sendMessage(data.channel, util.capitalize(output.substr(1)));
 };
+
+function pickWord(beginning) {
+    do {
+        var beginWordIndex = util.randomIntRange(1, wordMap.words.length - 1);
+        var beginWordLink = wordMap.links[beginWordIndex];
+    } while ((beginning && !beginWordLink[0].includes(0)) || beginWordLink[1].includes(0));
+    return beginWordIndex;
+}
 
 function buildWordMap() {
     wordMap.words = [null];
