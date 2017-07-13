@@ -27,9 +27,16 @@ module.exports = {
     getUsernameFromID: _getUsernameFromID,
     getIDFromUsername: function(username) {
         // TODO: Use fuzzy matching to get closest match above 50% similarity
-        if(!username || username.trim() == '') return false;
-        for(var uKey in bot.users) { if(!bot.users.hasOwnProperty(uKey)) continue;
-            if(bot.users[uKey].username.toLowerCase() == username.toLowerCase()) return uKey;
+        username = username.toLowerCase();
+        if(!username || username.trim() === '') return false;
+        for(let sKey in bot.servers) { if(!bot.servers.hasOwnProperty(sKey)) continue;
+            let members = bot.servers[sKey].members;
+            for(let mKey in members) { if(!members.hasOwnProperty(mKey)) continue;
+                if(members[mKey].nick && members[mKey].nick.toLowerCase() === username) return mKey;
+            }
+        }
+        for(let uKey in bot.users) { if(!bot.users.hasOwnProperty(uKey)) continue;
+            if(bot.users[uKey].username.toLowerCase() === username) return uKey;
         }
         return false;
     },
@@ -58,10 +65,10 @@ function _sendMessages(ID, messageArr, polite, callback) {
         bot.sendMessage({
             to: msgQueue[0].ID,
             message: msgQueue[0].msg
-        }, function(err,res) {
-            if(err) console.log('Error sending message:', err);
+        }, function(err, res) {
+            if(err) console.log(new Date().toLocaleString(),'Error sending message:', err);
             var sent = msgQueue.shift(); // Remove message from buffer
-            if(sent.callback) sent.callback(err,res); // Activate callback if exists
+            if(sent.callback) sent.callback(err, res); // Activate callback if exists
             if(msgQueue.length < 1) { // Stop when message buffer is empty
                 sending = false; // We're free
             } else {

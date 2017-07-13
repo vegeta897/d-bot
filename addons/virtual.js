@@ -25,14 +25,14 @@ _commands.virtual = function(data) {
 };
 
 function listen(data) {
-    if(!virtual || virtual.done || data.channel != virtual.channel || data.message.length < 5) return;
+    if(!virtual || virtual.done || data.channel !== virtual.channel || data.message.length < 5) return;
     discord.bot.simulateTyping(data.channel);
     var response = virtual.getResponse(data);
     setTimeout(function(){
         discord.sendMessage(data.channel, virtual.pre + response, true);
     }, Math.min(2000, response.length * 25));
     virtual.responses++;
-    if(virtual.responses == 6) {
+    if(virtual.responses === 6) {
         virtual.done = true;
         setTimeout(function(){
             discord.sendMessage(data.channel, virtual.pre + virtual.goodbye);
