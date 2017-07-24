@@ -158,7 +158,7 @@ var util = {
         }
         return pre + ' ' + word;
     },
-    matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?])/gi,
+    matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?:])/gi,
     alphabet: ['a','b','c','d','e','f','g','h','i','j','k','l','m',
         'n','o','p','q','r','s','t','u','v','w','x','y','z'],
     vowels: ['a','e','i','o','u'],

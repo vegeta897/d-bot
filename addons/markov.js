@@ -17,20 +17,20 @@ var _commands = {};
 _commands.markov = function(data) {
     if(!wordMap.words) return discord.sendMessage(data.channel, 'The word map needs to be built with `markovbuild`');
     var inputWords = util.getRegExpMatches(data.paramStr, util.matchWordsRX);
+    let inputWordCount = inputWords.length;
     let sequence;
-    if(inputWords.length === 0) {
+    if(inputWordCount === 0) {
         sequence = [pickWord(true)];
     } else {
         sequence = inputWords.map(word => wordMap.words.indexOf(word.toLowerCase()));
         if(sequence[sequence.length - 1] < 1) sequence.push(pickWord());
     }
     sequence.reverse();
-    var messageLength = Math.max(inputWords.length + 1, 15); // Ideal max message length;
-    var safety = 0;
+    var messageLength = Math.max(inputWordCount + 1, 15); // Ideal max message length;
     do {
-        safety++;
         var prevWords = wordMap.links[sequence[0]][0];
         var nextWords = wordMap.links[sequence[0]][1];
+        if(prevWords.length + nextWords.length === 0) break;
         var choices = prevWords.map((prevWord, index) => {
             let nextWord = nextWords[index];
             let score = 0;
@@ -48,13 +48,12 @@ _commands.markov = function(data) {
         });
         choices.sort((a, b) => b.score - a.score + util.randomIntRange(-2, 2));
         sequence.unshift(choices[0].word);
-        if(sequence[0] === 0) break;
-    } while(safety < 1000);
+    } while(sequence[0] > 0);
     
     // Output
     sequence.reverse();
-    var output = '';
-    for(var f = 0; f < sequence.length; f++) {
+    var output = data.paramStr;
+    for(var f = inputWordCount; f < sequence.length; f++) {
         var word = wordMap.words[sequence[f]];
         if(word) {
             output += ' ' + (['i','im','i\'m'].includes(word) ? util.capitalize(word) : word);
@@ -65,7 +64,8 @@ _commands.markov = function(data) {
             output += ' ' + word;
         }
     }
-    discord.sendMessage(data.channel, util.capitalize(output.substr(1)));
+    if(inputWordCount === 0) output = output.substr(1);
+    discord.sendMessage(data.channel, util.capitalize(output));
 };
 
 function pickWord(beginning) {

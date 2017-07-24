@@ -32,8 +32,7 @@ function getTopWords(data, unique) {
                 var thisWord = words[w].toLowerCase();
                 if(!unique && junkWords.includes(thisWord)) continue;
                 var obj = (!unique || allMessages[m].user === userID) ? dictionary : exclude;
-                if(obj.hasOwnProperty(thisWord)) obj[thisWord]++;
-                else obj[thisWord] = 1;
+                obj[thisWord] = (obj[thisWord] || 0) + 1;
             }
         }
         for(var key in exclude) delete dictionary[key];
