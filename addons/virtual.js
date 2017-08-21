@@ -2,9 +2,9 @@
 var util = require(__base+'core/util.js');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
-var requireNew = require('require-new');
-var VirtualUser = requireNew('./helpers/virtual-user.js');
-var VirtualCustom = requireNew('./helpers/virtual-custom.js');
+var requireUncached = require('require-uncached');
+var VirtualUser = requireUncached('./helpers/virtual-user.js');
+var VirtualCustom = requireUncached('./helpers/virtual-custom.js');
 
 var virtual; // Stores current virtual session
 

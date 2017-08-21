@@ -4,6 +4,7 @@ var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
 var config = require(__base+'core/config.js');
 var storage = require(__base+'core/storage.js');
+var Canvas = require('canvas');
 
 var wordMapStorage = storage.json('word-map');
 var wordMap = wordMapStorage.data;
@@ -12,18 +13,35 @@ if(!wordMap.words) {
     buildWordMap();
 }
 
+var lastMarkov = false;
+const LM_CHOICES = 7;
+
 var _commands = {};
 
 _commands.markov = function(data) {
-    if(!wordMap.words) return discord.sendMessage(data.channel, 'The word map needs to be built with `markovbuild`');
+    if(!wordMap.words) {
+        buildWordMap();
+        return discord.sendMessage(data.channel, 'Sorry, try again...');
+    }
+    lastMarkov = {
+        inputString: data.paramStr,
+        choices: []
+    };
     var inputWords = util.getRegExpMatches(data.paramStr, util.matchWordsRX);
     let inputWordCount = inputWords.length;
     let sequence;
     if(inputWordCount === 0) {
-        sequence = [pickWord(true)];
+        inputWords = [wordMap.words[pickWord(true)]];
+        lastMarkov.inputString = inputWords[0];
+        inputWordCount++;
     } else {
-        sequence = inputWords.map(word => wordMap.words.indexOf(word.toLowerCase()));
-        if(sequence[sequence.length - 1] < 1) sequence.push(pickWord());
+    }
+    sequence = inputWords.map(word => wordMap.words.indexOf(word.toLowerCase()));
+    if(sequence[sequence.length - 1] < 1) {
+        let addedWord = pickWord();
+        sequence.push(addedWord);
+        lastMarkov.inputString += ' ' + wordMap.words[addedWord];
+        inputWordCount++;
     }
     sequence.reverse();
     var messageLength = Math.max(inputWordCount + 1, 15); // Ideal max message length;
@@ -31,10 +49,11 @@ _commands.markov = function(data) {
         var prevWords = wordMap.links[sequence[0]][0];
         var nextWords = wordMap.links[sequence[0]][1];
         if(prevWords.length + nextWords.length === 0) break;
-        var choices = prevWords.map((prevWord, index) => {
-            let nextWord = nextWords[index];
+        let maxScore = 0;
+        var choiceSet = [];
+        var choices = nextWords.map((nextWord, index) => {
             let score = 0;
-            if(prevWord === sequence[1]) score += 3;
+            if(prevWords[index] === sequence[1]) score += 3;
             if(sequence.length < messageLength) {
                 if(nextWord > 0) {
                     if(wordMap.links[nextWord][1].some(elem => elem > 0)) score += 3; // Not an ending word
@@ -44,28 +63,85 @@ _commands.markov = function(data) {
             } else if(nextWord === 0) {
                 score += 1 + (sequence.length - messageLength); // More points for ending farther above max length
             }
+            maxScore = Math.max(maxScore, score);
             return { word: nextWord, score };
         });
-        choices.sort((a, b) => b.score - a.score + util.randomIntRange(-2, 2));
+        choices.sort((a, b) => b.score - a.score + util.random(-maxScore/2, maxScore/2));
+        if(choices[0].word) {
+            for(let i = 0; i < choices.length; i++) {
+                let word = wordMap.words[choices[i].word];
+                if(word && !choiceSet.includes(word)) choiceSet.push(word);
+                if(choiceSet.length === LM_CHOICES) break;
+            }
+            lastMarkov.choices.push(choiceSet);
+        }
         sequence.unshift(choices[0].word);
     } while(sequence[0] > 0);
     
     // Output
     sequence.reverse();
-    var output = data.paramStr;
+    var output = lastMarkov.inputString;
+    lastMarkov.finalWords = [];
     for(var f = inputWordCount; f < sequence.length; f++) {
         var word = wordMap.words[sequence[f]];
         if(word) {
             output += ' ' + (['i','im','i\'m'].includes(word) ? util.capitalize(word) : word);
         } else if(sequence[f] === 0) {
             output += '.';
-        } else {
+        } else { // Does this ever run?
             word = data.params[f];
             output += ' ' + word;
         }
+        if(word) lastMarkov.finalWords.push(word);
     }
-    if(inputWordCount === 0) output = output.substr(1);
+    if(!lastMarkov.choices[0][0]) lastMarkov = false;
     discord.sendMessage(data.channel, util.capitalize(output));
+};
+
+_commands.mapkov = function(data) {
+    if(!lastMarkov) return discord.sendMessage(data.channel, 'You have to generate a `/markov` first');
+    const HEADER = 30;
+    const LINE_HEIGHT = 24;
+    const SPACE = '    ';
+    let canvas = new Canvas(400, 
+        HEADER + lastMarkov.choices.length * LINE_HEIGHT);
+    let ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#bbbbbb';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.font = '24px Roboto';
+    util.resizeFontToFit(ctx, lastMarkov.inputString, 'Roboto', canvas.width - 2, 28);
+    ctx.fillText(lastMarkov.inputString, canvas.width / 2, Math.floor(HEADER / 2));
+    ctx.textAlign = 'left';
+    for(let i = 0; i < lastMarkov.choices.length; i++) {
+        let choiceSet = lastMarkov.choices[i];
+        choiceSet.sort();
+        let metrics = util.resizeFontToFit(ctx, choiceSet.join(SPACE), 'Roboto', canvas.width - 8, 20);
+        let blotX = Math.floor((canvas.width - metrics.width) / 2);
+        for(let j = 0; j < choiceSet.length; j++) {
+            let wordText = choiceSet[j] + (j === choiceSet.length - 1 ? '' : SPACE);
+            let blotY = HEADER + i * LINE_HEIGHT;
+            if(choiceSet[j] === lastMarkov.finalWords[i]) {
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                let wordMetrics = ctx.measureText(choiceSet[j]);
+                ctx.fillRect(blotX - 4, blotY, wordMetrics.width + 8, LINE_HEIGHT);
+                ctx.fillStyle = '#ffffff';
+            } else {
+                ctx.fillStyle = '#999999';
+            }
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1;
+            ctx.shadowBlur = 2;
+            ctx.fillText(wordText, blotX, blotY + 0.5 * LINE_HEIGHT);
+            ctx.restore();
+            blotX += Math.floor(ctx.measureText(wordText).width);
+        }
+    }
+    lastMarkov = false;
+    require('fs').writeFileSync('mapkov.png', canvas.toBuffer());
+    discord.bot.uploadFile({ to: data.channel, file: 'mapkov.png' });
 };
 
 function pickWord(beginning) {
@@ -127,6 +203,7 @@ module.exports = {
         if(!data.command && parseMessage(data.message)) wordMapStorage.save();
     },
     help: {
-        markov: ['Build markov chain sentences from chat history', 'This is really']
+        markov: ['Build markov chain sentences from chat history', 'This is really'],
+        mapkov: ['Generate a word-map from the previous markov']
     }
 };

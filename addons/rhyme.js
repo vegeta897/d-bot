@@ -2,8 +2,8 @@
 var util = require(__base+'core/util.js');
 var discord = require(__base+'core/discord.js');
 var messages = require(__base+'core/messages.js');
-var requireNew = require('require-new');
-var rhyme = requireNew('./helpers/rhyme.js');
+var requireUncached = require('require-uncached');
+var rhyme = requireUncached('./helpers/rhyme.js');
 
 var _commands = {};
 

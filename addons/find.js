@@ -2,8 +2,8 @@
 var util = require(__base+'core/util.js');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
-var requireNew = require('require-new');
-var findHelper = requireNew('./helpers/find.js');
+var requireUncached = require('require-uncached');
+var findHelper = requireUncached('./helpers/find.js');
 
 var _commands = {};
 

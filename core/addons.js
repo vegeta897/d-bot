@@ -1,7 +1,7 @@
 // Addon manager
 var fs = require('fs');
 var path = require('path');
-var requireNew = require('require-new');
+var requireUncached = require('require-uncached');
 var util = require('./util.js');
 var config = require('./config.js');
 var discord = require('./discord.js');
@@ -32,7 +32,7 @@ function scanAddons() {
 }
 
 function loadAddon(name) {
-    var addon = requireNew(__base+'addons/'+name+'.js');
+    var addon = requireUncached(__base+'addons/'+name+'.js');
     if(addons[name] && addons[name].unload) addons[name].unload(); // If addon already loaded and needs to be unloaded
     addons[name] = addon;
     for(var cKey in addon.commands) {

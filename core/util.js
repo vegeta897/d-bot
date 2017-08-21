@@ -3,6 +3,13 @@ var util = {
     contains: function(a, b) { // Check if string A contains string B, case insensitive
         return a.toLowerCase().indexOf(b.toLowerCase()) > -1;
     },
+    random(min, max) {
+        if(isNaN(max)) {
+            max = min < 0 ? 0 : min;
+            min = min < 0 ? min : 0;
+        }
+        return Math.floor(Math.random() * (+max - +min + 1)) + +min ;
+    },
     randomIntRange: (min, max) => Math.floor(Math.random() * (+max - +min + 1)) + +min,
     capitalize: s => s[0].toUpperCase() + s.substring(1),
     toProperCase: function(s) {
@@ -157,6 +164,13 @@ var util = {
             return pre + 'n ' + word;
         }
         return pre + ' ' + word;
+    },
+    resizeFontToFit(ctx, text, font, width, startSize) {
+        do {
+            ctx.font = startSize-- + 'px ' + font;
+            var metrics = ctx.measureText(text);
+        } while(metrics.width > width && startSize > 1);
+        return metrics;
     },
     matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?:])/gi,
     alphabet: ['a','b','c','d','e','f','g','h','i','j','k','l','m',

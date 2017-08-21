@@ -2,8 +2,8 @@
 var util = require(__base+'core/util.js');
 var discord = require(__base+'core/discord.js');
 var messages = require(__base+'core/messages.js');
-var requireNew = require('require-new');
-var findHelper = requireNew('./find.js');
+var requireUncached = require('require-uncached');
+var findHelper = requireUncached('./find.js');
 var FuzzySet = require('fuzzyset.js');
 
 function VirtualUser(params) {

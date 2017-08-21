@@ -4,8 +4,8 @@ var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
 var config = require(__base+'core/config.js');
 var storage = require(__base+'core/storage.js');
-var requireNew = require('require-new');
-var findHelper = requireNew('./helpers/find.js');
+var requireUncached = require('require-uncached');
+var findHelper = requireUncached('./helpers/find.js');
 
 var subsStorage = storage.json('subscriptions', {}, '\t');
 var subs = subsStorage.data;
