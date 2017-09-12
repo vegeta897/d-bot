@@ -66,7 +66,7 @@ module.exports = {
                 default: state = 'idle'; break;
             }
         }
-        var variation = util.randomIntRange(1,images.users[user][state].length);
+        var variation = util.randomInt(1,images.users[user][state].length);
         var imageName = user+'-'+state+'-'+ variation + '.png',
             img = new Image;
         img.src = fs.readFileSync(__dirname + '/img/users/' + imageName);

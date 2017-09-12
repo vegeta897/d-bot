@@ -234,7 +234,7 @@ function drawActors(frames) {
                 frameImage.collisionMap = images.flipCollision(frameImage.collisionMap);
             }
             var xOffset = 0;
-            if(actorState == 'alone') xOffset = util.randomIntRange(0,150);
+            if(actorState == 'alone') xOffset = util.randomInt(150);
             frame.collisionMaps.push(frameImage.collisionMap);
             frame.actorImage.ctx.drawImage(frameImage.img,0,0,fWidth,fHeight,xOffset*-1,0,fWidth,fHeight);
             if(frame.actors[aKey] == 'left') {
@@ -390,7 +390,7 @@ function getMessages(channel,option,callback) {
     if(option == 'random') {
         messages.count({}, function (err, count) {
             if(err) { console.log(err); return; }
-            executeQuery(util.randomIntRange(0,count-30));
+            executeQuery(util.randomInt(count-30));
         });
     } else {
         executeQuery(option);

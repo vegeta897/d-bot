@@ -33,8 +33,8 @@ module.exports = {
         }}
         for(var pKey in game.players) { if (!game.players.hasOwnProperty(pKey)) continue;
             do {
-                var px = util.randomIntRange(1,mapWidth-2),
-                    py = util.randomIntRange(1,mapHeight-2);
+                var px = util.randomInt(1,mapWidth-2),
+                    py = util.randomInt(1,mapHeight-2);
             } while(map[px+':'+py] || playerMap[px+':'+py]);
             playerMap[px+':'+py] = game.players[pKey];
             game.players[pKey].x = game.players[pKey].prevX = px;

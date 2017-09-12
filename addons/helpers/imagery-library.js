@@ -26,7 +26,8 @@ const COLORS = {
 const SHAPES = {
     CIRCLE: 'circle',
     SQUARE: 'square',
-    RECTANGLE: 'rectangle'
+    RECTANGLE: 'rectangle',
+    TRIANGLE: 'triangle'
 };
 
 const SIZE_SHAPE = {
@@ -34,12 +35,26 @@ const SIZE_SHAPE = {
     square: size => ({ size, width: size, height: size }),
     rectangle: size => {
         let width = size;
-        let height = util.randomIntRange(size/5, size/1.3);
-        if(util.flip()) {
-            width = height;
-            height = size;
+        let height = util.randomInt(size/4, size/1.3);
+        return { size, width, height, rotate: true };
+    },
+    triangle: size => {
+        let triangleType = util.randomInt(3);
+        switch(triangleType) {
+            case 0: // Equilateral
+                return { size, width: size, height: Math.round(size * Math.sqrt(3) / 2) };
+            case 1: // Isosceles
+            case 2: // Right
+                let width = size;
+                let height = util.randomInt(size/3, size/1.3);
+                if(util.flip()) {
+                    width = height;
+                    height = size;
+                }
+                return { size, width, height, right: triangleType === 2, rotate: true, flip: true };
+            case 3: // Scalene
+                return { size, width: size, height: size, scalene: true };
         }
-        return { size, width, height };
     }
 };
 
@@ -54,6 +69,18 @@ const DRAW_SHAPE = {
     },
     rectangle: (ctx, { width, height }) => {
         ctx.fillRect(0, 0, width, height);
+    },
+    triangle: (ctx, { width, height, right, scalene }) => {
+        let randomHeight = util.randomInt(height);
+        let randomWidth = util.randomInt(width);
+        ctx.beginPath();
+        ctx.moveTo(0, scalene ? randomHeight : height);
+        ctx.lineTo(width, height);
+        if(right) ctx.lineTo(0, 0);
+        else if(scalene) ctx.lineTo(randomWidth, 0);
+        else ctx.lineTo(width / 2, 0);
+        ctx.closePath();
+        ctx.fill();
     }
 };
 

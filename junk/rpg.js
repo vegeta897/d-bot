@@ -47,13 +47,13 @@ var describeUser = function(user) {
 
 var newEncounter = function(cb) {
     console.log(new Date(),'generating encounter');
-    var monster = unknownNames[util.randomIntRange(0,unknownNames.length-1)];
+    var monster = unknownNames[util.randomInt(unknownNames.length-1)];
     monster = { master: monster[1], name: monster[0], hp: [3,3], atk: 1, def: 1, evd: 1 };
     messages.find({ user:monster.master, 
             $where: function () { return !util.contains(this.content,'http') && !util.contains(this.content,'<@'); } },
         function(err,msgs) {
             if (err) { console.log(err); return; }
-            monster.message = msgs[util.randomIntRange(0,msgs.length-1)].content;
+            monster.message = msgs[util.randomInt(msgs.length-1)].content;
             cb(monster);
         }
     );

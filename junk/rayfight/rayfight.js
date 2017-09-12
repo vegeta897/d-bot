@@ -231,8 +231,8 @@ var simulateTurn = function() {
 
 var spawnPowerup = function() {
     do {
-        var px = util.randomIntRange(1,map.width-2),
-            py = util.randomIntRange(1,map.height-2);
+        var px = util.randomInt(1,map.width-2),
+            py = util.randomInt(1,map.height-2);
     } while(game.map[px+':'+py] || game.playerMap[px+':'+py]);
     game.powerups[px+':'+py] = powerups.spawn(game.turn,px,py);
 };

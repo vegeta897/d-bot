@@ -100,7 +100,7 @@ module.exports = {
             greeting: profiles[params.name.toLowerCase()].greeting,
             prepare() { },
             getResponse(data) {
-                var pickedResponse = util.randomIntRange(0, profiles[this.name].responses.length - 1);
+                var pickedResponse = util.randomInt(profiles[this.name].responses.length - 1);
                 pickedResponse = profiles[this.name].responses.splice(pickedResponse, 1)[0];
                 profiles[this.name].usedResponses.push(pickedResponse);
                 if(profiles[this.name].responses.length == 0) {

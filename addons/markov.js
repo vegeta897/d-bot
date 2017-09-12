@@ -145,7 +145,7 @@ _commands.mapkov = function(data) {
 
 function pickWord(beginning) {
     do {
-        var beginWordIndex = util.randomIntRange(1, wordMap.words.length - 1);
+        var beginWordIndex = util.randomInt(1, wordMap.words.length - 1);
         var beginWordLink = wordMap.links[beginWordIndex];
     } while ((beginning && !beginWordLink[0].includes(0)) || beginWordLink[1].includes(0));
     return beginWordIndex;

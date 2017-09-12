@@ -13,7 +13,7 @@ _commands.roll = function(data) {
     var rolls = [`Rolling a **${sides}** sided die **${diceCount}** time${diceCount > 1 ? 's' : ''}!`];
     if(diceCount > 0 && sides > 0) {
         for(var i = 0; i < diceCount; i++) {
-            var roll = util.randomIntRange(1, sides);
+            var roll = util.randomInt(1, sides);
             total += roll;
             rolls.push(`**${roll}**`);
         }
@@ -56,7 +56,7 @@ _commands.flip = function(data) {
 };
 
 _commands.whataretheodds = function(data) {
-    var odds = Math.pow(10,util.randomIntRange(1,8))*util.randomIntRange(1,9);
+    var odds = Math.pow(10,util.randomInt(1,8))*util.randomInt(1,9);
     discord.sendMessage(data.channel, `1 in ${odds.toLocaleString()}!`);
 };
 

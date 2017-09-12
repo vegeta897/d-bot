@@ -10,7 +10,14 @@ var util = {
         }
         return Math.floor(Math.random() * (+max - +min + 1)) + +min ;
     },
-    randomIntRange: (min, max) => Math.floor(Math.random() * (+max - +min + 1)) + +min,
+    randomInt(min, max) {
+        if(isNaN(max)) {
+            max = min < 0 ? 0 : min;
+            min = min < 0 ? min : 0;
+        }
+        return Math.floor(Math.random() * (+max - +min + 1)) + +min
+    },
+    isNumeric: n => !isNaN(parseFloat(n)) && isFinite(n),
     capitalize: s => s[0].toUpperCase() + s.substring(1),
     toProperCase: function(s) {
         var newstr = s.split(' ');
@@ -33,7 +40,7 @@ var util = {
         return timeUnit;
     },
     pickInArray: function(arr/*, splice */) {
-        var randomIndex = this.randomIntRange(0, arr.length-1);
+        var randomIndex = this.randomInt(arr.length-1);
         if(arguments[1]) return arr.splice(randomIndex,1)[0];
         else return arr[randomIndex];
     },

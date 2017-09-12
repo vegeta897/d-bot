@@ -209,7 +209,7 @@ setInterval(function() {
         save();
     } else if(elapsed > (data.hints.length + 1) * data.hintInterval) { // Drop a hint
         var nextHint;
-        do { nextHint = util.randomIntRange(0,data.word.length-1);
+        do { nextHint = util.randomInt(data.word.length-1);
         } while(data.hints.indexOf(nextHint) >= 0);
         data.hints.push(nextHint);
         updateHintText();
