@@ -34,6 +34,7 @@ const SHAPES = {
     BOX: 'box',
     DOT: 'dot'
 };
+
 const SIZE_SHAPE = {
     circle: size => ({ size, radius: size / 2, width: size, height: size }),
     square: size => ({ size, width: size, height: size }),
@@ -106,8 +107,29 @@ const DRAW_SHAPE = {
         ctx.lineTo(size * 0.38, size * 0.40);
         ctx.closePath();
         ctx.fill();
+    },
+    ngon: (ctx, { radius }, sides) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(radius, radius);
+        ctx.moveTo(0, -radius);
+        for (var i = 0; i < sides; i++) {
+            ctx.rotate(Math.PI / sides * 2);
+            ctx.lineTo(0, -radius);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
     }
 };
+
+['pentagon', 'hexagon', 'heptagon', 'octagon', 'nonagon', 'decagon', 'hendecagon', 'dodecagon', 'tridecagon',
+    'pentadecagon', 'hexadecagon', 'heptadecagon', 'octadecagon', 'enneadecagon', 'icosagon']
+    .forEach((ngon, index) => {
+    SHAPES[ngon.toUpperCase()] = ngon;
+    SIZE_SHAPE[ngon] = size => ({ size, radius: size / 2, width: size, height: size });
+    DRAW_SHAPE[ngon] = (ctx, args) => DRAW_SHAPE.ngon(ctx, args, index + 5);
+});
 
 function cropCanvas(canvas, padding) {
     padding = padding || 0;
