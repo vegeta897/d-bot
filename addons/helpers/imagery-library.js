@@ -42,7 +42,7 @@ const SIZE_SHAPE = {
         let triangleType = util.randomInt(3);
         switch(triangleType) {
             case 0: // Equilateral
-                return { size, width: size, height: Math.round(size * Math.sqrt(3) / 2) };
+                return { size, width: size, height: Math.round(size * Math.sqrt(3) / 2), rotate: true };
             case 1: // Isosceles
             case 2: // Right
                 let width = size;
@@ -53,7 +53,7 @@ const SIZE_SHAPE = {
                 }
                 return { size, width, height, right: triangleType === 2, rotate: true, flip: true };
             case 3: // Scalene
-                return { size, width: size, height: size, scalene: true };
+                return { size, width: size, height: size, scalene: true, rotate: true, flip: true };
         }
     }
 };
@@ -72,7 +72,7 @@ const DRAW_SHAPE = {
     },
     triangle: (ctx, { width, height, right, scalene }) => {
         let randomHeight = util.randomInt(height);
-        let randomWidth = util.randomInt(width);
+        let randomWidth = util.randomInt(width); // TODO: Prevent thin sliver triangles
         ctx.beginPath();
         ctx.moveTo(0, scalene ? randomHeight : height);
         ctx.lineTo(width, height);
@@ -108,10 +108,40 @@ function cropCanvas(canvas, padding) {
     } else return canvas;
 }
 
+function flipCanvas(canvas) {
+    let newCanvas = new Canvas(canvas.width, canvas.height);
+    let ctx = newCanvas.getContext('2d');
+    ctx.save();
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
+    return newCanvas;
+}
+
+function rotateCanvas(canvas, rotation) {
+    if(rotation === 0) return canvas;
+    // 90 or 270 degree rotation requires swapped canvas width/height
+    let newWidth = rotation === 2 ? canvas.width : canvas.height;
+    let newHeight = rotation === 2 ? canvas.height : canvas.width;
+    let newCanvas = new Canvas(newWidth, newHeight);
+    let ctx = newCanvas.getContext('2d');
+    ctx.save();
+    ctx.translate(newWidth / 2, newHeight / 2);
+    ctx.rotate(rotation * 90 * Math.PI / 180);
+    if(rotation === 2) ctx.translate(-newWidth / 2, -newHeight / 2); // Mind-fuck
+    else ctx.translate(-newHeight / 2, -newWidth / 2);
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
+    return newCanvas;
+}
+
 module.exports = {
     COLORS,
     SHAPES,
     DRAW_SHAPE,
     SIZE_SHAPE,
-    cropCanvas
+    cropCanvas,
+    flipCanvas,
+    rotateCanvas
 };

@@ -4,7 +4,7 @@ var discord = require(__base+'core/discord.js');
 var Canvas = require('canvas');
 var { wordsToNumbers } = require('words-to-numbers');
 var requireUncached = require('require-uncached');
-const { COLORS, SHAPES, DRAW_SHAPE, SIZE_SHAPE, cropCanvas } = requireUncached('./helpers/imagery-library.js');
+const { COLORS, SHAPES, DRAW_SHAPE, SIZE_SHAPE, cropCanvas, flipCanvas, rotateCanvas } = requireUncached('./helpers/imagery-library.js');
 var Color = requireUncached('./helpers/color.js');
 
 const W = 800;
@@ -23,32 +23,43 @@ function drawShape(elem) {
     let ctx = elem.canvas.getContext('2d');
     ctx.fillStyle = elem.color.hex;
     DRAW_SHAPE[elem.shape](ctx, elem);
+    if(elem.flipped) elem.canvas = flipCanvas(elem.canvas);
+    if(elem.rotation) elem.canvas = rotateCanvas(elem.canvas, elem.rotation);
 }
 
 function sizeElements(elems) { // Set element sizes
     elems.forEach(elem => Object.assign(elem, SIZE_SHAPE[elem.shape](util.randomInt(100, 300))));
 }
 
+function transformElement(elem) {
+    elem.flipped = elem.flip && util.flip();
+    elem.rotation = elem.rotate ? util.randomInt(0, 3) : 0;
+}
+
 function arrangeElements(elems) {
     //elems.sort((a, b) => b.size - a.size); // Arrange largest to smallest
+    // TODO: Custom collision detection per shape type
     for(let i = 0; i < elems.length; i++) {
         let elem = elems[i];
-        elem.size += 2;
         do {
             elem.size = Math.round(elem.size * 0.95);
             Object.assign(elem, SIZE_SHAPE[elem.shape](elem.size));
-            elem.x = util.randomInt(W - elem.width);
-            elem.y = util.randomInt(H - elem.height);
+            let elemWidth = elem.rotation % 2 ? elem.height : elem.width;
+            let elemHeight = elem.rotation % 2 ? elem.width : elem.height;
+            elem.x = util.randomInt(W - elemWidth);
+            elem.y = util.randomInt(H - elemHeight);
             var collides = false;
             for(let j = i -1; j >= 0; j--) {
                 let elem2 = elems[j];
-                if(elem2.x < elem.x + elem.width && elem2.x + elem2.width > elem.x
-                    && elem2.y < elem.y + elem.height && elem2.y + elem2.height > elem.y) {
+                let elem2Width = elem2.rotation % 2 ? elem2.height : elem2.width;
+                let elem2Height = elem2.rotation % 2 ? elem2.width : elem2.height;
+                if(elem2.x < elem.x + elemWidth && elem2.x + elem2Width > elem.x
+                    && elem2.y < elem.y + elemHeight && elem2.y + elem2Height > elem.y) {
                     collides = true;
                     break;
                 }
             }
-        } while(collides)
+        } while(collides && elem.size > 4)
     }
 }
 
@@ -95,10 +106,11 @@ _commands.draw = function(data) {
     elements.forEach(elem => { // Pluralize
         if(elem.plural) {
             let qty = elem.quantity || util.randomInt(2, 4);
-            for(let i = 0; i < qty; i++) elements.push(Object.assign({}, elem));
+            for(let i = 0; i < qty - 1; i++) elements.push(Object.assign({}, elem));
         }
     });
     sizeElements(elements); // Give elements sizes
+    elements.forEach(transformElement);
     arrangeElements(elements); // Arrange elements on canvas
     elements.forEach(elem => { // Color and draw elements
         elem.color = elem.color || new Color({ hex: COLORS.DEFAULT });
