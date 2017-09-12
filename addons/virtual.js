@@ -1,6 +1,5 @@
 //  I am a mechanical boy
 var util = require(__base+'core/util.js');
-var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
 var requireUncached = require('require-uncached');
 var VirtualUser = requireUncached('./helpers/virtual-user.js');
@@ -11,7 +10,7 @@ var virtual; // Stores current virtual session
 var _commands = {};
 
 _commands.virtual = function(data) {
-    if(data.paramStr == 'profiles') return discord.sendMessage(data.channel, VirtualCustom.getProfileSummary());
+    if(data.paramStr === 'profiles') return discord.sendMessage(data.channel, VirtualCustom.getProfileSummary());
     if(data.isPM) return VirtualCustom.startMaintenance(data);
     if(virtual) return discord.sendMessage(data.channel, 'Only one virtual chatter at a time!');
     var id = discord.getIDFromUsername(data.paramStr);

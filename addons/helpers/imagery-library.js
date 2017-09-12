@@ -2,26 +2,27 @@
 var util = require(__base+'core/util.js');
 var Canvas = require('canvas');
 
-// TODO: allow for random slight variation, and modifiers like dark, light, pale, etc
+const hex = hex => ({ hex });
 const COLORS = {
-    DEFAULT: '#CCCCCC',
-    RED: '#F44336',
-    PINK: '#E91E63',
-    PURPLE: '#9C27B0',
-    INDIGO: '#3F51B5',
-    BLUE: '#2196F3',
-    CYAN: '#00BCD4',
-    TEAL: '#009688',
-    GREEN: '#4CAF50',
-    LIME: '#CDDC39',
-    YELLOW: '#FFEB3B',
-    AMBER: '#FFC107',
-    ORANGE: '#FF9800',
-    BROWN: '#795548',
-    GRAY: '#9E9E9E',
-    GREY: '#9E9E9E',
-    WHITE: '#FFFFFF',
-    BLACK: '#000000'
+    DEFAULT: hex('#CCCCCC'),
+    RED: hex('#F44336'),
+    PINK: hex('#E91E63'),
+    PURPLE: hex('#9C27B0'),
+    INDIGO: hex('#3F51B5'),
+    BLUE: hex('#2196F3'),
+    CYAN: hex('#00BCD4'),
+    TEAL: hex('#009688'),
+    GREEN: hex('#4CAF50'),
+    LIME: hex('#CDDC39'),
+    YELLOW: hex('#FFEB3B'),
+    AMBER: hex('#FFC107'),
+    ORANGE: hex('#FF9800'),
+    BROWN: hex('#795548'),
+    GRAY: hex('#9E9E9E'),
+    GREY: hex('#9E9E9E'),
+    WHITE: hex('#FFFFFF'),
+    BLACK: hex('#000000'),
+    RAINBOW: { custom: 'rainbow' }
 };
 
 const SHAPES = {
@@ -29,9 +30,10 @@ const SHAPES = {
     SQUARE: 'square',
     RECTANGLE: 'rectangle',
     TRIANGLE: 'triangle',
-    STAR: 'star'
+    STAR: 'star',
+    BOX: 'box',
+    DOT: 'dot'
 };
-
 const SIZE_SHAPE = {
     circle: size => ({ size, radius: size / 2, width: size, height: size }),
     square: size => ({ size, width: size, height: size }),
@@ -60,6 +62,11 @@ const SIZE_SHAPE = {
     },
     star: size => ({ size, width: size, height: size })
 };
+SIZE_SHAPE.box = size => {
+    if(util.flip()) return Object.assign({ shape: 'square' }, SIZE_SHAPE.square(size));
+    else return Object.assign({ shape: 'rectangle' }, SIZE_SHAPE.rectangle(size));
+};
+SIZE_SHAPE.dot = size => Object.assign({ shape: 'circle' }, SIZE_SHAPE.circle(util.randomInt(2, 6)));
 
 const DRAW_SHAPE = {
     circle: (ctx, { radius }) => {

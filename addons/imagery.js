@@ -14,6 +14,7 @@ const H = 600;
 // Write text -- /draw a big red "hello"
 // Quantity -- /draw 30 boxes
 // Improvisation -- /draw something in a circle, or just /draw
+// Color variation -- /draw dark red square, pale blue dot
 // Color schemes -- randomly choose a color scheme when colors not specified
 
 // Show this to the procjam server when it's impressive enough!
@@ -40,12 +41,14 @@ function transformElement(elem) {
 function arrangeElements(elems) {
     //elems.sort((a, b) => b.size - a.size); // Arrange largest to smallest
     // TODO: Custom collision detection per shape type
+    // Or just do per-pixel collision...?
     for(let i = 0; i < elems.length; i++) {
         let elem = elems[i];
         do {
             elem.size = Math.round(elem.size * 0.95); // Maybe make shapes a prototype with getters and setters
             elem.width = Math.round(elem.width * 0.95);
             elem.height = Math.round(elem.height * 0.95);
+            if(elem.radius) elem.radius = elem.size / 2;
             let elemWidth = elem.rotation % 2 ? elem.height : elem.width;
             let elemHeight = elem.rotation % 2 ? elem.width : elem.height;
             elem.x = util.randomInt(W - elemWidth);
@@ -118,7 +121,7 @@ _commands.draw = function(data) {
     elements.forEach(transformElement);
     arrangeElements(elements); // Arrange elements on canvas
     elements.forEach(elem => { // Color and draw elements
-        elem.color = new Color({ hex: elem.color || COLORS.DEFAULT });
+        elem.color = new Color(elem.color || COLORS.DEFAULT);
         elem.color.vary();
         // console.log(elem);
         drawShape(elem);

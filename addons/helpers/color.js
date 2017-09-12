@@ -1,15 +1,19 @@
 // A super smart color object
 var util = require(__base+'core/util.js');
 
-function Color({ rgb, hsv, hex }) {
+function Color({ rgb, hsv, hex, custom }) {
     if(rgb) this.rgb = rgb;
     if(hsv) this.hsv = hsv;
     if(hex) this.hex = hex;
+    switch(custom) {
+        case 'rainbow':
+            this.hsv = [util.randomInt(0, 359), 90, 95];
+            break;
+    }
 }
 
 Color.prototype = {
     set rgb(value) {
-        console.log('setting rgb to', value);
         this._rgb = value;
         this._hsv = this.rgbToHSV(this._rgb);
         this._hex = this.rgbToHex(this._rgb);
