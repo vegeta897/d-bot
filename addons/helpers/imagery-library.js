@@ -35,7 +35,7 @@ const SIZE_SHAPE = {
     square: size => ({ size, width: size, height: size }),
     rectangle: size => {
         let width = size;
-        let height = util.randomInt(size/4, size/1.3);
+        let height = util.randomInt(Math.round(size/4), Math.round(size/1.3));
         return { size, width, height, rotate: true };
     },
     triangle: size => {
@@ -46,7 +46,7 @@ const SIZE_SHAPE = {
             case 1: // Isosceles
             case 2: // Right
                 let width = size;
-                let height = util.randomInt(size/3, size/1.3);
+                let height = util.randomInt(Math.round(size/3), Math.round(size/1.3));
                 if(util.flip()) {
                     width = height;
                     height = size;
@@ -72,7 +72,7 @@ const DRAW_SHAPE = {
     },
     triangle: (ctx, { width, height, right, scalene }) => {
         let randomHeight = util.randomInt(height);
-        let randomWidth = util.randomInt(width); // TODO: Prevent thin sliver triangles
+        let randomWidth = util.randomInt(Math.max(0, Math.round(height / 2 - randomHeight)), width);
         ctx.beginPath();
         ctx.moveTo(0, scalene ? randomHeight : height);
         ctx.lineTo(width, height);
@@ -108,7 +108,7 @@ function cropCanvas(canvas, padding) {
     } else return canvas;
 }
 
-function flipCanvas(canvas) {
+function flipCanvas(canvas) { // Only need horizontal flip, because of rotation
     let newCanvas = new Canvas(canvas.width, canvas.height);
     let ctx = newCanvas.getContext('2d');
     ctx.save();
