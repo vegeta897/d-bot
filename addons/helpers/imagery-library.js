@@ -1,3 +1,4 @@
+// Definitions and utils and stuff for making images
 var util = require(__base+'core/util.js');
 var Canvas = require('canvas');
 
@@ -27,7 +28,8 @@ const SHAPES = {
     CIRCLE: 'circle',
     SQUARE: 'square',
     RECTANGLE: 'rectangle',
-    TRIANGLE: 'triangle'
+    TRIANGLE: 'triangle',
+    STAR: 'star'
 };
 
 const SIZE_SHAPE = {
@@ -55,7 +57,8 @@ const SIZE_SHAPE = {
             case 3: // Scalene
                 return { size, width: size, height: size, scalene: true, rotate: true, flip: true };
         }
-    }
+    },
+    star: size => ({ size, width: size, height: size })
 };
 
 const DRAW_SHAPE = {
@@ -79,6 +82,21 @@ const DRAW_SHAPE = {
         if(right) ctx.lineTo(0, 0);
         else if(scalene) ctx.lineTo(randomWidth, 0);
         else ctx.lineTo(width / 2, 0);
+        ctx.closePath();
+        ctx.fill();
+    },
+    star: (ctx, { size }) => {
+        ctx.beginPath();
+        ctx.moveTo(size / 2, size * 0.03);
+        ctx.lineTo(size * 0.62, size * 0.40);
+        ctx.lineTo(size, size * 0.40);
+        ctx.lineTo(size * 0.69, size * 0.62);
+        ctx.lineTo(size * 0.80, size * 0.98);
+        ctx.lineTo(size / 2, size * 0.75);
+        ctx.lineTo(size * 0.20, size * 0.98);
+        ctx.lineTo(size * 0.31, size * 0.62);
+        ctx.lineTo(0, size * 0.40);
+        ctx.lineTo(size * 0.38, size * 0.40);
         ctx.closePath();
         ctx.fill();
     }

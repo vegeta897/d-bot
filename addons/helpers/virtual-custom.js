@@ -36,7 +36,7 @@ module.exports = {
         }
         if(profiles[name]) { // Virtual person exists
             var profile = profiles[name];
-            if(profile.maintained && profile.maintained != data.userID) {
+            if(profile.maintained && profile.maintained !== data.userID) {
                 return discord.sendMessage(data.channel, `Virtual ${properName} is currently being edited by someone.`);
             }
             discord.sendMessage(data.channel, `_Virtual ${properName}_ already exists, but you can add more responses! ` + EXPLAIN + `\nYou can add more responses later by invoking \`/virtual ${name}\` in this conversation again.`);
@@ -60,13 +60,13 @@ module.exports = {
     maintain(data) {
         if(maintenance[data.userID]) {
             var profile = profiles[maintenance[data.userID]];
-            if(data.command == 'greet') {
+            if(data.command === 'greet') {
                 profile.greeting = data.paramStr;
                 discord.sendMessage(data.channel, `Greeting updated`);
-            } else if(data.command == 'bye') {
+            } else if(data.command === 'bye') {
                 profile.goodbye = data.paramStr;
                 discord.sendMessage(data.channel, `Goodbye updated`);
-            }else if(data.command == 'undo') {
+            }else if(data.command === 'undo') {
                 var removed = profile.responses.pop();
                 discord.sendMessage(data.channel, `Removed _"${removed}"_`);
             } else if(!data.command) {
@@ -85,7 +85,7 @@ module.exports = {
             }
             refreshTime(maintenance[data.userID]);
             virtualStorage.save();
-        } else if(data.command == 'undo') {
+        } else if(data.command === 'undo') {
             discord.sendMessage(data.channel, 'You aren\'t working on a virtual person, use `/virtual` to get started.');
         }
     },
@@ -98,12 +98,13 @@ module.exports = {
             pre: `**Virtual ${util.toProperCase(params.name)}**: `,
             responses: 0,
             greeting: profiles[params.name.toLowerCase()].greeting,
+            goodbye: profiles[params.name.toLowerCase()].goodbye,
             prepare() { },
             getResponse(data) {
                 var pickedResponse = util.randomInt(profiles[this.name].responses.length - 1);
                 pickedResponse = profiles[this.name].responses.splice(pickedResponse, 1)[0];
                 profiles[this.name].usedResponses.push(pickedResponse);
-                if(profiles[this.name].responses.length == 0) {
+                if(profiles[this.name].responses.length === 0) {
                     profiles[this.name].responses = profiles[this.name].usedResponses;
                     profiles[this.name].usedResponses = [];
                 }

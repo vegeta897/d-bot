@@ -1,4 +1,4 @@
-// Copy me to make a new addon
+// Bring some beauty to the dull grays of discord chat
 var util = require(__base+'core/util.js');
 var discord = require(__base+'core/discord.js');
 var Canvas = require('canvas');
@@ -67,6 +67,7 @@ function arrangeElements(elems) {
 
 var _commands = {};
 _commands.draw = function(data) {
+    if(data.userID !== '86913608335773696') return;
     if(data.params.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
     let canvas = new Canvas(W, H);
     let ctx = canvas.getContext('2d');
@@ -107,7 +108,9 @@ _commands.draw = function(data) {
     if(elements.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
     elements.forEach(elem => { // Pluralize
         if(elem.plural) {
+            delete elem.plural;
             let qty = elem.quantity || util.randomInt(2, 4);
+            delete elem.quantity;
             for(let i = 0; i < qty - 1; i++) elements.push(Object.assign({}, elem));
         }
     });

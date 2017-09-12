@@ -1,3 +1,4 @@
+// A super smart color object
 var util = require(__base+'core/util.js');
 
 function Color({ rgb, hsv, hex }) {
