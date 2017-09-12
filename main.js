@@ -21,11 +21,10 @@ discord.bot.on('ready', function(event) {
 });
 
 discord.bot.on('message', function(user, userID, channelID, message, rawEvent) {
-    if(userID == discord.bot.id) return; // Don't listen to yourself, bot
+    if(userID === discord.bot.id) return; // Don't listen to yourself, bot
     var data = addons.readMessage(user, userID, channelID, message, rawEvent);
-    var isPM = discord.bot.directMessages[channelID];
     require('fs').writeFile('./debug/lastMessage.json', JSON.stringify(rawEvent, null, '\t'));
-    if(isPM) {
+    if(data.isPM) {
         // This is a PM
         
     } else {

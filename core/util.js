@@ -104,7 +104,7 @@ var util = {
         if(firstPeriod < 0) return false;
         var afterFirstPeriod = url.substring(firstPeriod);
         var firstFolder = afterFirstPeriod.indexOf('/');
-        firstFolder = firstFolder == -1 ? afterFirstPeriod.length : firstFolder;
+        firstFolder = firstFolder === -1 ? afterFirstPeriod.length : firstFolder;
         var beforeFirstFolder = url.substring(0,firstPeriod + firstFolder);
         var domainParts = beforeFirstFolder.split('.');
         if(domainParts.length < 2) return false;
@@ -123,10 +123,10 @@ var util = {
     },
     flip: function(input) { // Flip a coin, flip a value, flip a side
         if(input === undefined) return Math.random() > 0.5;
-        if(input == 'left') return 'right';
-        if(input == 'right') return 'left';
+        if(input === 'left') return 'right';
+        if(input === 'right') return 'left';
         if(!isNaN(parseFloat(input)) && isFinite(input)) return input * -1;
-        console.error('bad use of flip function!', input);
+        console.error('flip function received invalid input:', input);
     },
     regExpify: function(str) {
         var rxParser = /^\/(.*)\/([gmi]{0,3})?$/;

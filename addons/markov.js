@@ -140,8 +140,7 @@ _commands.mapkov = function(data) {
         }
     }
     lastMarkov = false;
-    require('fs').writeFileSync('mapkov.png', canvas.toBuffer());
-    discord.bot.uploadFile({ to: data.channel, file: 'mapkov.png' });
+    discord.bot.uploadFile({ to: data.channel, filename: 'mapkov.png', file: canvas.toBuffer() });
 };
 
 function pickWord(beginning) {

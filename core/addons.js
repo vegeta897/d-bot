@@ -104,7 +104,7 @@ module.exports = {
             rawEvent: rawEvent
         };
         if(commandPrefixes.indexOf(message[0]) >= 0) { // Command
-            var command = message.substring(1, message.length).split(' ')[0];
+            var command = message.substring(1, message.length).split(' ')[0].toLowerCase();
             msgData.command = command;
             var params = message.trim().split(' ');
             params.shift();
