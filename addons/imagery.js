@@ -4,8 +4,9 @@ var discord = require(__base+'core/discord.js');
 var Canvas = require('canvas');
 var { wordsToNumbers } = require('words-to-numbers');
 var requireUncached = require('require-uncached');
-const { COLORS, SHAPES, DRAW_SHAPE, SIZE_SHAPE, cropCanvas, flipCanvas, rotateCanvas } = requireUncached('./helpers/imagery-library.js');
-var Color = requireUncached('./helpers/color.js');
+var { cropCanvas, flipCanvas, rotateCanvas } = requireUncached('./helpers/canvas.js');
+const { COLORS, COLOR_MODS, SHAPES, DRAW_SHAPE, SIZE_SHAPE } = requireUncached('./helpers/imagery-library.js');
+var { Color } = requireUncached('./helpers/color.js');
 
 const W = 800;
 const H = 600;
@@ -76,7 +77,7 @@ _commands.draw = function(data) {
     let ctx = canvas.getContext('2d');
     let words = wordsToNumbers(' ' + data.paramStr).slice(1).split(' ');
     let elements = [];
-    let element = {};
+    let element = { colors: [], colorMods: [] };
     for(let i = 0; i < words.length; i++) {
         let word = words[i].toUpperCase();
         let foundDelimiter = false;
@@ -86,7 +87,8 @@ _commands.draw = function(data) {
         }
         if(word === 'AND') foundDelimiter = true;
         else if(util.isNumeric(word)) element.quantity = word;
-        else if(COLORS[word]) element.color = COLORS[word];
+        else if(COLOR_MODS[word]) element.colorMods.push(COLOR_MODS[word]);
+        else if(COLORS[word]) element.colors.push(COLORS[word]);
         else if(SHAPES[word]) element.shape = SHAPES[word];
         else if(word.slice(-1) === 'S') {
             let singularS = word.substr(0, word.length - 1);
@@ -114,14 +116,17 @@ _commands.draw = function(data) {
             delete elem.plural;
             let qty = elem.quantity || util.randomInt(2, 4);
             delete elem.quantity;
-            for(let i = 0; i < qty - 1; i++) elements.push(Object.assign({}, elem));
+            for(let i = 0; i < qty - 1; i++) {
+                elements.push(Object.assign({ child: i }, elem));
+            }
         }
     });
     sizeElements(elements); // Give elements sizes
     elements.forEach(transformElement);
     arrangeElements(elements); // Arrange elements on canvas
     elements.forEach(elem => { // Color and draw elements
-        elem.color = new Color(elem.color || COLORS.DEFAULT);
+        elem.color = new Color(elem.colors[elem.child % elem.colors.length || 0] || COLORS.DEFAULT);
+        elem.colorMods.forEach(mod => elem.color.modify(mod));
         elem.color.vary();
         // console.log(elem);
         drawShape(elem);

@@ -12,18 +12,26 @@ var timeouts = {};
 const EXPLAIN = 'Send responses to me, **one per line**. You can send as many as you want in one message, but make sure each one is on a new line.' +
     '\n\nSet a custom greeting with `/greet <message>` and a goodbye with `/bye <message>`' +
     '\nYou can remove the last submitted response with `/undo`' +
+    '\nYou can delete the entire virtual profile with `/delete`' +
     '\n\nI\'ll stop listening after 1 minute of silence.';
 
-function refreshTime(profile) {
-    if(timeouts[profile]) clearTimeout(timeouts[profile]);
-    timeouts[profile] = setTimeout(function() {
-        discord.sendMessage(profiles[profile].maintained, 
+function finishMaintenance(userID) {
+    let profile = maintenance[userID];
+    if(profiles[profile]) {
+        discord.sendMessage(profiles[profile].maintained,
             `Thanks for adding responses to _virtual ${util.toProperCase(profile)}!_`);
-        maintenance[profiles[profile].maintained] = false;
         profiles[profile].maintained = false;
-        virtualStorage.save();
-        delete timeouts[profile];
-    }, 60000);
+    }
+    maintenance[userID] = false;
+    virtualStorage.save();
+    delete timeouts[profile];
+}
+
+function refreshTime(userID) {
+    let profile = maintenance[userID];
+    if(timeouts[profile]) clearTimeout(timeouts[profile]);
+    if(profiles[profile]) timeouts[profile] = setTimeout(() => finishMaintenance(userID), 60000);
+    else finishMaintenance(userID);
 }
 
 module.exports = {
@@ -69,6 +77,11 @@ module.exports = {
             }else if(data.command === 'undo') {
                 var removed = profile.responses.pop();
                 discord.sendMessage(data.channel, `Removed _"${removed}"_`);
+            }else if(data.command === 'delete') {
+                if(profile.creator === data.userID) {
+                    delete profiles[maintenance[data.userID]];
+                    discord.sendMessage(data.channel, `Virtual profile deleted!`);
+                } else discord.sendMessage(data.channel, `Only **${discord.getUsernameFromID(profile.creator)}** can delete this profile!`);
             } else if(!data.command) {
                 var addedResponses = data.message.split('\n');
                 var added = 0, skipped = 0;
@@ -83,9 +96,9 @@ module.exports = {
                 discord.sendMessage(data.channel, `${added} response(s) added` +
                     (skipped ? `, ${skipped} duplicate(s) skipped` : '' ));
             }
-            refreshTime(maintenance[data.userID]);
+            refreshTime(data.userID);
             virtualStorage.save();
-        } else if(data.command === 'undo') {
+        } else if(data.command === 'undo' || data.command === 'delete') {
             discord.sendMessage(data.channel, 'You aren\'t working on a virtual person, use `/virtual` to get started.');
         }
     },
