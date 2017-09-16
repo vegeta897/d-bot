@@ -28,7 +28,8 @@ const COLOR_MODS = {
     DIM: { hsv: [1, 0.8, 0.6] },
     LIGHT: { hsv: [1, 0.7, 1.5] },
     BRIGHT: { hsv: [1, 100, 100] },
-    PALE: { hsv: [1, 0.2, 1] }
+    PALE: { hsv: [1, 0.2, 1.2] },
+    DULL: { hsv: [1, 0.2, 1.0] }
 };
 
 const SHAPES = {};
@@ -44,7 +45,8 @@ DRAW_SHAPE.circle = (ctx, { radius }) => {
 };
 
 SHAPES.DOT = 'dot';
-SIZE_SHAPE.dot = size => Object.assign({ shape: 'circle' }, SIZE_SHAPE.circle(util.randomInt(2, 6)));
+SIZE_SHAPE.dot = size => Object.assign({ shape: 'circle' },
+    SIZE_SHAPE.circle(Math.ceil(size * util.random(0.01, 0.05))));
 
 SHAPES.SQUARE = 'square';
 SIZE_SHAPE.square = size => ({ size, width: size, height: size });
@@ -56,7 +58,7 @@ SHAPES.RECTANGLE = 'rectangle';
 SIZE_SHAPE.rectangle = size => {
     let width = size;
     let height = util.randomInt(Math.round(size/4), Math.round(size/1.3));
-    return { size, width, height, rotate: true };
+    return { size, width, height, oy: (size - height) / 2, rotate: true };
 };
 DRAW_SHAPE.rectangle = (ctx, { width, height }) => {
     ctx.fillRect(0, 0, width, height);
@@ -71,18 +73,17 @@ SIZE_SHAPE.box = size => {
 SHAPES.TRIANGLE = 'triangle';
 SIZE_SHAPE.triangle = size => {
     let triangleType = util.randomInt(3);
+    let height;
     switch(triangleType) {
         case 0: // Equilateral
-            return { size, width: size, height: Math.round(size * Math.sqrt(3) / 2), rotate: true };
+            height = Math.round(size * Math.sqrt(3) / 2);
+            return { size, width: size, height, oy: (size - height) / 2, rotate: true };
         case 1: // Isosceles
         case 2: // Right
+            let right = triangleType === 2;
             let width = size;
-            let height = util.randomInt(Math.round(size/3), Math.round(size/1.3));
-            if(util.flip()) {
-                width = height;
-                height = size;
-            }
-            return { size, width, height, right: triangleType === 2, rotate: true, flip: true };
+            height = util.randomInt(Math.round(size/3), Math.round(size/1.3));
+            return { size, width, height, oy: (size - height) / 2, right, rotate: true, flip: true };
         case 3: // Scalene
             return { size, width: size, height: size, scalene: true, rotate: true, flip: true };
     }
@@ -130,7 +131,7 @@ DRAW_SHAPE.star = (ctx, { size }) => {
         ctx.translate(radius, radius);
         ctx.moveTo(0, -radius);
         for (var i = 0; i < sides; i++) {
-            ctx.rotate(Math.PI / sides * 2);
+            ctx.rotate(2 * Math.PI / sides);
             ctx.lineTo(0, -radius);
         }
         ctx.closePath();

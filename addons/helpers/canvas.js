@@ -1,6 +1,15 @@
 // Canvas utilities
 var Canvas = require('canvas');
 
+function resizeCanvas(canvas, maxWidth, maxHeight) {
+    let factor = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
+    if(factor <= 1) return canvas;
+    let newCanvas = new Canvas(Math.ceil(canvas.width * factor), Math.ceil(canvas.height * factor));
+    let newCtx = newCanvas.getContext('2d');
+    newCtx.drawImage(canvas, 0, 0);
+    return newCanvas;
+}
+
 function cropCanvas(canvas, padding) {
     padding = padding || 0;
     let ctx = canvas.getContext('2d');
@@ -45,7 +54,7 @@ function rotateCanvas(canvas, rotation) {
     let ctx = newCanvas.getContext('2d');
     ctx.save();
     ctx.translate(newWidth / 2, newHeight / 2);
-    ctx.rotate(rotation * 90 * Math.PI / 180);
+    ctx.rotate(rotation * 90 / 180 * Math.PI);
     if(rotation === 2) ctx.translate(-newWidth / 2, -newHeight / 2); // Mind-fuck
     else ctx.translate(-newHeight / 2, -newWidth / 2);
     ctx.drawImage(canvas, 0, 0);
@@ -54,6 +63,7 @@ function rotateCanvas(canvas, rotation) {
 }
 
 module.exports = {
+    resizeCanvas,
     cropCanvas,
     flipCanvas,
     rotateCanvas
