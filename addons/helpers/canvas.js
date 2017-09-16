@@ -3,9 +3,10 @@ var Canvas = require('canvas');
 
 function resizeCanvas(canvas, maxWidth, maxHeight) {
     let factor = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
-    if(factor <= 1) return canvas;
+    if(factor >= 1) return canvas;
     let newCanvas = new Canvas(Math.ceil(canvas.width * factor), Math.ceil(canvas.height * factor));
     let newCtx = newCanvas.getContext('2d');
+    newCtx.scale(factor, factor);
     newCtx.drawImage(canvas, 0, 0);
     return newCanvas;
 }

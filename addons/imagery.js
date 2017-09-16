@@ -170,7 +170,7 @@ _commands.draw = function(data) {
     elements.forEach(elem => { // Pluralize
         if(elem.plural) {
             delete elem.plural;
-            let qty = Math.min(10000, elem.quantity) || util.randomInt(2, 4);
+            let qty = Math.min(2000, elem.quantity) || util.randomInt(2, 4);
             delete elem.quantity;
             for(let i = 0; i < qty - 1; i++) {
                 elements.push(Object.assign({ child: i }, elem));
