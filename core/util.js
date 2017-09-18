@@ -179,6 +179,32 @@ var util = {
         } while(metrics.width > width && startSize > 1);
         return metrics;
     },
+    timer: {
+        times: {},
+        timing: {},
+        now() {
+            const hrTime = process.hrtime();
+            return hrTime[0] * 1000000000 + hrTime[1];
+        },
+        start(label) {
+            if(!this.times[label]) this.times[label] = 0;
+            this.timing[label] = this.now();
+        },
+        stop(label) {
+            this.times[label] += this.now() - this.timing[label];
+        },
+        results() {
+            console.log('---Timer Results---');
+            Object.keys(this.times).forEach(label => {
+                console.log(label, this.times[label] / 1000000, 'ms');
+            });
+            console.log('-------------------');
+        },
+        reset() {
+            this.times = {};
+            this.timing = {};
+        }
+    },
     matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?:])/gi,
     alphabet: ['a','b','c','d','e','f','g','h','i','j','k','l','m',
         'n','o','p','q','r','s','t','u','v','w','x','y','z'],
