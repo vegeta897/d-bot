@@ -77,53 +77,49 @@ function arrangeElements(elems) {
     };
     let placed = [];
     let placeMap = {};
-    let collides = elem => {
+    let collides = elem => { // TODO: Find a way to optimize this
         for(let i = 0; i < placed.length; i++) {
             if(elemsCollide(elem, placed[i])) return true;
         }
         return false;
     };
+    let getScore = elem => {
+        let newBox = getNewBoundingBox(elem);
+        let wider = newBox.width > box.width, taller = newBox.height > box.height;
+        let bits = 12;
+        let score = (1 << bits++) - Math.min(Math.abs(elem.x), Math.abs(elem.y));
+        if(Math.abs(1 - newBox.width / newBox.height / ASPECT) 
+            <= Math.abs(1 - box.width / box.height / ASPECT)) score += 1 << bits++;
+        if(!taller || !wider) score += 1 << bits++;
+        if(!wider && !taller) score += 1 << bits;
+        return score;
+    };
     util.timer.reset();
     elems.forEach(elem => {
-        // let ctx = elem.canvas.getContext('2d'); ctx.fillStyle = '#000000';
-        // ctx.font = '24px Arial'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-        // ctx.fillText((placed.length + 1).toString(), elem.width / 2, elem.height / 2);
-        let valid = [];
-        util.timer.start('finding valid positions');
-        for(let y = box.bTop - elem.u; y <= box.bBottom; y++) {
-            for(let x = box.bLeft - elem.u; x <= box.bRight; x++) {
+        let bestPlace;
+        let bestScore = 0;
+        // util.timer.start('finding valid positions');
+        for(let y = box.bTop; y <= box.bBottom; y++) {
+            for(let x = box.bLeft; x <= box.bRight; x++) {
                 if(placeMap[x + ':' + y]) continue;
                 let place = { x, y, u: elem.u };
-                if(!collides(place)) valid.push(place);
+                if(collides(place)) continue;
+                let score = getScore(place);
+                if(score > bestScore) {
+                    bestScore = score;
+                    bestPlace = place;
+                }
             }
         }
-        util.timer.stop('finding valid positions');
-        util.timer.start('sorting valid positions');
-        valid.sort((a, b) => {
-            let aBox = getNewBoundingBox(a), bBox = getNewBoundingBox(b);
-            let aRatio = Math.abs(1 - aBox.width / aBox.height / ASPECT),
-                bRatio = Math.abs(1 - bBox.width / bBox.height / ASPECT);
-            let aWider = aBox.width > box.width, aTaller = aBox.height > box.height,
-                bWider = bBox.width > box.width, bTaller = bBox.height > box.height;
-            let aInline = !aTaller || !aWider, bInline = !bTaller || !bWider;
-            let aSameBox = !aWider && !aTaller, bSameBox = !bWider && !bTaller;
-            let aNotNegative = a.x >= box.bLeft && a.y >= box.bTop,
-                bNotNegative = b.x >= box.bLeft && b.y >= box.bTop;
-            if(aInline && !bInline) return -1;
-            else if(bInline && !aInline) return 1;
-            else if(aSameBox && !bSameBox) return -1;
-            else if(bSameBox && !aSameBox) return 1;
-            else if(aRatio !== bRatio) return aRatio - bRatio;
-            else if(aNotNegative && !bNotNegative) return -1;
-            else if(bNotNegative && !aNotNegative) return 1;
-            else if(a.y !== b.y) return a.y - b.y;
-            else return a.x - b.x;
-        });
-        util.timer.stop('sorting valid positions');
-        elem.x = valid[0].x;
-        elem.y = valid[0].y;
+        // util.timer.stop('finding valid positions');
+        elem.x = bestPlace.x;
+        elem.y = bestPlace.y;
         placed.push(elem);
-        placeMap[elem.x + ':' + elem.y] = true;
+        for(let x = 0; x < elem.u; x++) {
+            for(let y = 0; y < elem.u; y++) {
+                placeMap[(elem.x + x) + ':' + (elem.y + y)] = true;
+            }
+        }
         Object.assign(box, getNewBoundingBox(elem));
     });
     util.timer.results();
@@ -135,6 +131,7 @@ _commands.draw = function(data) {
     if(data.channel !== '209177876975583232') return;
     if(data.params.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
     let words = data.paramStr.split(' ');
+    // console.log(data.paramStr);
     let elements = [];
     let element = { colors: [], colorMods: [] };
     for(let i = 0; i < words.length; i++) {
@@ -183,9 +180,7 @@ _commands.draw = function(data) {
     });
     sizeElements(elements); // Give elements sizes
     transformElements(elements); // Flip and rotate elements
-    console.time('arrange');
     let box = arrangeElements(elements); // Arrange elements on canvas
-    console.timeEnd('arrange');
     let res = Math.min(MAX_WIDTH / (box.width * (1 + SPACE)), MAX_HEIGHT / (box.height * (1 + SPACE)), BASE_RES);
     // console.log('---- Sizing elements and canvas ----');
     // console.log('units width:', box.width);
@@ -204,8 +199,8 @@ _commands.draw = function(data) {
     let ctx = canvas.getContext('2d');
     elements.forEach(elem => ctx.drawImage( // Draw to canvas
         elem.canvas,
-        (elem.x - box.bLeft + (elem.u - 1) * SPACE / 2) * res * (1 + SPACE) + elem.ox,
-        (elem.y - box.bTop + (elem.u - 1) * SPACE / 2) * res * (1 + SPACE) + elem.oy
+        (elem.x - box.bLeft + (elem.u - 1) * SPACE / 2) * res * (1 + SPACE) + elem.ox * res,
+        (elem.y - box.bTop + (elem.u - 1) * SPACE / 2) * res * (1 + SPACE) + elem.oy * res
     ));
     //canvas = cropCanvas(resizeCanvas(canvas, 1200, 900), 20);
     discord.bot.uploadFile({

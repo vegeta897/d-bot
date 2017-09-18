@@ -66,7 +66,7 @@ _commands.markov = function(data) {
             maxScore = Math.max(maxScore, score);
             return { word: nextWord, score };
         });
-        choices.sort((a, b) => b.score - a.score + util.random(-maxScore/2, maxScore/2));
+        choices.sort((a, b) => b.score - a.score + util.random(Math.floor(-maxScore/2), Math.ceil(maxScore/2)));
         if(choices[0].word) {
             for(let i = 0; i < choices.length; i++) {
                 let word = wordMap.words[choices[i].word];
