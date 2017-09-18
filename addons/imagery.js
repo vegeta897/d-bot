@@ -4,15 +4,15 @@ var discord = require(__base+'core/discord.js');
 var Canvas = require('canvas');
 var { wordsToNumbers } = require('words-to-numbers');
 var requireUncached = require('require-uncached');
-var { resizeCanvas, cropCanvas, flipCanvas, rotateCanvas } = requireUncached('./helpers/canvas.js');
+var { resizeCanvas, cropCanvas, flipCanvas, rotateCanvas, UnitContext } = requireUncached('./helpers/canvas.js');
 const { COLORS, COLOR_MODS, SHAPES, DRAW_SHAPE, SIZE_SHAPE } = requireUncached('./helpers/imagery-library.js');
 var { Color } = requireUncached('./helpers/color.js');
 
-const RES = 200; // Pixels per unit
+const MAX_WIDTH = 1200; // Max resolution of final image
+const MAX_HEIGHT = 900;
+const BASE_RES = 200; // Maximum pixels per unit, before scaling down
 const SPACE = 0.1; // Unit space between elements
-const ASPECT = 4 / 3; // Target aspect ratio
-const DEG_RAD_RATIO = Math.PI / 180;
-const DEG_TO_RAD = degrees => DEG_RAD_RATIO * degrees;
+const ASPECT = 4 / 2; // Target aspect ratio (Discord's image embedding is 4:3, but 4:2 is better aesthetically)
 
 // TODO: Ideas
 // Write text -- /draw a big red "hello"
@@ -24,10 +24,10 @@ const DEG_TO_RAD = degrees => DEG_RAD_RATIO * degrees;
 
 // Show this to the procjam server when it's impressive enough!
 
-function drawShape(elem) {
+function drawShape(elem, res) {
     if(!elem.shape) return;
-    elem.canvas = new Canvas(Math.ceil(elem.width), Math.ceil(elem.height));
-    let ctx = elem.canvas.getContext('2d');
+    elem.canvas = new Canvas(Math.ceil(elem.width * res), Math.ceil(elem.height * res));
+    let ctx = new UnitContext(elem.canvas.getContext('2d'), res);
     ctx.fillStyle = elem.color.hex;
     DRAW_SHAPE[elem.shape](ctx, elem);
     if(elem.flipped) elem.canvas = flipCanvas(elem.canvas);
@@ -43,16 +43,16 @@ function drawShape(elem) {
 }
 
 function sizeElements(elems) { // Set element sizes
-    elems.forEach(elem => {
-        elem.u = 1;
-        Object.assign(elem, { ox: 0, oy: 0 }, SIZE_SHAPE[elem.shape](elem.u * RES))
-    });
+    elems.forEach(elem => elem.u = 1);
     elems.sort((a, b) => b.u - a.u);
 }
 
-function transformElement(elem) {
-    elem.flipped = elem.flip && util.flip();
-    elem.rotation = elem.rotate ? util.randomInt(0, 3) : 0;
+function transformElements(elems) {
+    elems.forEach(elem => {
+        Object.assign(elem, { ox: 0, oy: 0 }, SIZE_SHAPE[elem.shape](elem.u));
+        elem.flipped = elem.flip && util.flip();
+        elem.rotation = elem.rotate ? util.randomInt(3) : 0;
+    });
 }
 
 function elemsCollide(e1, e2) {
@@ -76,28 +76,29 @@ function arrangeElements(elems) {
         return Object.assign(newBox, { width: newBox.bRight - newBox.bLeft, height: newBox.bBottom - newBox.bTop });
     };
     let placed = [];
+    let placeMap = {};
     let collides = elem => {
-        for(let j = 0; j < placed.length; j++) {
-            if(elemsCollide(elem, placed[j])) return true;
+        for(let i = 0; i < placed.length; i++) {
+            if(elemsCollide(elem, placed[i])) return true;
         }
         return false;
     };
+    util.timer.reset();
     elems.forEach(elem => {
-        
-        // let ctx = elem.canvas.getContext('2d');
-        // ctx.fillStyle = '#000000';
-        // ctx.font = '24px Arial';
-        // ctx.textBaseline = 'middle';
-        // ctx.textAlign = 'center';
+        // let ctx = elem.canvas.getContext('2d'); ctx.fillStyle = '#000000';
+        // ctx.font = '24px Arial'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
         // ctx.fillText((placed.length + 1).toString(), elem.width / 2, elem.height / 2);
-        
         let valid = [];
+        util.timer.start('finding valid positions');
         for(let y = box.bTop - elem.u; y <= box.bBottom; y++) {
             for(let x = box.bLeft - elem.u; x <= box.bRight; x++) {
+                if(placeMap[x + ':' + y]) continue;
                 let place = { x, y, u: elem.u };
                 if(!collides(place)) valid.push(place);
             }
         }
+        util.timer.stop('finding valid positions');
+        util.timer.start('sorting valid positions');
         valid.sort((a, b) => {
             let aBox = getNewBoundingBox(a), bBox = getNewBoundingBox(b);
             let aRatio = Math.abs(1 - aBox.width / aBox.height / ASPECT),
@@ -118,17 +119,20 @@ function arrangeElements(elems) {
             else if(a.y !== b.y) return a.y - b.y;
             else return a.x - b.x;
         });
+        util.timer.stop('sorting valid positions');
         elem.x = valid[0].x;
         elem.y = valid[0].y;
         placed.push(elem);
+        placeMap[elem.x + ':' + elem.y] = true;
         Object.assign(box, getNewBoundingBox(elem));
     });
+    util.timer.results();
     return box;
 }
 
 var _commands = {};
 _commands.draw = function(data) {
-    if(data.userID !== '86913608335773696') return;
+    if(data.channel !== '209177876975583232') return;
     if(data.params.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
     let words = data.paramStr.split(' ');
     let elements = [];
@@ -178,23 +182,32 @@ _commands.draw = function(data) {
         }
     });
     sizeElements(elements); // Give elements sizes
-    elements.forEach(transformElement); // Flip and rotate elements
+    transformElements(elements); // Flip and rotate elements
+    console.time('arrange');
+    let box = arrangeElements(elements); // Arrange elements on canvas
+    console.timeEnd('arrange');
+    let res = Math.min(MAX_WIDTH / (box.width * (1 + SPACE)), MAX_HEIGHT / (box.height * (1 + SPACE)), BASE_RES);
+    // console.log('---- Sizing elements and canvas ----');
+    // console.log('units width:', box.width);
+    // console.log('units height:', box.height);
+    // console.log('width res:', MAX_WIDTH / (box.width * (1 + SPACE)));
+    // console.log('height res:', MAX_HEIGHT / (box.height * (1 + SPACE)));
+    // console.log('res:', res);
     elements.forEach(elem => { // Color and draw elements
         elem.color = new Color(elem.colors[elem.child % elem.colors.length || 0] || COLORS.DEFAULT);
         elem.colorMods.forEach(mod => elem.color.modify(mod));
         elem.color.vary();
         //console.log(elem);
-        drawShape(elem);
+        drawShape(elem, res);
     });
-    let box = arrangeElements(elements); // Arrange elements on canvas
-    let canvas = new Canvas(box.width * RES * (1 + SPACE), box.height * RES * (1 + SPACE));
+    let canvas = new Canvas(box.width * res * (1 + SPACE), box.height * res * (1 + SPACE));
     let ctx = canvas.getContext('2d');
     elements.forEach(elem => ctx.drawImage( // Draw to canvas
         elem.canvas,
-        (elem.x - box.bLeft + (elem.u - 1) * SPACE / 2) * RES * (1 + SPACE) + elem.ox,
-        (elem.y - box.bTop + (elem.u - 1) * SPACE / 2) * RES * (1 + SPACE) + elem.oy
+        (elem.x - box.bLeft + (elem.u - 1) * SPACE / 2) * res * (1 + SPACE) + elem.ox,
+        (elem.y - box.bTop + (elem.u - 1) * SPACE / 2) * res * (1 + SPACE) + elem.oy
     ));
-    canvas = cropCanvas(resizeCanvas(canvas, 1200, 800), 20);
+    //canvas = cropCanvas(resizeCanvas(canvas, 1200, 900), 20);
     discord.bot.uploadFile({
         to: data.channel, filename: data.paramStr.split(' ').join('-') + '.png', file: canvas.toBuffer()
     });

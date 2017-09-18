@@ -44,9 +44,19 @@ DRAW_SHAPE.circle = (ctx, { radius }) => {
     ctx.fill();
 };
 
+SHAPES.RING = 'ring';
+SIZE_SHAPE.ring = size => ({ size, radius: size / 2, width: size, height: size });
+DRAW_SHAPE.ring = (ctx, { radius }) => {
+    ctx.beginPath();
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = radius * 0.3;
+    ctx.arc(radius, radius, radius * 0.85, 0, 2 * Math.PI, false);
+    ctx.stroke();
+};
+
 SHAPES.DOT = 'dot';
 SIZE_SHAPE.dot = size => Object.assign({ shape: 'circle' },
-    SIZE_SHAPE.circle(Math.ceil(size * util.random(0.01, 0.05))));
+    SIZE_SHAPE.circle(size * util.random(0.01, 0.05)));
 
 SHAPES.SQUARE = 'square';
 SIZE_SHAPE.square = size => ({ size, width: size, height: size });
@@ -57,7 +67,7 @@ DRAW_SHAPE.square = (ctx, { size }) => {
 SHAPES.RECTANGLE = 'rectangle';
 SIZE_SHAPE.rectangle = size => {
     let width = size;
-    let height = util.randomInt(Math.round(size/4), Math.round(size/1.3));
+    let height = util.random(size / 4, size / 1.3);
     return { size, width, height, oy: (size - height) / 2, rotate: true };
 };
 DRAW_SHAPE.rectangle = (ctx, { width, height }) => {
@@ -76,21 +86,21 @@ SIZE_SHAPE.triangle = size => {
     let height;
     switch(triangleType) {
         case 0: // Equilateral
-            height = Math.round(size * Math.sqrt(3) / 2);
+            height = size * Math.sqrt(3) / 2;
             return { size, width: size, height, oy: (size - height) / 2, rotate: true };
         case 1: // Isosceles
         case 2: // Right
             let right = triangleType === 2;
             let width = size;
-            height = util.randomInt(Math.round(size/3), Math.round(size/1.3));
+            height = util.random(size / 3, size / 1.3);
             return { size, width, height, oy: (size - height) / 2, right, rotate: true, flip: true };
         case 3: // Scalene
             return { size, width: size, height: size, scalene: true, rotate: true, flip: true };
     }
 };
 DRAW_SHAPE.triangle = (ctx, { width, height, right, scalene }) => {
-    let randomHeight = util.randomInt(height);
-    let randomWidth = util.randomInt(Math.max(0, Math.round(height / 2 - randomHeight)), width);
+    let randomHeight = util.random(height);
+    let randomWidth = util.random(Math.max(0, height / 2 - randomHeight), width);
     ctx.beginPath();
     ctx.moveTo(0, scalene ? randomHeight : height);
     ctx.lineTo(width, height);

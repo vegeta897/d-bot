@@ -6,8 +6,7 @@ function resizeCanvas(canvas, maxWidth, maxHeight) {
     if(factor >= 1) return canvas;
     let newCanvas = new Canvas(Math.ceil(canvas.width * factor), Math.ceil(canvas.height * factor));
     let newCtx = newCanvas.getContext('2d');
-    newCtx.scale(factor, factor);
-    newCtx.drawImage(canvas, 0, 0);
+    newCtx.drawImage(canvas, 0, 0, newCanvas.width, newCanvas.height);
     return newCanvas;
 }
 
@@ -63,9 +62,28 @@ function rotateCanvas(canvas, rotation) {
     return newCanvas;
 }
 
+function UnitContext(ctx, res) { // Canvas context proxy that scales command parameters by resolution
+    return new Proxy({
+        arc: (x, y, radius, arc, ac) => ctx.arc(x * res, y * res, radius * res, arc, ac),
+        lineWidth: (width) => ctx.lineWidth = width * res,
+        fillRect: (x, y, width, height) => ctx.fillRect(x * res, y * res, width * res, height * res),
+        clearRect: (x, y, width, height) => ctx.clearRect(x * res, y * res, width * res, height * res),
+        moveTo: (x, y) => ctx.moveTo(x * res, y * res),
+        lineTo: (x, y) => ctx.lineTo(x * res, y * res)
+    }, {
+        get: function(target, name) {
+            if(name in target) return target[name];
+            if(ctx[name] && ctx[name].bind) return ctx[name].bind(ctx);
+            return ctx[name];
+        },
+        set: function(target, property, value) { ctx[property] = value; }
+    });
+}
+
 module.exports = {
     resizeCanvas,
     cropCanvas,
     flipCanvas,
-    rotateCanvas
+    rotateCanvas,
+    UnitContext
 };
