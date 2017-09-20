@@ -8,7 +8,6 @@ function JSONFile(filename, initData, space) {
     this.filename = filename;
     this.space = space;
     try {
-        fs.readFileSync(filename);
         JSON.parse(fs.readFileSync(filename));
     } catch(err) {
         initData = JSON.stringify(initData || {}, null, this.space);

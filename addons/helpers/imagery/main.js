@@ -76,7 +76,7 @@ DRAW_SHAPE.rectangle = (ctx, { width, height }) => {
 
 SHAPES.BOX = 'box';
 SIZE_SHAPE.box = size => {
-    if(util.flip()) return Object.assign({ shape: 'square' }, SIZE_SHAPE.square(size));
+    if(util.random() < 0.3) return Object.assign({ shape: 'square' }, SIZE_SHAPE.square(size));
     else return Object.assign({ shape: 'rectangle' }, SIZE_SHAPE.rectangle(size));
 };
 

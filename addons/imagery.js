@@ -4,8 +4,8 @@ var discord = require(__base+'core/discord.js');
 var Canvas = require('canvas');
 var { wordsToNumbers } = require('words-to-numbers');
 var requireUncached = require('require-uncached');
-var { resizeCanvas, cropCanvas, flipCanvas, rotateCanvas, UnitContext } = requireUncached('./helpers/canvas.js');
-const { COLORS, COLOR_MODS, SHAPES, DRAW_SHAPE, SIZE_SHAPE } = requireUncached('./helpers/imagery-library.js');
+const { resizeCanvas, cropCanvas, flipCanvas, rotateCanvas, UnitContext } = requireUncached('./helpers/canvas.js');
+const { COLORS, COLOR_MODS, SHAPES, DRAW_SHAPE, SIZE_SHAPE } = requireUncached('./helpers/imagery/main.js');
 var { Color } = requireUncached('./helpers/color.js');
 
 const MAX_WIDTH = 1200; // Max resolution of final image
@@ -44,7 +44,7 @@ function drawShape(elem, res) {
 
 function sizeElements(elems) { // Set element sizes
     elems.forEach(elem => elem.u = 1);
-    elems.sort((a, b) => b.u - a.u);
+    elems.sort((a, b) => b.u !== a.u ? b.u - a.u : a.num - b.num);
 }
 
 function transformElements(elems) {
@@ -58,7 +58,6 @@ function transformElements(elems) {
 function elemsCollide(e1, e2) {
     return e2.x < e1.x + e1.u && e2.x + e2.u > e1.x && e2.y < e1.y + e1.u && e2.y + e2.u > e1.y;
 }
-
 function elemsTouch(e1, e2) {
     return ((e2.x === e1.x + e1.u || e2.x + e2.u === e1.x) && (e2.y < e1.y + e1.u && e2.y + e2.u > e1.y))
         || ((e2.y === e1.y + e1.u || e2.y + e2.u === e1.y) && (e2.x < e1.x + e1.u && e2.x + e2.u > e1.x));
@@ -122,7 +121,7 @@ function arrangeElements(elems) {
         }
         Object.assign(box, getNewBoundingBox(elem));
     });
-    util.timer.results();
+    // util.timer.results();
     return box;
 }
 
@@ -131,43 +130,88 @@ _commands.draw = function(data) {
     if(data.channel !== '209177876975583232') return;
     if(data.params.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
     let words = data.paramStr.split(' ');
-    // console.log(data.paramStr);
-    let elements = [];
-    let element = { colors: [], colorMods: [] };
-    for(let i = 0; i < words.length; i++) {
-        let word = words[i].toUpperCase();
+    words = words.map((word, index) => {
+        let wordObj = { text: word.toUpperCase(), index, toString() { return this.text; } };
         let number = wordsToNumbers(word.toLowerCase());
+        if(!isNaN(number)) wordObj.number = number;
+        return wordObj;
+    });
+    let elements = [];
+    let element = { num: 1, colors: [], colorMods: [] };
+    
+    function parse(phrase) {
+        let parsed = false;
+        let parsedElement = Object.assign({}, element);
+        let phraseText = phrase.join(' ');
+        let toNumber = wordsToNumbers(phraseText.toLowerCase());
+        if(phrase[0].number && phrase[phrase.length -1].number && !isNaN(toNumber)) {
+            parsedElement.quantity = toNumber;
+            return parsedElement;
+        }
         let foundDelimiter = false;
-        if(word.substr(-1) === ',') {
-            word = word.substr(0, word.length - 1);
+        if(phraseText.substr(-1) === ',') {
+            phraseText = phraseText.substr(0, phraseText.length - 1);
             foundDelimiter = true;
         }
-        if(word === 'AND') foundDelimiter = true;
-        else if(util.isNumeric(number) && number > 1) element.quantity = number;
-        else if(COLOR_MODS[word]) element.colorMods.push(COLOR_MODS[word]);
-        else if(COLORS[word]) element.colors.push(COLORS[word]);
-        else if(SHAPES[word]) element.shape = SHAPES[word];
-        else if(word.slice(-1) === 'S') {
-            let singularS = word.substr(0, word.length - 1);
-            let singularES = word.substr(0, word.length - 2);
+        if(phraseText === 'AND') {
+            foundDelimiter = true;
+            parsed = true;
+        } else if(COLOR_MODS[phraseText]) {
+            parsedElement.colorMods.push(COLOR_MODS[phraseText]);
+            parsed = true;
+        } else if(COLORS[phraseText]) {
+            parsedElement.colors.push(COLORS[phraseText]);
+            parsed = true;
+        } else if(SHAPES[phraseText]) {
+            parsedElement.shape = SHAPES[phraseText];
+            parsed = true;
+        } else if(phraseText.slice(-1) === 'S') {
+            let singularS = phraseText.substr(0, phraseText.length - 1);
+            let singularES = phraseText.substr(0, phraseText.length - 2);
             if(SHAPES[singularS]) {
-                element.shape = SHAPES[singularS];
-                element.plural = true;
+                parsedElement.shape = SHAPES[singularS];
+                parsedElement.plural = true;
+                parsed = true;
             }
-            if(word.slice(-2) === 'ES' && SHAPES[singularES]) {
-                element.shape = SHAPES[singularES];
-                element.plural = true;
+            if(phraseText.slice(-2) === 'ES' && SHAPES[singularES]) {
+                parsedElement.shape = SHAPES[singularES];
+                parsedElement.plural = true;
+                parsed = true;
             }
         }
-        if(foundDelimiter && element.shape) {
-            elements.push(element);
-            element = { colors: [], colorMods: [] };
+        if(foundDelimiter && parsedElement.shape) {
+            parsedElement.complete = true;
+            parsed = true;
         }
         // TODO: When an unknown word is encountered, ask the user what they mean, thus creating a feature request
+        if(parsed) return parsedElement;
+    }
+    for(let i = 0; i < words.length; i++) {
+        let lookAhead = i;
+        let phrase = [];
+        let extraWords = 0;
+        let parsedElement;
+        while(lookAhead < words.length) {
+            phrase.push(Object.assign({}, words[lookAhead]));
+            let parsed = parse(phrase);
+            if(parsed) {
+                parsedElement = parsed;
+                extraWords = lookAhead - i;
+            }
+            lookAhead++;
+        }
+        // if(parsedElement) console.log('parsed:',phrase.slice(0, 1+extraWords).join(' '));
+        element = parsedElement || element;
+        if(element.complete) {
+            elements.push(element);
+            element = { num: element.num + 1, colors: [], colorMods: [] };
+        }
+        i += extraWords;
     }
     elements.push(element);
     elements = elements.filter(elem => elem.shape); // Elements need a shape
     if(elements.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
+    // elements.forEach(elem => console.log(JSON.stringify(elem, null, '\t')));
     elements.forEach(elem => { // Pluralize
         if(elem.plural) {
             delete elem.plural;
@@ -182,17 +226,11 @@ _commands.draw = function(data) {
     transformElements(elements); // Flip and rotate elements
     let box = arrangeElements(elements); // Arrange elements on canvas
     let res = Math.min(MAX_WIDTH / (box.width * (1 + SPACE)), MAX_HEIGHT / (box.height * (1 + SPACE)), BASE_RES);
-    // console.log('---- Sizing elements and canvas ----');
-    // console.log('units width:', box.width);
-    // console.log('units height:', box.height);
-    // console.log('width res:', MAX_WIDTH / (box.width * (1 + SPACE)));
-    // console.log('height res:', MAX_HEIGHT / (box.height * (1 + SPACE)));
-    // console.log('res:', res);
     elements.forEach(elem => { // Color and draw elements
         elem.color = new Color(elem.colors[elem.child % elem.colors.length || 0] || COLORS.DEFAULT);
         elem.colorMods.forEach(mod => elem.color.modify(mod));
         elem.color.vary();
-        //console.log(elem);
+        // console.log(JSON.stringify(elem, null, '\t'));
         drawShape(elem, res);
     });
     let canvas = new Canvas(box.width * res * (1 + SPACE), box.height * res * (1 + SPACE));

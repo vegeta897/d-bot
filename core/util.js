@@ -17,7 +17,7 @@ var util = {
         }
         return Math.floor(Math.random() * (+max - +min + 1)) + +min
     },
-    isNumeric: n => !isNaN(parseFloat(n)) && isFinite(n),
+    isNumeric: n => !(''+n).includes(' ') && !isNaN(parseFloat(n)) && isFinite(n),
     capitalize: s => s[0].toUpperCase() + s.substring(1),
     toProperCase: function(s) {
         var newstr = s.split(' ');
