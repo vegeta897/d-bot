@@ -34,10 +34,7 @@ function drawShape(elem, res) {
     if(elem.rotation) {
         elem.canvas = rotateCanvas(elem.canvas, elem.rotation);
         if(elem.rotation !== 2) {
-            Object.assign(elem, { width: elem.height, height: elem.width });
-            let newOY = elem.ox;
-            elem.ox = elem.oy;
-            elem.oy = newOY;
+            Object.assign(elem, { width: elem.height, height: elem.width, ox: elem.oy, oy: elem.ox });
         }
     }
 }

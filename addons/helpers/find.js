@@ -18,7 +18,7 @@ module.exports = {
             params.shift();
             paramString = params.join(' ');
         }
-        if(paramString[0] == '"' && paramString[params.string.length-1] == '"' && paramString.length > 2) {
+        if(paramString[0] == '"' && paramString[paramString.length-1] == '"' && paramString.length > 2) {
             paramString = paramString.substring(1,paramString.length-2); // Trim quotes
         }
         return { string: paramString, limit: limit };

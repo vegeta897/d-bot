@@ -47,7 +47,7 @@ Color.prototype = {
 Color.prototype.vary = function() { // Can't use fat arrow because it breaks "this"
     let [h, s, v] = this._hsv;
     if(s > 0) {
-        h = (h + util.randomInt(-10, 10));
+        h = (h + util.randomInt(-9, 9));
         if(h < 0) h += 360;
         s += util.randomInt(-10, 10);
     }

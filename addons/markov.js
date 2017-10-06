@@ -94,7 +94,7 @@ _commands.markov = function(data) {
         }
         if(word) lastMarkov.finalWords.push(word);
     }
-    if(!lastMarkov.choices[0][0]) lastMarkov = false;
+    if(!lastMarkov.choices[0] || !lastMarkov.choices[0][0]) lastMarkov = false;
     discord.sendMessage(data.channel, util.capitalize(output));
 };
 

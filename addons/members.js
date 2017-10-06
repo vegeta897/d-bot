@@ -1,11 +1,24 @@
 // Counts messages and words for all members
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
+var DateFormat = require('dateformat');
 
 var _commands = {};
 
 _commands.members = function(data) {
-    discord.bot.simulateTyping(data.channel);
+    let message;
+    if(data.params[0] === 'joined') {
+        message = '**Members sorted by join date**';
+        let members = discord.bot.servers[data.server].members;
+        Object.keys(members)
+            .sort((a,b) => members[a].joined_at - members[b].joined_at)
+            .forEach(member => {
+                member = members[member];
+                let timestamp = DateFormat(new Date(member.joined_at), 'mmm dS, yyyy - h:MM:ss TT') + ' EST';
+                message += `\n${timestamp} - **${member.nick || member.username}**`;
+        });
+        return discord.sendMessage(data.channel, message);
+    }
     messages.wrap(messages.db.find(),function(allMessages) {
         if(!allMessages) return;
         var members = {};
@@ -19,7 +32,7 @@ _commands.members = function(data) {
         membersArr.sort(function(a,b){
             return members[b].msgCount - members[a].msgCount;
         });
-        var message = '**Members sorted by message count**';
+        message = '**Members sorted by message count**';
         for(var m = 0; m < membersArr.length; m++) {
             var memberID = membersArr[m];
             if(!discord.getUsernameFromID(memberID)) continue;
@@ -34,6 +47,6 @@ _commands.members = function(data) {
 module.exports = {
     commands: _commands,
     help: {
-        members: ['Get message statistics from all members']
+        members: ['Get member statistics', 'messages', 'joined']
     }
 };
