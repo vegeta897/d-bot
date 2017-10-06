@@ -25,11 +25,12 @@ VirtualUser.prototype.prepare = function() {
     setTimeout(function() {
         messages.wrap(messages.db.find(msgQuery).sort({time:1}), function(allMessages) {
             if(allMessages) for(var i = 1; i < allMessages.length; i++) {
-                if(allMessages[i-1].user != virtual.id && allMessages[i].user == virtual.id) {
+                if(allMessages[i-1].user !== virtual.id && allMessages[i].user === virtual.id) {
                     virtual.exchanges.push([allMessages[i-1].content.toLowerCase(), allMessages[i].content]);
                     virtual.fuzzy.add(allMessages[i-1].content.toLowerCase());
                 }
             }
+            virtual.ready = true;
             if(!virtual.exchanges[0]) {
                 discord.sendMessage(virtual.channel, virtual.pre + `Actually, never mind. I'm leaving.`);
                 virtual = false;

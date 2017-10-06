@@ -24,12 +24,12 @@ _commands.virtual = function(data) {
 };
 
 function listen(data) {
-    if(!virtual || virtual.done || data.channel !== virtual.channel || data.message.length < 5) return;
+    if(!virtual || !virtual.ready || virtual.done || data.channel !== virtual.channel || data.message.length < 5) return;
     discord.bot.simulateTyping(data.channel);
     var response = virtual.getResponse(data);
     setTimeout(function(){
         discord.sendMessage(data.channel, virtual.pre + response, true);
-    }, Math.min(2000, response.length * 25));
+    }, Math.min(2000, response.length * 30));
     virtual.responses++;
     if(virtual.responses === 6) {
         virtual.done = true;

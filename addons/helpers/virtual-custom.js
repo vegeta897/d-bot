@@ -107,6 +107,7 @@ module.exports = {
         return {
             name: params.name.toLowerCase(),
             id: params.id,
+            ready: true,
             channel: params.channel,
             pre: `**Virtual ${util.toProperCase(params.name)}**: `,
             responses: 0,
