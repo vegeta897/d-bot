@@ -11,11 +11,18 @@ const commandPrefixes = ['/','!'];
 var addons = {}; // Addon name -> Addon module
 var commands = {}; // Command name -> Addon name
 var msgListeners = []; // Addon names
+var tickers = []; // Addon names
 var help = {}; // Command reference
 
 //var commandAttempts = {}; // Tracking unknown command attempts to offer help when needed
 
 scanAddons();
+
+setInterval(function tick() {
+    for(let i = 0; i < tickers.length; i++) {
+        addons[tickers[i]].tick();
+    }
+}, 1000);
 
 function scanAddons() {
     // Clear all addons
@@ -51,7 +58,9 @@ function loadAddon(name) {
         }
     }
     util.findAndRemove(name, msgListeners);
+    util.findAndRemove(name, tickers);
     if(addon.listen) msgListeners.push(name);
+    if(addon.tick) tickers.push(name);
 }
 
 function reload(name, channel) {

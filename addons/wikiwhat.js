@@ -20,8 +20,7 @@ var stateDurations = { // Duration of each game state, in seconds
     playing: 50,
     postround: 5
 };
-if(!wwData.state || wwData.state == 'starting') resetData();
-var tickInterval = setInterval(tick, 1000);
+if(!wwData.state || wwData.state === 'starting') resetData();
 
 function resetData() {
     wwStorage.reset();
@@ -29,47 +28,8 @@ function resetData() {
     wwStorage.save();
 }
 
-function tick() {
-    if(!stateDurations[wwData.state]) return;
-    if(new Date().getTime() >= wwData.stateBegan + stateDurations[wwData.state]*1000) {
-        switch(wwData.state) {
-            case 'starting':
-                discord.bot.simulateTyping(wwData.channel);
-                wwData.state = 'playing';
-                wwData.stateBegan = new Date().getTime();
-                wwData.round = 1;
-                wwStorage.save();
-                discord.bot.uploadFile({
-                    to: wwData.channel,
-                    file: imgData, filename: 'wikihow.jpg',
-                    message: '**Guess the title of the WikiHow article containing this image**\n'
-                        + 'Type `/guess` or `/g` to guess\n'
-                        + '*You only get one guess,* but you can change it during the round\n'
-                },function(){
-                    wwData.stateBegan = new Date().getTime();
-                    wwStorage.save();
-                });
-                break;
-            case 'playing':
-                if(wwData.round < 3) download(wwData.images[wwData.round]).then(downloaded => {
-                    imgData = downloaded;
-                    wwData.downloaded = wwData.round;
-                    wwStorage.save();
-                });
-                wwData.state = 'postround';
-                wwData.stateBegan = new Date().getTime();
-                discord.sendMessage(wwData.channel, `Round ${wwData.round} has ended!`);
-                wwStorage.save();
-                break;
-            case 'postround':
-                if(wwData.downloaded == wwData.round || wwData.round == 3) endRound();
-                break;
-        }
-    }
-}
-
 function submitGuess(newGuess, user) {
-    newGuess = newGuess.substr(0,7).toLowerCase() == 'how to ' ? newGuess.substr(7) : newGuess;
+    newGuess = newGuess.substr(0,7).toLowerCase() === 'how to ' ? newGuess.substr(7) : newGuess;
     var guessScore = FuzzySet([wwData.answer.toLowerCase()]).get(newGuess.toLowerCase());
     guessScore = guessScore ? guessScore[0][0] : 0;
     var now = new Date().getTime();
@@ -95,7 +55,7 @@ function endRound() {
         var player = wwData.players[user];
         if(!player.guess) continue;
         if(player.guessScore > bestGuess.score
-            || (player.guessScore == bestGuess.score && player.guessTime < bestGuess.time)) {
+            || (player.guessScore === bestGuess.score && player.guessTime < bestGuess.time)) {
             bestGuess.guess = player.guess;
             bestGuess.user = user;
             bestGuess.score = player.guessScore;
@@ -108,7 +68,7 @@ function endRound() {
     wwData.bestGuesses.push(bestGuess);
     if(bestGuess.score > 0.7) {
         endGame(bestGuess);
-    } else if(wwData.round == rounds) {
+    } else if(wwData.round === rounds) {
         endGame();
     } else {
         discord.bot.simulateTyping(wwData.channel);
@@ -191,7 +151,7 @@ function getArticle(callback) {
             var image = body.query.pages[imageID];
             // Remove images less than 300x200
             var validImage = image.imageinfo
-                && image.imageinfo[0].url && image.imageinfo[0].url.substr(0,4) == 'http'
+                && image.imageinfo[0].url && image.imageinfo[0].url.substr(0,4) === 'http'
                 && image.imageinfo[0].width >= 300 && image.imageinfo[0].height >= 200;
             for(var pageID in pages) {
                 if(!pages.hasOwnProperty(pageID)) continue;
@@ -226,9 +186,9 @@ function getArticle(callback) {
 var _commands = {};
 
 _commands.wikiwhat = function(data) {
-    if(data.params[0] == 'reset' && userID == config.owner) {
+    if(data.params[0] === 'reset' && userID === config.owner) {
         resetData();
-    } else if(wwData.state == 'idle') {
+    } else if(wwData.state === 'idle') {
         wwData.state = 'starting';
         wwData.stateBegan = new Date().getTime();
         wwData.channel = data.channel;
@@ -252,12 +212,49 @@ _commands.wikiwhat = function(data) {
 
 module.exports = {
     commands: _commands,
-    listen: function(data) {
-        if(data.command != 'g' && data.command != 'guess') return;
-        if(!wwData || wwData.state != 'playing' || data.params.length == 0 || data.channel != wwData.channel) return;
+    listen(data) {
+        if(data.command !== 'g' && data.command !== 'guess') return;
+        if(!wwData || wwData.state !== 'playing' || data.params.length === 0 || data.channel !== wwData.channel) return;
         submitGuess(data.paramStr, data.userID);
     },
-    unload: function() { clearInterval(tickInterval); },
+    tick() {
+        if(!stateDurations[wwData.state]) return;
+        if(new Date().getTime() >= wwData.stateBegan + stateDurations[wwData.state]*1000) {
+            switch(wwData.state) {
+                case 'starting':
+                    discord.bot.simulateTyping(wwData.channel);
+                    wwData.state = 'playing';
+                    wwData.stateBegan = new Date().getTime();
+                    wwData.round = 1;
+                    wwStorage.save();
+                    discord.bot.uploadFile({
+                        to: wwData.channel,
+                        file: imgData, filename: 'wikihow.jpg',
+                        message: '**Guess the title of the WikiHow article containing this image**\n'
+                        + 'Type `/guess` or `/g` to guess\n'
+                        + '*You only get one guess,* but you can change it during the round\n'
+                    },function(){
+                        wwData.stateBegan = new Date().getTime();
+                        wwStorage.save();
+                    });
+                    break;
+                case 'playing':
+                    if(wwData.round < 3) download(wwData.images[wwData.round]).then(downloaded => {
+                        imgData = downloaded;
+                        wwData.downloaded = wwData.round;
+                        wwStorage.save();
+                    });
+                    wwData.state = 'postround';
+                    wwData.stateBegan = new Date().getTime();
+                    discord.sendMessage(wwData.channel, `Round ${wwData.round} has ended!`);
+                    wwStorage.save();
+                    break;
+                case 'postround':
+                    if(wwData.downloaded === wwData.round || wwData.round === 3) endRound();
+                    break;
+            }
+        }
+    },
     help: {
         wikiwhat: ['Start a game of *WikiWhat*, where you guess the title of a WikiHow article based on its images']
     }
