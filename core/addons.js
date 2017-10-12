@@ -6,7 +6,7 @@ var util = require('./util.js');
 var config = require('./config.js');
 var discord = require('./discord.js');
 
-const commandPrefixes = ['/','!'];
+const prefixes = config.prefixes;
 
 var addons = {}; // Addon name -> Addon module
 var commands = {}; // Command name -> Addon name
@@ -80,19 +80,14 @@ function reload(name, channel) {
 
 function generateHelpMessage() {
     var msg = '__D-Bot Command List__';
-    msg += '\nCommands can be activated with ';
-    for(var p = 0; p < config.prefixes.length; p++) {
-        if(p > 0) msg += ' or ';
-        msg += '`' + config.prefixes[p] + '`';
-    }
+    msg += '\nCommands can be activated with ' + prefixes.map(p => '`'+p+'`').join(' or ');
     msg = [msg]; // Convert to array to handle splitting message if necessary
     for(var hKey in help) {
         if(!help.hasOwnProperty(hKey)) continue;
         var command = '\n**' + hKey + '** - ' + help[hKey].desc;
-        for(var e = 0; e < help[hKey].examples.length; e++) {
-            if(e === 0) command += ' — _ex._';
-            command += '  `' + config.prefixes[0] + hKey + ' ' + help[hKey].examples[e] + '`';
-        }
+        if(help[hKey].examples[0]) command += ' — _ex._ ' + help[hKey].examples.map(
+            e => `\`${prefixes[0] + hKey} ${e}\``
+        ).join(' ');
         if(msg[msg.length-1].length + command.length > 2000) {
             msg.push('*(continued)*' + command);
         } else {
@@ -108,10 +103,10 @@ module.exports = {
         var server = isPM ? false : discord.bot.channels[channelID].guild_id;
         var msgData = { 
             channel: channelID, server, user, userID, isPM, message, rawEvent,
-            nick: discord.bot.servers[server].members[userID].nick || user,
+            nick: server ? (discord.bot.servers[server].members[userID].nick || user) : user,
             mention: '<@!' + userID + '>'
         };
-        if(commandPrefixes.indexOf(message[0]) >= 0) { // Command
+        if(prefixes.indexOf(message[0]) >= 0) { // Command
             var command = message.substring(1, message.length).split(' ')[0].toLowerCase();
             msgData.command = command;
             var params = message.trim().split(' ');
