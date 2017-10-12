@@ -97,11 +97,10 @@ module.exports = {
     readMessage(user, userID, channelID, message, rawEvent) {
         var isPM = discord.bot.directMessages[channelID];
         var server = isPM ? false : discord.bot.channels[channelID].guild_id;
-        var msgData = {
-            channel: channelID, server: server,
-            user: user, userID: userID, isPM: isPM,
-            message: message,
-            rawEvent: rawEvent
+        var msgData = { 
+            channel: channelID, server, user, userID, isPM, message, rawEvent,
+            nick: discord.bot.servers[server].members[userID].nick || user,
+            mention: '<@!' + userID + '>'
         };
         if(commandPrefixes.indexOf(message[0]) >= 0) { // Command
             var command = message.substring(1, message.length).split(' ')[0].toLowerCase();
@@ -111,8 +110,8 @@ module.exports = {
             msgData.params = params;
             msgData.paramStr = params.join(' ');
             // TODO: Implement config reloading
-            if(command == 'reload' && userID == config.owner) reload(msgData.paramStr, channelID); // Reload addon
-            if(command == 'help' || command == 'commands') {
+            if(command === 'reload' && userID === config.owner) reload(msgData.paramStr, channelID); // Reload addon
+            if(command === 'help' || command === 'commands') {
                 discord.sendMessages(userID, generateHelpMessage());
                 if(!isPM) discord.sendMessage(channelID, 'Command list sent, check your PMs!');
             }

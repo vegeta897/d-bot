@@ -8,18 +8,22 @@ function JSONFile(filename, initData, space) {
     this.filename = filename;
     this.space = space;
     try {
-        JSON.parse(fs.readFileSync(filename));
+        let data = JSON.parse(fs.readFileSync(filename));
+        this.data = Object.assign(initData || {}, data);
     } catch(err) {
-        initData = JSON.stringify(initData || {}, null, this.space);
-        fs.writeFileSync(this.filename, `${initData}\n`);
+        this.data = initData || {};
     } finally {
-        this.data = JSON.parse(fs.readFileSync(filename));
+        this.save();
     }
 }
 JSONFile.prototype.save = function() {
-    fs.writeFile(this.filename, JSON.stringify(this.data, null, this.space) + '\n');
+    try {
+        let json = JSON.stringify(this.data, null, this.space);
+        fs.writeFile(this.filename, json + '\n');
+    } catch(err) {
+        console.log('Error saving', this.filename, 'data', err);
+    }
 };
-
 JSONFile.prototype.reset = function() {
     Object.keys(this.data).forEach(function(key) { delete this.data[key]; }, this); // Empty the object
     this.save();
