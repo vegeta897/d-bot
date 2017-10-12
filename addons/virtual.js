@@ -29,7 +29,7 @@ function listen(data) {
     var response = virtual.getResponse(data);
     setTimeout(function(){
         discord.sendMessage(data.channel, virtual.pre + response, true);
-    }, Math.min(2000, response.length * 30));
+    }, Math.max(300, Math.min(2000, response.length * 30)));
     virtual.responses++;
     if(virtual.responses === 6) {
         virtual.done = true;
