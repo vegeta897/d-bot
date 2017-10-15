@@ -4,6 +4,9 @@ var fs = require('fs');
 var Nedb = require('nedb');
 var callsite = require('callsite'); // For getting filename of calling module
 
+const DEBUG = process.argv[2] === 'debug';
+const PATH = DEBUG ? 'debug/' : 'storage/';
+
 function JSONFile(filename, initData, space) {
     this.filename = filename;
     this.space = space;
@@ -31,14 +34,14 @@ JSONFile.prototype.reset = function() {
 
 module.exports = {
     nedb: function(name) {
-        var dir = getDirectory('storage/' + path.basename(callsite()[1].getFileName(),'.js'));
+        var dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
         return new Nedb({
             filename: dir + '/' + name + '.db', 
             autoload: true
         });
     },
     json: function(name, initData, space) {
-        var dir = getDirectory('storage/' + path.basename(callsite()[1].getFileName(),'.js'));
+        var dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
         return new JSONFile(dir + '/' + name + '.json', initData, space);
     }
 };

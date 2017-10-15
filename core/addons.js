@@ -104,9 +104,10 @@ module.exports = {
         var msgData = { 
             channel: channelID, server, user, userID, isPM, message, rawEvent,
             nick: server ? (discord.bot.servers[server].members[userID].nick || user) : user,
-            mention: '<@!' + userID + '>'
+            mention: '<@!' + userID + '>', words: message.toLowerCase().split(' '),
+            reply: msg => discord.sendMessage(channelID, msg)
         };
-        if(prefixes.indexOf(message[0]) >= 0) { // Command
+        if(prefixes.indexOf(message[0]) >= 0 && message[1] !== ' ') { // Command
             var command = message.substring(1, message.length).split(' ')[0].toLowerCase();
             msgData.command = command;
             var params = message.trim().split(' ');
@@ -119,7 +120,11 @@ module.exports = {
                 discord.sendMessages(userID, generateHelpMessage());
                 if(!isPM) discord.sendMessage(channelID, 'Command list sent, check your PMs!');
             }
-            if(commands[command]) addons[commands[command]].commands[command](JSON.parse(JSON.stringify(msgData)));
+            if(commands[command] && (!commands[command].dev || userID === config.owner)) {
+                let dataCopy = JSON.parse(JSON.stringify(msgData));
+                dataCopy.reply = msgData.reply; // Function is lost on stringify
+                addons[commands[command]].commands[command](dataCopy);
+            }
             // else if(!commands[command]) { // Unknown command
             //     if(message[2] == '/') return; // Ignore "/r/..."
             //     if(new Date() - commandAttempts[userID] < 8000) { // If tried 2 bad commands in 8 sec
@@ -130,7 +135,9 @@ module.exports = {
             // }
         }
         for(var l = 0; l < msgListeners.length; l++) {
-            addons[msgListeners[l]].listen(JSON.parse(JSON.stringify(msgData)))
+            let dataCopy = JSON.parse(JSON.stringify(msgData));
+            dataCopy.reply = msgData.reply;
+            addons[msgListeners[l]].listen(dataCopy)
         }
         return msgData;
     }

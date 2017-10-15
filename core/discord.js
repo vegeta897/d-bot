@@ -1,14 +1,28 @@
 // Discord.io!
 var config = require('./config.js');
 var Discord = require('discord.io');
-var bot = new Discord.Client({
-    token: config.token,
-    autorun: true
-});
+
+const DEBUG = process.argv[2] === 'debug';
+
+let bot;
+if(DEBUG) {
+    bot = new (require('events').EventEmitter)();
+    Object.assign(bot, JSON.parse(require('fs').readFileSync('./debug/bot.json')));
+    bot.sendMessage = ({ to, message }, cb) => {
+        console.log('D-Bug:', message);
+        cb();
+    };
+    setTimeout(() => bot.emit('ready'), 100);
+} else {
+    bot = new Discord.Client({
+        token: config.token,
+        autorun: true
+    });
+}
 
 bot.on('err', function(error) {
     _sendMessages(config.owner, `An error has occurred: ${error}`);
-    console.log(new Date(),error);
+    console.log(new Date(), error);
 });
 
 // TODO: Crawl back through message history, 100 messages every 20 seconds, to the beginning of time
@@ -32,11 +46,9 @@ module.exports = {
         for(let sKey in bot.servers) { if(!bot.servers.hasOwnProperty(sKey)) continue;
             let members = bot.servers[sKey].members;
             for(let mKey in members) { if(!members.hasOwnProperty(mKey)) continue;
-                if(members[mKey].nick && members[mKey].nick.toLowerCase() === username) return mKey;
+                if((members[mKey].nick || '').toLowerCase() === username) return mKey;
+                if(members[mKey].username.toLowerCase() === username) return mKey;
             }
-        }
-        for(let uKey in bot.users) { if(!bot.users.hasOwnProperty(uKey)) continue;
-            if(bot.users[uKey].username.toLowerCase() === username) return uKey;
         }
         return false;
     },
@@ -50,6 +62,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
 
     for(var i = 0; i < messageArr.length; i++) { // Add messages to buffer
         if(polite) messageArr[i] = suppressMentionsLinks(messageArr[i]);
+        if(messageArr[i].length === 0) messageArr[i] = '`empty message`';
         if(messageArr[i].length > 2000) {
             // TODO: Auto-split messages over 2000 chars
             console.log('Trimming message over 2000 chars');

@@ -33,8 +33,7 @@ module.exports = {
     formatMessage: function(message, result, hideTimestamp) {
         var timestamp = DateFormat(new Date(message.time), 'mmmm dS, yyyy - h:MM:ss TT') + ' EST ';
         if(new Date() - new Date(message.time) < 86400000) {
-            var timeSince = util.getTimeUnits(new Date() - new Date(message.time));
-            timestamp =  `${timeSince[0]} ${timeSince[1]} ago `;
+            timestamp =  `${util.getTimeUnits(new Date() - new Date(message.time)).join(' ')} ago `;
         }
         if(hideTimestamp) timestamp = '';
         var username = discord.getUsernameFromID(message.user) || '<Missing User>';

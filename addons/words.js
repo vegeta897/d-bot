@@ -61,7 +61,7 @@ var junkWords = [
     'into','way',"didn't","i've",'probably','him','were','kind',"he's",'right',
     "can't","you're",'does','yes','thing','think','good','know','new','need','back',
     'off',"i'll",'here','other','looks','guess','time','said','time','use','mean',
-    'say','look'
+    'say','look','http','https','youtu'
 ];
 
 module.exports = {

@@ -97,6 +97,10 @@
         }
       },
       "default": null
+    },
+    "debugChannel": {
+      "type": "string",
+      "default": null
     }
   }
 }
