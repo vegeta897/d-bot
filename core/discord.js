@@ -2,6 +2,10 @@
 var config = require('./config.js');
 var Discord = require('discord.io');
 
+const MSG_LIMIT = 5; // Can send 5 messages
+const MSG_PERIOD = 5000; // In 5 seconds
+const MSG_WAIT = 250; // Minimum wait between messages
+
 const DEBUG = process.argv[2] === 'debug';
 
 let bot;
@@ -27,8 +31,8 @@ bot.on('err', function(error) {
 
 // TODO: Crawl back through message history, 100 messages every 20 seconds, to the beginning of time
 
-var msgQueue = [], // Message buffer
-    sending; // Busy sending a message
+var msgQueue = {}, // Message buffer
+    sentMessages = {}; // Recently sent messages
 
 // TODO: Add custom "onMessage" function that wraps event to include things like isPM etc.
 
@@ -57,10 +61,13 @@ module.exports = {
 
 function _sendMessages(ID, messageArr, polite, callback) {
     messageArr = Array.isArray(messageArr) ? messageArr : [messageArr];
-
-    // TODO: Get rid of this queue thing, implement proper rate limiting
-
-    for(var i = 0; i < messageArr.length; i++) { // Add messages to buffer
+    let server = bot.channels[ID] ? bot.channels[ID].guild_id : ID;
+    let sent = sentMessages[server] || [];
+    sentMessages[server] = sent;
+    let queue = msgQueue[server] || [];
+    msgQueue[server] = queue;
+    let emptyQueue = queue.length === 0;
+    for(let i = 0; i < messageArr.length; i++) { // Add messages to buffer
         if(polite) messageArr[i] = suppressMentionsLinks(messageArr[i]);
         if(messageArr[i].length === 0) messageArr[i] = '`empty message`';
         if(messageArr[i].length > 2000) {
@@ -68,28 +75,28 @@ function _sendMessages(ID, messageArr, polite, callback) {
             console.log('Trimming message over 2000 chars');
             messageArr[i] = messageArr[i].substr(0, 2000);
         }
-        msgQueue.push({
+        queue.push({
             ID: ID, msg: messageArr[i],
-            callback: i === messageArr.length-1 ? callback : false // If callback specified, only add to last message
+            callback: i === messageArr.length - 1 ? callback : false // Only add callback to last message
         })
     }
     function _sendMessage() {
-        sending = true; // We're busy
-        bot.sendMessage({
-            to: msgQueue[0].ID,
-            message: msgQueue[0].msg
-        }, function(err, res) {
-            if(err) console.log(new Date().toLocaleString(),'Error sending message:', err);
-            var sent = msgQueue.shift(); // Remove message from buffer
-            if(sent.callback) sent.callback(err, res); // Activate callback if exists
-            if(msgQueue.length < 1) { // Stop when message buffer is empty
-                sending = false; // We're free
-            } else {
-                _sendMessage();
-            }
-        })
+        sent.unshift(Date.now());
+        sent = sent.slice(0, MSG_LIMIT);
+        let msg = queue.shift(); // Remove message from buffer
+        bot.sendMessage({ to: msg.ID, message: msg.msg },
+            function(err, res) {
+            if(err) console.log(new Date().toLocaleString(), 'Error sending message:', err);
+            if(msg.callback) sent.callback(err, res); // Activate callback if exists
+        });
+        if(queue.length) setTimeout(handleQueue, MSG_WAIT);
     }
-    if(!sending) _sendMessage(); // If not busy with a message, send now
+    function handleQueue() {
+        let wait = (sent[MSG_LIMIT - 1] || 0) - (Date.now() - MSG_PERIOD);
+        if(wait < 0) _sendMessage(); // Can send now
+        else setTimeout(_sendMessage, wait); // Have to wait
+    }
+    if(emptyQueue) handleQueue();
 }
 
 function _editMessage(channel, id, message, polite, callback) {
