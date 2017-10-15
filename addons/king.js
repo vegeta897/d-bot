@@ -2,16 +2,15 @@
 var util = require(__base+'core/util.js');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
-var config = require(__base+'core/config.js');
 
 var _commands = {};
 
 _commands.king = function(data) {
-    if(!data.paramStr.length) return discord.sendMessage(data.channel, 'Please specify a word or phrase');
+    if(!data.paramStr.length) return data.reply('Please specify a word or phrase');
     discord.bot.simulateTyping(data.channel);
     var kingRX = util.regExpify(data.paramStr.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
     messages.wrap(messages.db.find({ content: kingRX }), function(allMessages) {
-        if(!allMessages) return discord.sendMessage(data.channel, `Nobody is the king of _${data.paramStr}_`);
+        if(!allMessages) return data.reply(`Nobody is the king of _${data.paramStr}_`);
         var rankings = {};
         for(var k = 0; k < allMessages.length; k++) {
             var occurrences = allMessages[k].content.match(kingRX).length;
@@ -37,7 +36,7 @@ _commands.king = function(data) {
         var message = `The kings of _${data.paramStr}_ are **${userList}**, who each said it **`;
         if(king.users.length === 1) message = `The king of _${data.paramStr}_ is **${userList}**, who said it **`;
         message += king.count.toLocaleString() + '** time' + (king.count > 1 ? 's' : '');
-        discord.sendMessage(data.channel, message, true);
+        data.reply(message, true);
     });
 };
 

@@ -9,7 +9,7 @@ _commands.color = function(data) {
     if(!config.allowCustomColors) return;
     var hexColorRX = /^#(?:[0-9a-f]{6})$/i;
     if(!data.params[0] || !hexColorRX.test(data.params[0])) {
-        discord.sendMessage(data.channel, 'You must specify a hex color, e.g. #897897');
+        data.reply('You must specify a hex color, e.g. #897897');
         return;
     }
     var userRole = false;
@@ -37,7 +37,7 @@ _commands.color = function(data) {
             serverID: data.server, roleID: userRole, name: 'user' + data.userID,
             color: data.params[0].toUpperCase() // TODO: Assign role position to top
         },function() {
-            discord.sendMessage(data.channel, 'Color changed!');
+            data.reply('Color changed!');
         });
     }
 };

@@ -36,18 +36,18 @@ function refreshTime(userID) {
 
 module.exports = {
     startMaintenance(data) {
-        if(maintenance[data.userID]) return discord.sendMessage(data.channel, `You're already editing _virtual ${util.toProperCase(maintenance[data.userID])}!_`);
+        if(maintenance[data.userID]) return data.reply(`You're already editing _virtual ${util.toProperCase(maintenance[data.userID])}!_`);
         var name = data.paramStr.toLowerCase();
         var properName = util.toProperCase(name);
         if(discord.getIDFromUsername(name)) {
-            return discord.sendMessage(data.channel, `That's a real person! _They're already virtual!_`);
+            return data.reply(`That's a real person! _They're already virtual!_`);
         }
         if(profiles[name]) { // Virtual person exists
             var profile = profiles[name];
             if(profile.maintained && profile.maintained !== data.userID) {
-                return discord.sendMessage(data.channel, `Virtual ${properName} is currently being edited by someone.`);
+                return data.reply(`Virtual ${properName} is currently being edited by someone.`);
             }
-            discord.sendMessage(data.channel, `_Virtual ${properName}_ already exists, but you can add more responses! ` + EXPLAIN + `\nYou can add more responses later by invoking \`/virtual ${name}\` in this conversation again.`);
+            data.reply(`_Virtual ${properName}_ already exists, but you can add more responses! ` + EXPLAIN + `\nYou can add more responses later by invoking \`/virtual ${name}\` in this conversation again.`);
             profiles[name].maintained = data.userID;
             maintenance[data.userID] = name;
         } else if(name) { // New virtual person
@@ -60,7 +60,7 @@ module.exports = {
                 goodbye: 'I have to go now, see you later!'
             };
             maintenance[data.userID] = name;
-            discord.sendMessage(data.channel, `Let's create _virtual ${properName}!_ ` + EXPLAIN);
+            data.reply(`Let's create _virtual ${properName}!_ ` + EXPLAIN);
             refreshTime(name);
         }
         virtualStorage.save();
@@ -70,18 +70,18 @@ module.exports = {
             var profile = profiles[maintenance[data.userID]];
             if(data.command === 'greet') {
                 profile.greeting = data.paramStr;
-                discord.sendMessage(data.channel, `Greeting updated`);
+                data.reply(`Greeting updated`);
             } else if(data.command === 'bye') {
                 profile.goodbye = data.paramStr;
-                discord.sendMessage(data.channel, `Goodbye updated`);
+                data.reply(`Goodbye updated`);
             }else if(data.command === 'undo') {
                 var removed = profile.responses.pop();
-                discord.sendMessage(data.channel, `Removed _"${removed}"_`);
+                data.reply(`Removed _"${removed}"_`);
             }else if(data.command === 'delete') {
                 if(profile.creator === data.userID) {
                     delete profiles[maintenance[data.userID]];
-                    discord.sendMessage(data.channel, `Virtual profile deleted!`);
-                } else discord.sendMessage(data.channel, `Only **${discord.getUsernameFromID(profile.creator)}** can delete this profile!`);
+                    data.reply(`Virtual profile deleted!`);
+                } else data.reply(`Only **${discord.getUsernameFromID(profile.creator)}** can delete this profile!`);
             } else if(!data.command) {
                 var addedResponses = data.message.split('\n');
                 var added = 0, skipped = 0;
@@ -93,13 +93,13 @@ module.exports = {
                         profile.responses.push(addedResponses[i]);
                     }
                 }
-                discord.sendMessage(data.channel, `${added} response(s) added` +
+                data.reply(`${added} response(s) added` +
                     (skipped ? `, ${skipped} duplicate(s) skipped` : '' ));
             }
             refreshTime(data.userID);
             virtualStorage.save();
         } else if(data.command === 'undo' || data.command === 'delete') {
-            discord.sendMessage(data.channel, 'You aren\'t working on a virtual person, use `/virtual` to get started.');
+            data.reply('You aren\'t working on a virtual person, use `/virtual` to get started.');
         }
     },
     newSession(params) {

@@ -9,14 +9,14 @@ var contexts = {};
 
 function getContext(data, direction) {
     if(data.params.length == 0) {
-        if(!contexts[data.channel]) return discord.sendMessage(data.channel, 'Please specify a search string');
+        if(!contexts[data.channel]) return data.reply('Please specify a search string');
         traverse(data.channel,direction);
     } else {
         var params = findHelper.parseParams(data.params);
         var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };
         findHelper.addChannelQuery(command.query, data.channel);
         messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
-            if(!results) return discord.sendMessage(data.channel, 
+            if(!results) return data.reply(
                 `Couldn't find any messages matching _${params.string}_`);
             var foundMessage = results[results.length-1];
             contexts[data.channel] = {

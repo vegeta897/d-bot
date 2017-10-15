@@ -125,7 +125,7 @@ function arrangeElements(elems) {
 var _commands = {};
 _commands.draw = function(data) {
     if(data.channel !== '209177876975583232') return;
-    if(data.params.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
+    if(data.params.length === 0) return data.reply('Describe something, e.g. `a red circle`');
     let words = data.paramStr.split(' ');
     words = words.map((word, index) => {
         let wordObj = { text: word.toUpperCase(), index, toString() { return this.text; } };
@@ -207,7 +207,7 @@ _commands.draw = function(data) {
     }
     elements.push(element);
     elements = elements.filter(elem => elem.shape); // Elements need a shape
-    if(elements.length === 0) return discord.sendMessage(data.channel, 'Describe something, e.g. `a red circle`');
+    if(elements.length === 0) return data.reply('Describe something, e.g. `a red circle`');
     // elements.forEach(elem => console.log(JSON.stringify(elem, null, '\t')));
     elements.forEach(elem => { // Pluralize
         if(elem.plural) {

@@ -12,13 +12,13 @@ _commands.gif = function(data) {
     request(url, function(err, response, body) {
         if(err) {
             console.log(err);
-            return discord.sendMessage(data.channel, 'Error loading giphy...');
+            return data.reply('Error loading giphy...');
         }
         var imgData = JSON.parse(body).data;
         var imgURL = imgData.image_url;
         if (!imgURL && imgData.length > 0) imgURL = util.pickInArray(imgData).images.original.url;
         var message = imgURL ? imgURL : 'No images found :(';
-        discord.sendMessage(data.channel, message);
+        data.reply(message);
     });
 };
 

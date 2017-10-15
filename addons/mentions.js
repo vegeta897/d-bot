@@ -20,12 +20,12 @@ _commands.mentions = function(data) {
         if(data.paramStr.toLowerCase().includes('un')) result = removeSub(data.userID, channel);
         else result = addSub(data.userID, channel);
         subsStorage.save();
-        return discord.sendMessage(data.channel, result);
+        return data.reply(result);
     }
     // Get mentions
     var mCount = Math.min(25,parseInt(data.params[0]));
     if(!mCount) {
-        discord.sendMessage(data.channel, 'Please provide the number of mentions to retrieve, eg. `/mentions 3`');
+        data.reply('Please provide the number of mentions to retrieve, eg. `/mentions 3`');
         return;
     }
     discord.bot.simulateTyping(data.channel);
@@ -33,13 +33,13 @@ _commands.mentions = function(data) {
     var query = {content: rx};
     findHelper.addChannelQuery(query, data.channel);
     messages.wrap(messages.db.find(query).limit(mCount).sort({time: -1}), function(results) {
-        if(!results) return discord.sendMessage(data.channel, `Sorry, I don't have any record of you being mentioned.`);
+        if(!results) return data.reply(`Sorry, I don't have any record of you being mentioned.`);
         var mentionRecap = `__Your last ${results.length}mentions__`;
         results.reverse();
         for(var m = 0; m < results.length; m++) {
             mentionRecap += '\n' + findHelper.formatMessage(results[m]);
         }
-        discord.sendMessage(data.channel, mentionRecap, true);
+        data.reply(mentionRecap, true);
     });
 };
 

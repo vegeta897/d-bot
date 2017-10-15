@@ -15,13 +15,13 @@ function getTopWords(data, unique) {
         maxWords = util.clamp(Math.round(+data.params.shift()),1,25);
         data.paramStr = data.params.join(' ');
     }
-    if(unique && data.params.length === 0) return discord.sendMessage(data.channel, `You must specify a username`);
+    if(unique && data.params.length === 0) return data.reply(`You must specify a username`);
     var userID = discord.getIDFromUsername(data.paramStr);
     var allUsers = data.params.length === 0;
-    if(!allUsers && !userID) return discord.sendMessage(data.channel, `I don't know anyone named "${data.paramStr}"`);
+    if(!allUsers && !userID) return data.reply(`I don't know anyone named "${data.paramStr}"`);
     var query = (unique || allUsers) ? null : { user: userID };
     messages.wrap(messages.db.find(query),function(allMessages) {
-        if(!allMessages) return discord.sendMessage(data.channel, 'No messages found for that user!');
+        if(!allMessages) return data.reply('No messages found for that user!');
         var dictionary = {};
         var exclude = {};
         for(var m = 0; m < allMessages.length; m++) {
@@ -46,7 +46,7 @@ function getTopWords(data, unique) {
             finalMessage += `\n**${topWords[tw].c.toLocaleString()}** - ${topWords[tw].w}`;
         }
         if(unique && topWords.length === 0) finalMessage += '\n*This user hasn\'t used any unique words*';
-        discord.sendMessage(data.channel, finalMessage);
+        data.reply(finalMessage);
     });
 }
 

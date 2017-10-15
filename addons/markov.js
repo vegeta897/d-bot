@@ -2,7 +2,6 @@
 var util = require(__base+'core/util.js');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
-var config = require(__base+'core/config.js');
 var storage = require(__base+'core/storage.js');
 var Canvas = require('canvas');
 
@@ -21,7 +20,7 @@ var _commands = {};
 _commands.markov = function(data) {
     if(!wordMap.words) {
         buildWordMap();
-        return discord.sendMessage(data.channel, 'Sorry, try again...');
+        return data.reply('Sorry, try again...');
     }
     lastMarkov = {
         inputString: data.paramStr,
@@ -95,11 +94,11 @@ _commands.markov = function(data) {
         if(word) lastMarkov.finalWords.push(word);
     }
     if(!lastMarkov.choices[0] || !lastMarkov.choices[0][0]) lastMarkov = false;
-    discord.sendMessage(data.channel, util.capitalize(output));
+    data.reply(util.capitalize(output));
 };
 
 _commands.mapkov = function(data) {
-    if(!lastMarkov) return discord.sendMessage(data.channel, 'You have to generate a `/markov` first');
+    if(!lastMarkov) return data.reply('You have to generate a `/markov` first');
     const HEADER = 30;
     const LINE_HEIGHT = 24;
     const SPACE = '    ';

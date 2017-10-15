@@ -20,7 +20,7 @@ function doRhyme(data) {
     var rhymeWord = data.params[data.params.length - 1];
     var punctuation = rhymeWord.slice(-1) === '?' ? '?' : '!';
     rhymeWord = rhymeWord ? encodeURIComponent(/\w+.?\w+/g.exec(rhymeWord)[0]) : false;
-    if(!rhymeWord) return discord.sendMessage(data.channel, `I can't rhyme that, man!`);
+    if(!rhymeWord) return data.reply(`I can't rhyme that, man!`);
     discord.bot.simulateTyping(data.channel);
     rhyme.getRhyme(rhymeWord)
         .then(results => { // Retry once
@@ -43,9 +43,9 @@ function doRhyme(data) {
                 bestWord.word = util.fixIndefiniteArticle(data.params[data.params.length - 2], bestWord.word);
                 if(data.params.length > 2) sentence = data.params.slice(0, data.params.length - 2).join(' ') + ' ';
             }
-            discord.sendMessage(data.channel, `${util.capitalize(sentence + bestWord.word)}${punctuation}`);
+            data.reply(`${util.capitalize(sentence + bestWord.word)}${punctuation}`);
         })
-        .catch(err => discord.sendMessage(data.channel, err));
+        .catch(err => data.reply(err));
 }
 
 module.exports = {

@@ -9,13 +9,13 @@ var _commands = {};
 
 _commands.me = function(data) {
     discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id });
-    discord.sendMessage(data.channel, '_' + data.user + ' ' + data.paramStr + '_');
+    data.reply('_' + data.user + ' ' + data.paramStr + '_');
 };
 
 _commands.earliest = function(data) {
     messages.wrap(messages.db.find().sort({ time: 1 }).limit(1), function(firstMessage) {
         var firstMsgTimestamp = DateFormat(new Date(firstMessage[0].time), 'mmmm dS, yyyy - h:MM:ss TT') + ' EST';
-        discord.sendMessage(data.channel, `Earliest message in log was on: ${firstMsgTimestamp}`);
+        data.reply(`Earliest message in log was on: ${firstMsgTimestamp}`);
     });
 };
 
@@ -25,7 +25,7 @@ _commands.youtube = function(data) {
     messages.wrap(messages.db.find({ content: ytrx }), function(messages) {
         var msg = util.pickInArray(messages);
         var yt = util.pickInArray(util.getRegExpMatches(msg.content, ytrx));
-        discord.sendMessage(data.channel, yt, true);
+        data.reply(yt, true);
     });
 };
 

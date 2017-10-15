@@ -105,7 +105,7 @@ module.exports = {
             channel: channelID, server, user, userID, isPM, message, rawEvent,
             nick: server ? (discord.bot.servers[server].members[userID].nick || user) : user,
             mention: '<@!' + userID + '>', words: message.toLowerCase().split(' '),
-            reply: msg => discord.sendMessage(channelID, msg)
+            reply: (msg, polite, cb) => discord.sendMessage(isPM ? userID : channelID, msg, polite, cb)
         };
         if(prefixes.indexOf(message[0]) >= 0 && message[1] !== ' ') { // Command
             var command = message.substring(1, message.length).split(' ')[0].toLowerCase();

@@ -1,6 +1,5 @@
 // RNG-based commands
 var util = require('./../core/util.js');
-var discord = require(__base+'core/discord.js');
 
 var _commands = {};
 
@@ -18,12 +17,12 @@ _commands.roll = function(data) {
             rolls.push(`**${roll}**`);
         }
         if(diceCount > 1) rolls.push(`Total: **${total}**`);
-        discord.sendMessage(data.channel, rolls.join('\n'));
+        data.reply(rolls.join('\n'));
     }
 };
 
 _commands.pick = function(data) {
-    if(!data.params.length) return discord.sendMessage(data.channel, 'Pick what?');
+    if(!data.params.length) return data.reply('Pick what?');
     var choices = [];
     var choice = '';
     for(var p = 0; p < data.params.length; p++) {
@@ -41,7 +40,7 @@ _commands.pick = function(data) {
         }
     }
     if(choice !== '') choices.push(choice);
-    if(choices.length) discord.sendMessage(data.channel, `**${util.capitalize(util.pickInArray(choices))}**`);
+    if(choices.length) data.reply(`**${util.capitalize(util.pickInArray(choices))}**`);
 };
 
 _commands.flip = function(data) {
@@ -51,13 +50,13 @@ _commands.flip = function(data) {
         for(var j = 0; j < coinCount; j++) {
             flips.push(`**${util.flip() ? 'Heads' : 'Tails'}**`);
         }
-        discord.sendMessage(data.channel,flips.join('\n'));
+        data.reply(flips.join('\n'));
     }
 };
 
 _commands.whataretheodds = function(data) {
     var odds = Math.pow(10,util.randomInt(1,8))*util.randomInt(1,9);
-    discord.sendMessage(data.channel, `1 in ${odds.toLocaleString()}!`);
+    data.reply(`1 in ${odds.toLocaleString()}!`);
 };
 
 module.exports = {

@@ -17,7 +17,7 @@ _commands.members = function(data) {
                 let timestamp = DateFormat(new Date(member.joined_at), 'mmm dS, yyyy - h:MM:ss TT') + ' EST';
                 message += `\n${timestamp} - **${member.nick || member.username}**`;
         });
-        return discord.sendMessage(data.channel, message);
+        return data.reply(message);
     }
     messages.wrap(messages.db.find(),function(allMessages) {
         if(!allMessages) return;
@@ -40,7 +40,7 @@ _commands.members = function(data) {
                 members[memberID].msgCount.toLocaleString() + ' messages - ' +
                 members[memberID].wordCount.toLocaleString() + ' words';
         }
-        discord.sendMessage(data.channel, message);
+        data.reply(message);
     });
 };
 
