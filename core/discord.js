@@ -4,6 +4,7 @@ var Discord = require('discord.io');
 
 const MSG_LIMIT = 5; // Can send 5 messages
 const MSG_PERIOD = 5000; // In 5 seconds
+const SAFETY = 15; // Bit of extra ms
 const MSG_WAIT = 250; // Minimum wait between messages
 
 const DEBUG = process.argv[2] === 'debug';
@@ -33,6 +34,7 @@ bot.on('err', function(error) {
 
 var msgQueue = {}, // Message buffer
     sentMessages = {}; // Recently sent messages
+    waitUntil = 0; // Handle rate-limited response
 
 // TODO: Add custom "onMessage" function that wraps event to include things like isPM etc.
 
@@ -86,15 +88,20 @@ function _sendMessages(ID, messageArr, polite, callback) {
         let msg = queue.shift(); // Remove message from buffer
         bot.sendMessage({ to: msg.ID, message: msg.msg },
             function(err, res) {
-            if(err) console.log(new Date().toLocaleString(), 'Error sending message:', err);
+            if(err) {
+                console.log(new Date().toLocaleString(), 'Error sending message:', err);
+                if(err.statusMessage === 'TOO MANY REQUESTS') {
+                    waitUntil = Date.now() + err.response.retry_after + SAFETY;
+                }
+            }
             if(msg.callback) sent.callback(err, res); // Activate callback if exists
         });
         if(queue.length) setTimeout(handleQueue, MSG_WAIT);
     }
     function handleQueue() {
-        let wait = (sent[MSG_LIMIT - 1] || 0) - (Date.now() - MSG_PERIOD);
-        if(wait < 0) _sendMessage(); // Can send now
-        else setTimeout(_sendMessage, wait); // Have to wait
+        let wait = (sent[MSG_LIMIT - 1] || 0) - (Date.now() - MSG_PERIOD) + SAFETY;
+        if(wait < 0 && waitUntil < Date.now()) _sendMessage(); // Can send now
+        else setTimeout(_sendMessage, Math.max(wait, waitUntil - Date.now())); // Have to wait
     }
     if(emptyQueue) handleQueue();
 }

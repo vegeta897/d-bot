@@ -99,7 +99,7 @@ function generateHelpMessage() {
 
 module.exports = {
     readMessage(user, userID, channelID, message, rawEvent) {
-        var isPM = discord.bot.directMessages[channelID];
+        var isPM = !discord.bot.channels[channelID];
         var server = isPM ? false : discord.bot.channels[channelID].guild_id;
         var msgData = { 
             channel: channelID, server, user, userID, isPM, message, rawEvent,

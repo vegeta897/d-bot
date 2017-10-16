@@ -1,6 +1,6 @@
 {
   "name": "d-bot",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "description": "A quirky Discord bot made for single, small, private servers",
   "main": "main.js",
   "dependencies": {
