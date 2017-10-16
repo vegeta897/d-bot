@@ -168,6 +168,9 @@ function listenToBeggar(data) {
     economyStorage.save();
 }
 
+// TODO: Create a module for chat interfaces like casino games and begging
+// Has its own .onMessage event handler for the specified user in the specified channel
+
 module.exports = {
     listen(data) {
         if(!economy.beggars[data.userID] || !economy.beggars[data.userID].state) casino.listen(data);

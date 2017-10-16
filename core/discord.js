@@ -63,7 +63,7 @@ module.exports = {
 
 function _sendMessages(ID, messageArr, polite, callback) {
     messageArr = Array.isArray(messageArr) ? messageArr : [messageArr];
-    let server = bot.channels[ID] ? bot.channels[ID].guild_id : ID;
+    let server = bot.channels[ID] ? bot.channels[ID].guild_id : 'dm';
     let sent = sentMessages[server] || [];
     sentMessages[server] = sent;
     let queue = msgQueue[server] || [];
@@ -94,7 +94,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
                     waitUntil = Date.now() + err.response.retry_after + SAFETY;
                 }
             }
-            if(msg.callback) sent.callback(err, res); // Activate callback if exists
+            if(msg.callback) msg.callback(err, res); // Activate callback if exists
         });
         if(queue.length) setTimeout(handleQueue, MSG_WAIT);
     }

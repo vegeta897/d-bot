@@ -10,8 +10,7 @@ function resizeCanvas(canvas, maxWidth, maxHeight) {
     return newCanvas;
 }
 
-function cropCanvas(canvas, padding) {
-    padding = padding || 0;
+function cropCanvas(canvas, padding = 0) {
     let ctx = canvas.getContext('2d');
     let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     let top = canvas.height, bottom = 0, left = canvas.width, right = 0;

@@ -47,10 +47,9 @@ function dealerDraw(dHand, deck, pScore) {
     }
 }
 
-function play({ userData, deck, pHand, pScore, dHand, dScore, net, choices, bet }, play) {
+function play({ userData, deck, pHand, pScore, dHand, dScore, net = 0, choices, bet }, play) {
     deck = new Deck(deck);
     bet = bet || play.bet;
-    net = net || 0;
     let gameOver = false;
     let result;
     if(!pHand) { // New game
