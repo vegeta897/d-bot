@@ -130,12 +130,10 @@ function _getTimeFromID(id) { // Converts Discord snowflake ID to timestamp, tha
 }
 
 function suppressMentionsAndLinks(message) {
-    return message.replace(/<@!?[0-9]+>/g,function(match) {
-        match = match.replace('!','');
+    return message.replace(/<@!?[0-9]+>/g, match => {
+        match = match.replace('!', '');
         return "(@)" + _getUsernameFromID(match.substring(2, match.length - 1))
-    }).replace(util.urlRX, function(match, a) {
-        return (match[0] === ' ' ? ' ' : '') + '<' + a + '>';
-    });
+    }).replace(util.urlRX, match => (match[0] === ' ' ? ' ' : '') + '<' + match.trim() + '>');
 }
 
 bot.on('presence', function(user, userID, status, game, rawEvent) {
