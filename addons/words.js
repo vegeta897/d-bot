@@ -15,32 +15,46 @@ _commands.words = data => getTopWords(data);
 _commands.unique = data => getTopWords(data, true);
 
 _commands.graph = function(data) {
-    if(data.params.length === 0) return data.reply(`You must specify at least one word`);
-    let words = data.params;
+    let graphUsers = data.params.length === 0;
+    let words = graphUsers ? [] : data.params;
     let rxWords = words.map(w => w.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
-    let query = { content: new RegExp('(?:^|[^a-z])(' + rxWords.join('|') + ')(?:$|[^a-z])', 'gi') };
+    let query = graphUsers ? {} : { content: new RegExp('(?:^|[^a-z])(' + rxWords.join('|') + ')(?:$|[^a-z])', 'gi') };
     messages.wrap(messages.db.find(query).sort({ time: 1 }), function(allMessages) {
-        if(!allMessages) return data.reply(`Couldn't find any messages containing _${data.paramStr}_`);
+        if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : `containing _${data.paramStr}_`));
         let dailyUsage = {};
-        let firstDate, firstDay;
+        let firstDate = graphUsers ? new Date(allMessages[0].time) : null, 
+            firstDay = graphUsers ? Math.floor(firstDate.getTime() / 8.64e7) : null;
         for(let m = 0; m < allMessages.length; m++) {
             let message = allMessages[m];
-            rxWords.forEach((rxWord, i) => {
-                let rxMatches = util.getRegExpMatches(message.content,
-                    new RegExp('(?:^|[^a-z])(' + rxWord + ')(?:$|[^a-z])', 'gi'));
-                if(!rxMatches || rxMatches.length === 0 || !rxMatches[0]) return;
-                if(!firstDay) {
-                    firstDate = new Date(message.time);
-                    firstDay = Math.floor(firstDate.getTime() / 8.64e7);
-                }
-                let day = Math.floor(new Date(message.time) / 8.64e7 - firstDay);
-                if(!dailyUsage[words[i]]) dailyUsage[words[i]] = [];
-                dailyUsage[words[i]][day] = (dailyUsage[words[i]][day] || 0) + rxMatches.length;
-            });
+            let day = Math.floor(new Date(message.time) / 8.64e7 - firstDay);
+            if(graphUsers) {
+                let username = discord.getUsernameFromID(message.user);
+                if(!username) continue;
+                if(!words.includes(username)) words.push(username);
+                if(!dailyUsage[username]) dailyUsage[username] = [];
+                dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
+            } else {
+                rxWords.forEach((rxWord, i) => {
+                    let rxMatches = util.getRegExpMatches(message.content,
+                        new RegExp('(?:^|[^a-z])(' + rxWord + ')(?:$|[^a-z])', 'gi'));
+                    if(!rxMatches || rxMatches.length === 0 || !rxMatches[0]) return;
+                    if(!firstDay) {
+                        firstDate = new Date(message.time);
+                        firstDay = Math.floor(firstDate.getTime() / 8.64e7);
+                    }
+                    day = Math.floor(new Date(message.time) / 8.64e7 - firstDay);
+                    if(!dailyUsage[words[i]]) dailyUsage[words[i]] = [];
+                    dailyUsage[words[i]][day] = (dailyUsage[words[i]][day] || 0) + rxMatches.length;
+                });
+            }
         }
         let totalDays = Math.floor(new Date() / 8.64e7) - firstDay;
         if(!firstDay || totalDays < 1) return data.reply(`Not enough usage to graph that`);
-        let maxTotal = words.filter(w => dailyUsage[w]).map(w => dailyUsage[w].reduce((t, c) => t + c, 0)).reduce((t, c) => Math.max(t, c), 0);
+        let sumArray = (t, c) => t + c;
+        let maxTotal = words.filter(w => dailyUsage[w])
+            .map(w => dailyUsage[w].reduce(sumArray, 0)).reduce((t, c) => Math.max(t, c), 0);
+        if(graphUsers) words = words.filter(w => dailyUsage[w].reduce(sumArray, 0) > maxTotal / 300);
+        words.sort((a, b) => dailyUsage[b].reduce(sumArray, 0) - dailyUsage[a].reduce(sumArray, 0));
         let yInc;
         let yIncs = [1, 5, 10, 15, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000];
         for(let i = 0; i < yIncs.length; i++) {
@@ -48,11 +62,11 @@ _commands.graph = function(data) {
             if(Math.ceil(maxTotal / yInc) < 16) break;
         }
         let yIncCount = Math.ceil(maxTotal / yInc);
-        let wordsPerLine = 4;
-        let defaultLineCount = Math.ceil(words.length / wordsPerLine);
-        while(Math.ceil(words.length / (wordsPerLine - 1)) === defaultLineCount) wordsPerLine--;
+        let wordLabelSize = Math.floor(words.length > 8 ? 40 - (words.length - 8) * 10 / 8 : 40);
+        let wordsPerLine = Math.floor(160 / wordLabelSize);
+        while(Math.ceil(words.length / (wordsPerLine - 1)) === Math.ceil(words.length / wordsPerLine)) wordsPerLine--;
         const IMAGE_W = 800, IMAGE_H = 600;
-        const TOP = 20 + Math.ceil(words.length / wordsPerLine) * 40, BOTTOM = 58,
+        const TOP = 20 + Math.ceil(words.length / wordsPerLine) * wordLabelSize, BOTTOM = 58,
             LEFT = 0, RIGHT = 16 + 16 * (Math.ceil(maxTotal / yInc) * yInc).toLocaleString().length;
         const GRAPH_W = IMAGE_W - RIGHT - LEFT, GRAPH_H = IMAGE_H - TOP - BOTTOM;
         let imgCanvas = new Canvas(IMAGE_W, IMAGE_H);
@@ -84,7 +98,7 @@ _commands.graph = function(data) {
             ctx.stroke();
         }
         imgCtx.fillStyle = '#DDDDDD';
-        imgCtx.font = '36px Roboto';
+        imgCtx.font = `${Math.floor(wordLabelSize * 9 / 10)}px Roboto`;
         imgCtx.textBaseline = 'top';
         imgCtx.textAlign = 'center';
         for(let i = 0; i < words.length; i++) { // Draw word list
@@ -94,7 +108,7 @@ _commands.graph = function(data) {
             imgCtx.fillStyle = colors[i % colors.length];
             imgCtx.fillText(
                 discord.bot.fixMessage(NodeEmoji.replace(words[i], e => `:${e.key}:`).replace(/<(:\w+:)\d+>/gi,'$1')),
-                LEFT + wordWidth * (i % wordCount) + wordWidth / 2, line * 40
+                LEFT + wordWidth * (i % wordCount) + wordWidth / 2, line * wordLabelSize
             );
         }
         imgCtx.textBaseline = 'middle';
@@ -200,7 +214,32 @@ var junkWords = [
     'say','look','http','https','youtu'
 ];
 
-const COLORS = ['#DDDDDD', '#F44336', '#2196F3', '#FFEB3B', '#4CAF50', '#eb4af3', '#FF9800', '#E91E63', '#009688',     '#795548', '#FFC107', '#00BCD4', '#CDDC39'];
+const COLORS = [
+    '#DDDDDD',
+    '#F44336',
+    '#2196F3',
+    '#FFEB3B',
+    '#4CAF50',
+    '#eb4af3',
+    '#FF9800',
+    '#E91E63',
+    '#009688',
+    '#795548',
+    '#FFC107',
+    '#00BCD4',
+    '#a9dc3b',
+    '#eaa5f3',
+    '#00d5cc',
+    '#f4845c',
+    '#6ddef3',
+    '#ffc67b',
+    '#56af2e',
+    '#e9788c',
+    '#ba8572',
+    '#5bd893',
+    '#46a5d4',
+    '#8f92dc'
+];
 
 module.exports = {
     commands: _commands,
