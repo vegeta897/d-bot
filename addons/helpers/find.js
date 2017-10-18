@@ -8,18 +8,15 @@ var DateFormat = require('dateformat');
 module.exports = {
     parseParams: function(params) { // Separate skip number from search string
         var paramString = params.join(' ').trim();
-        if(!paramString || paramString.length == 0) {
+        if(!paramString || paramString.length === 0) {
             return false;
         }
         var limit = 1;
         if(params.length > 1 && params[0] == parseInt(params[0]) && params[0] > 0) {
             // If a valid skip number was specified (2 means return the 2nd result, so skip 1 record)
-            limit = Math.max(2,+params[0]); // 1 and 2 are equivalent, to avoid confusion with how skipping works
+            limit = Math.max(2, +params[0]); // 1 and 2 are equivalent, to avoid confusion with how skipping works
             params.shift();
             paramString = params.join(' ');
-        }
-        if(paramString[0] == '"' && paramString[paramString.length-1] == '"' && paramString.length > 2) {
-            paramString = paramString.substring(1,paramString.length-2); // Trim quotes
         }
         return { string: paramString, limit: limit };
     },

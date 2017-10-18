@@ -101,16 +101,23 @@ module.exports = {
     readMessage(user, userID, channelID, message, rawEvent) {
         var isPM = !discord.bot.channels[channelID];
         var server = isPM ? false : discord.bot.channels[channelID].guild_id;
-        var msgData = { 
-            channel: channelID, server, user, userID, isPM, message, rawEvent,
-            nick: server ? (discord.bot.servers[server].members[userID].nick || user) : user,
+        let nick;
+        try {
+            nick = server ? (discord.bot.servers[server].members[userID].nick || user) : user;
+        } catch(err) {
+            console.log(new Date().toLocaleString(), 'user ID', userID, 'is not in server', server);
+            console.log('message:',message);
+            console.log('raw event:',rawEvent);
+        }
+        var msgData = {
+            channel: channelID, server, user, userID, isPM, message, rawEvent, nick,
             mention: '<@!' + userID + '>', words: message.toLowerCase().split(' '),
             reply: (msg, polite, cb) => discord.sendMessage(isPM ? userID : channelID, msg, polite, cb)
         };
         if(prefixes.indexOf(message[0]) >= 0 && message[1] !== ' ') { // Command
             var command = message.substring(1, message.length).split(' ')[0].toLowerCase();
             msgData.command = command;
-            var params = message.trim().split(' ');
+            var params = util.getRegExpMatches(message.trim(), /"(.*?)"|(\S+)/gi);
             params.shift();
             msgData.params = params;
             msgData.paramStr = params.join(' ');
@@ -121,9 +128,7 @@ module.exports = {
                 if(!isPM) discord.sendMessage(channelID, 'Command list sent, check your PMs!');
             }
             if(commands[command] && (!commands[command].dev || userID === config.owner)) {
-                let dataCopy = JSON.parse(JSON.stringify(msgData));
-                dataCopy.reply = msgData.reply; // Function is lost on stringify
-                addons[commands[command]].commands[command](dataCopy);
+                addons[commands[command]].commands[command](Object.assign({}, msgData));
             }
             // else if(!commands[command]) { // Unknown command
             //     if(message[2] == '/') return; // Ignore "/r/..."
@@ -135,9 +140,7 @@ module.exports = {
             // }
         }
         for(var l = 0; l < msgListeners.length; l++) {
-            let dataCopy = JSON.parse(JSON.stringify(msgData));
-            dataCopy.reply = msgData.reply;
-            addons[msgListeners[l]].listen(dataCopy)
+            addons[msgListeners[l]].listen(Object.assign({}, msgData))
         }
         return msgData;
     }

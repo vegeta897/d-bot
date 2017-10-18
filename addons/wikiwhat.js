@@ -124,6 +124,9 @@ function getArticle(callback) {
     function getImageList(err, response, body) {
         if(err) return apiError(err);
         body = JSON.parse(body);
+        if(body) return resetData();
+        console.log('response:',response);
+        console.log('body:',body);
         var imageList = [];
         for(var pageID in body.query.pages) {
             if(!body.query.pages.hasOwnProperty(pageID)) continue;
@@ -195,8 +198,9 @@ _commands.wikiwhat = function(data) {
         wwData.players = {};
         wwData.players[data.userID] = {};
         wwData.bestGuesses = [];
-        discord.sendMessage(wwData.channel, `**${discord.getUsernameFromID(data.userID)}**`
-            + ' wants to play **WikiWhat**! The game will begin shortly.');
+        discord.sendMessage(wwData.channel, `*WikiWhat is currently undergoing maintenance, please try again later.*`);
+        // discord.sendMessage(wwData.channel, `**${discord.getUsernameFromID(data.userID)}**`
+        //     + ' wants to play **WikiWhat**! The game will begin shortly.');
         getArticle(function(article) {
             wwData.answer = article.title;
             wwData.images = article.images;

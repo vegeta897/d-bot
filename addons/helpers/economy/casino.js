@@ -54,7 +54,7 @@ module.exports = {
                 return data.reply(output.join(''));
             }
             let cooldown = getCooldown(data.userID, newGame);
-            if(cooldown > 0) {
+            if(cooldown > 3000) {
                 output.push('```\n⏳ Wait ' +  util.getTimeUnits(cooldown).join(' ') +
                     ` to play ${games[newGame].properName} again` + '```');
                 return data.reply(output.join(''));

@@ -31,7 +31,7 @@ _commands.last = function(data) {
     var userID = params ? discord.getIDFromUsername(params.string) : 'any';
     if(!userID) return data.reply(`That user doesn't seem to exist.`);
     var command = { query: { user: userID }, limit: params.limit || 1 };
-    if(userID == 'any') delete command.query.user;
+    if(userID === 'any') delete command.query.user;
     findHelper.addChannelQuery(command.query, data.channel);
     messages.wrap(messages.db.find(command.query).sort({time:-1}), function(results) {
         if(!results) return data.reply(`Couldn't find any messages from **${params.string}**`, true);

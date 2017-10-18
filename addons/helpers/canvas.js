@@ -61,14 +61,15 @@ function rotateCanvas(canvas, rotation) {
     return newCanvas;
 }
 
-function UnitContext(ctx, res) { // Canvas context proxy that scales command parameters by resolution
+function UnitContext(ctx, resX, resY) { // Canvas context proxy that scales command parameters by resolution
+    resY = resY || resX;
     return new Proxy({
-        arc: (x, y, radius, arc, ac) => ctx.arc(x * res, y * res, radius * res, arc, ac),
-        lineWidth: (width) => ctx.lineWidth = width * res,
-        fillRect: (x, y, width, height) => ctx.fillRect(x * res, y * res, width * res, height * res),
-        clearRect: (x, y, width, height) => ctx.clearRect(x * res, y * res, width * res, height * res),
-        moveTo: (x, y) => ctx.moveTo(x * res, y * res),
-        lineTo: (x, y) => ctx.lineTo(x * res, y * res)
+        arc: (x, y, radius, arc, ac) => ctx.arc(x * resX, y * resY, radius * resX, arc, ac),
+        lineWidth: width => ctx.lineWidth = width * resX,
+        fillRect: (x, y, width, height) => ctx.fillRect(x * resX, y * resY, width * resX, height * resY),
+        clearRect: (x, y, width, height) => ctx.clearRect(x * resX, y * resY, width * resX, height * resY),
+        moveTo: (x, y) => ctx.moveTo(x * resX, y * resY),
+        lineTo: (x, y) => ctx.lineTo(x * resX, y * resY)
     }, {
         get: function(target, name) {
             if(name in target) return target[name];

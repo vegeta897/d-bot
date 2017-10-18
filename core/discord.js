@@ -1,4 +1,5 @@
 // Discord.io!
+var util = require(__base+'core/util.js');
 var config = require('./config.js');
 var Discord = require('discord.io');
 
@@ -70,7 +71,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
     msgQueue[server] = queue;
     let emptyQueue = queue.length === 0;
     for(let i = 0; i < messageArr.length; i++) { // Add messages to buffer
-        if(polite) messageArr[i] = suppressMentionsLinks(messageArr[i]);
+        if(polite) messageArr[i] = suppressMentionsAndLinks(messageArr[i]);
         if(messageArr[i].length === 0) messageArr[i] = '`empty message`';
         if(messageArr[i].length > 2000) {
             // TODO: Auto-split messages over 2000 chars
@@ -83,6 +84,8 @@ function _sendMessages(ID, messageArr, polite, callback) {
         })
     }
     function _sendMessage() {
+        if(waitUntil) console.log('sending message at', Date.now(),'after waiting', waitUntil);
+        waitUntil = 0;
         sent.unshift(Date.now());
         sent = sent.slice(0, MSG_LIMIT);
         let msg = queue.shift(); // Remove message from buffer
@@ -91,6 +94,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
             if(err) {
                 console.log(new Date().toLocaleString(), 'Error sending message:', err);
                 if(err.statusMessage === 'TOO MANY REQUESTS') {
+                    console.log('rate limit received at',Date.now());
                     waitUntil = Date.now() + err.response.retry_after + SAFETY;
                 }
             }
@@ -109,7 +113,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
 function _editMessage(channel, id, message, polite, callback) {
     bot.editMessage({
         channelID: channel, messageID: id,
-        message: polite ? suppressMentionsLinks(message) : message
+        message: polite ? suppressMentionsAndLinks(message) : message
     }, callback);
 }
 
@@ -121,12 +125,12 @@ function _getTimeFromID(id) { // Converts Discord snowflake ID to timestamp, tha
     return new Date((id / 4194304) + 1420070400000);
 }
 
-function suppressMentionsLinks(message) {
+function suppressMentionsAndLinks(message) {
     return message.replace(/<@!?[0-9]+>/g,function(match) {
         match = match.replace('!','');
-        return "(@)" + _getUsernameFromID(match.substring(2,match.length-1))
-    }).replace(/(?:^| )((https?:\/\/)[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi,function(match,a) {
-        return (match[0] == ' ' ? ' ' : '') + '<' + a + '>';
+        return "(@)" + _getUsernameFromID(match.substring(2, match.length - 1))
+    }).replace(util.urlRX, function(match, a) {
+        return (match[0] === ' ' ? ' ' : '') + '<' + a + '>';
     });
 }
 

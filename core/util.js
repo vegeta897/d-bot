@@ -155,7 +155,7 @@ var util = {
         var matches = [];
         var match;
         while(match = rx.exec(str)) {
-            matches.push(match[1]);
+            matches = matches.concat(match.slice(1).filter(m => m));
         }
         return matches;
     },
@@ -205,6 +205,7 @@ var util = {
             this.timing = {};
         }
     },
+    urlRX: /(^|\s)((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi,
     matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?:])/gi,
     alphabet: ['a','b','c','d','e','f','g','h','i','j','k','l','m',
         'n','o','p','q','r','s','t','u','v','w','x','y','z'],
@@ -283,3 +284,8 @@ if (!String.prototype.padEnd) {
         }
     };
 }
+Date.prototype.addDays = function(days) { // https://stackoverflow.com/a/563442/2612679
+    var dat = new Date(this.valueOf());
+    dat.setDate(dat.getDate() + days);
+    return dat;
+};
