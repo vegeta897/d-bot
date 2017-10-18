@@ -22,16 +22,17 @@ function wrapFind(command, callback) {
 }
 
 module.exports = {
-    db: db,
+    db,
     wrap: wrapFind,
     logMessage: function(data) {
-        if(data.message == "" || !data.message) return; // Don't log empty messages TODO: Log attachments!
+        if(!data.message && data.attachments.length === 0) return; // Don't log empty messages
         if(config.noLogServers.includes(data.server)) return; // Don't log this server
         if(config.noLogChannels.includes(data.channel)) return; // Don't log this channel
-        if(config.prefixes.includes(data.message[0])) return; // Don't log commands
+        if(data.command) return; // Don't log commands
         db.insert({
             id: data.rawEvent.d.id, user: data.userID, channel: data.channel, 
-            content: data.message, time: new Date(data.rawEvent.d.timestamp).getTime()
+            content: data.message, time: new Date(data.rawEvent.d.timestamp).getTime(),
+            attachments: data.attachments || undefined
         }, function(err) { if(err) console.log('Error logging message:', err) })
     },
     getRandomWord: function() {

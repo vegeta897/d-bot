@@ -103,7 +103,8 @@ module.exports = {
         let isPM = !isWebhook && !discord.bot.channels[channelID];
         let server = isWebhook || isPM ? false : discord.bot.channels[channelID].guild_id;
         let msgData = {
-            channel: channelID, server, user, userID, isWebhook, isPM, message, rawEvent,
+            channel: channelID, server, user, userID, isWebhook, isPM, message,
+            rawEvent, attachments: rawEvent.d.attachments.length > 0 ? rawEvent.d.attachments.map(a => a.url) : null,
             nick: server ? (discord.bot.servers[server].members[userID].nick || user) : user,
             mention: '<@!' + userID + '>', words: message.toLowerCase().split(' '),
             reply: (msg, polite, cb) => discord.sendMessage(isPM ? userID : channelID, msg, polite, cb)

@@ -140,14 +140,12 @@ var util = {
         var parsed = str.match(rxParser);
         if(parsed) {
             try {
-                return new RegExp(parsed[1],parsed[2]);
+                return new RegExp(parsed[1], parsed[2]);
             } catch(e) {
-                return false; // Invalid regexp!
+                return str; // Invalid regexp!
             }
-        } else if(str.match(/^\w\S*\w$/)) {
-            return new RegExp('\\b'+str+'\\b','gi');
         } else {
-            return new RegExp(str,'gi');
+            return new RegExp('(?:^|[^a-z])('+str+')(?:$|[^a-z])', 'gi');
         }
     },
     getRegExpMatches: function(str, rx) {

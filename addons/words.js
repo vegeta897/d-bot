@@ -20,7 +20,7 @@ _commands.graph = function(data) {
     let rxWords = words.map(w => w.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
     let query = graphUsers ? {} : { content: new RegExp('(?:^|[^a-z])(' + rxWords.join('|') + ')(?:$|[^a-z])', 'gi') };
     messages.wrap(messages.db.find(query).sort({ time: 1 }), function(allMessages) {
-        if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : `containing _${data.paramStr}_`));
+        if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : ` containing _${data.paramStr}_`));
         let dailyUsage = {};
         let firstDate = graphUsers ? new Date(allMessages[0].time) : null, 
             firstDay = graphUsers ? Math.floor(firstDate.getTime() / 8.64e7) : null;
@@ -219,19 +219,18 @@ const COLORS = [
     '#F44336',
     '#2196F3',
     '#FFEB3B',
-    '#4CAF50',
+    '#33c136',
     '#eb4af3',
     '#FF9800',
     '#E91E63',
-    '#009688',
-    '#795548',
+    '#00ae9e',
     '#FFC107',
     '#00BCD4',
     '#a9dc3b',
     '#eaa5f3',
     '#00d5cc',
     '#f4845c',
-    '#6ddef3',
+    '#7bc8f3',
     '#ffc67b',
     '#56af2e',
     '#e9788c',
