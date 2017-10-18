@@ -101,6 +101,19 @@
     "debugChannel": {
       "type": "string",
       "default": null
+    },
+    "userAliases": {
+      "type": "object",
+      "patternProperties": {
+        "[0-9]+": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          } 
+        }
+      },
+      "default": {}
     }
   }
 }

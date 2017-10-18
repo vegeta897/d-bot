@@ -57,6 +57,9 @@ module.exports = {
                 if(members[mKey].username.toLowerCase() === username) return mKey;
             }
         }
+        for(let uKey in config.userAliases) { if(!config.userAliases.hasOwnProperty(uKey)) continue;
+            if(config.userAliases[uKey].includes(username)) return uKey;
+        }
         return false;
     },
     getTimeFromID: _getTimeFromID
@@ -118,7 +121,8 @@ function _editMessage(channel, id, message, polite, callback) {
 }
 
 function _getUsernameFromID(id) {
-    return bot.users[id] ? bot.users[id].username : false;
+    return bot.users[id] ? bot.users[id].username : 
+        config.userAliases[id] ? config.userAliases[id][0] : false;
 }
 
 function _getTimeFromID(id) { // Converts Discord snowflake ID to timestamp, thanks /u/Natsulus!
