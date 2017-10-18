@@ -99,25 +99,19 @@ function generateHelpMessage() {
 
 module.exports = {
     readMessage(user, userID, channelID, message, rawEvent) {
-        var isPM = !discord.bot.channels[channelID];
-        var server = isPM ? false : discord.bot.channels[channelID].guild_id;
-        let nick;
-        try {
-            nick = server ? (discord.bot.servers[server].members[userID].nick || user) : user;
-        } catch(err) {
-            console.log(new Date().toLocaleString(), 'user ID', userID, 'is not in server', server);
-            console.log('message:',message);
-            console.log('raw event:',rawEvent);
-        }
-        var msgData = {
-            channel: channelID, server, user, userID, isPM, message, rawEvent, nick,
+        let isWebhook = !!rawEvent.d.webhook_id;
+        let isPM = !isWebhook && !discord.bot.channels[channelID];
+        let server = isWebhook || isPM ? false : discord.bot.channels[channelID].guild_id;
+        let msgData = {
+            channel: channelID, server, user, userID, isWebhook, isPM, message, rawEvent,
+            nick: server ? (discord.bot.servers[server].members[userID].nick || user) : user,
             mention: '<@!' + userID + '>', words: message.toLowerCase().split(' '),
             reply: (msg, polite, cb) => discord.sendMessage(isPM ? userID : channelID, msg, polite, cb)
         };
         if(prefixes.indexOf(message[0]) >= 0 && message[1] !== ' ') { // Command
-            var command = message.substring(1, message.length).split(' ')[0].toLowerCase();
+            let command = message.substring(1, message.length).split(' ')[0].toLowerCase();
             msgData.command = command;
-            var params = util.getRegExpMatches(message.trim(), /"(.*?)"|(\S+)/gi);
+            let params = util.getRegExpMatches(message.trim(), /"(.*?)"|(\S+)/gi);
             params.shift();
             msgData.params = params;
             msgData.paramStr = params.join(' ');
@@ -139,7 +133,7 @@ module.exports = {
             //     return msgData;
             // }
         }
-        for(var l = 0; l < msgListeners.length; l++) {
+        for(let l = 0; l < msgListeners.length; l++) {
             addons[msgListeners[l]].listen(Object.assign({}, msgData))
         }
         return msgData;

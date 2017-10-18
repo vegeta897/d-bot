@@ -46,8 +46,8 @@ discord.bot.on('message', function(user, userID, channelID, message, rawEvent) {
     if(userID === discord.bot.id) return; // Don't listen to yourself, bot
     var data = addons.readMessage(user, userID, channelID, message, rawEvent);
     require('fs').writeFile('./debug/lastMessage.json', JSON.stringify(rawEvent, null, '\t'));
-    if(data.isPM) {
-        // This is a PM
+    if(data.isPM || data.isWebhook) {
+        // This is a PM or webhook
         
     } else {
         // Not a PM
