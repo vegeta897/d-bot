@@ -6,7 +6,6 @@ var Canvas = require('canvas');
 var requireUncached = require('require-uncached');
 const { UnitContext } = requireUncached('./helpers/canvas.js');
 var DateFormat = require('dateformat');
-var NodeEmoji = require('node-emoji');
 
 var _commands = {};
 
@@ -16,12 +15,13 @@ _commands.unique = data => getTopWords(data, true);
 
 _commands.graph = function(data) {
     let graphUsers = data.params.length === 0;
-    let words = graphUsers ? [] : data.params;
+    let words = graphUsers ? [] : data.params.filter((p, i, a) => a.indexOf(p) === i);
     let rxWords = words.map(w => w.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
     let query = graphUsers ? {} : { content: new RegExp('(?:^|[^a-z])(' + rxWords.join('|') + ')(?:$|[^a-z])', 'gi') };
     messages.wrap(messages.db.find(query).sort({ time: 1 }), function(allMessages) {
         if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : ` containing _${data.paramStr}_`));
         let dailyUsage = {};
+        words.forEach(w => dailyUsage[w] = []);
         let firstDate = graphUsers ? new Date(allMessages[0].time) : null, 
             firstDay = graphUsers ? Math.floor(firstDate.getTime() / 8.64e7) : null;
         for(let m = 0; m < allMessages.length; m++) {
@@ -31,7 +31,6 @@ _commands.graph = function(data) {
                 let username = discord.getUsernameFromID(message.user);
                 if(!username) continue;
                 if(!words.includes(username)) words.push(username);
-                if(!dailyUsage[username]) dailyUsage[username] = [];
                 dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
             } else {
                 rxWords.forEach((rxWord, i) => {
@@ -43,7 +42,6 @@ _commands.graph = function(data) {
                         firstDay = Math.floor(firstDate.getTime() / 8.64e7);
                     }
                     day = Math.floor(new Date(message.time) / 8.64e7 - firstDay);
-                    if(!dailyUsage[words[i]]) dailyUsage[words[i]] = [];
                     dailyUsage[words[i]][day] = (dailyUsage[words[i]][day] || 0) + rxMatches.length;
                 });
             }
@@ -107,7 +105,7 @@ _commands.graph = function(data) {
             let wordWidth = GRAPH_W / wordCount;
             imgCtx.fillStyle = colors[i % colors.length];
             imgCtx.fillText(
-                discord.bot.fixMessage(NodeEmoji.replace(words[i], e => `:${e.key}:`).replace(/<(:\w+:)\d+>/gi,'$1')),
+                discord.bot.fixMessage(util.emojiToText(words[i]).replace(/<(:\w+:)\d+>/gi,'$1')),
                 LEFT + wordWidth * (i % wordCount) + wordWidth / 2, line * wordLabelSize
             );
         }

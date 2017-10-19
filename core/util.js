@@ -1,4 +1,11 @@
 // Helper functions!
+var NodeEmoji = require('node-emoji');
+
+const alphabet = ['a','b','c','d','e','f','g','h','i','j','k','l','m',
+    'n','o','p','q','r','s','t','u','v','w','x','y','z'];
+const emojiAlphabet = ['🇦','🇧','🇨','🇩','🇪','🇫','🇬','🇭','🇮','🇯','🇰','🇱','🇲',
+    '🇳','🇴','🇵','🇶','🇷','🇸','🇹','🇺','🇻','🇼','🇽','🇾','🇿'];
+
 var util = {
     contains: function(a, b) { // Check if string A contains string B, case insensitive
         return a.toLowerCase().indexOf(b.toLowerCase()) > -1;
@@ -177,6 +184,10 @@ var util = {
         } while(metrics.width > width && startSize > 1);
         return metrics;
     },
+    emojiToText(input) {
+        return NodeEmoji.unemojify(input).replace(new RegExp('(' + emojiAlphabet.join('|') + ')', 'g'),
+            a => `:${alphabet[emojiAlphabet.indexOf(a)]}:`);
+    },
     timer: {
         times: {},
         timing: {},
@@ -205,8 +216,7 @@ var util = {
     },
     urlRX: /(^|\s)((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi,
     matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?:])/gi,
-    alphabet: ['a','b','c','d','e','f','g','h','i','j','k','l','m',
-        'n','o','p','q','r','s','t','u','v','w','x','y','z'],
+    alphabet, emojiAlphabet,
     vowels: ['a','e','i','o','u'],
     consonants: ['b','c','d','f','g','h','j','k','l','m','n','p','q','r','s','t','v','w','x','y','z'],
     hex: ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
