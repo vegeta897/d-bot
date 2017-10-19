@@ -16,8 +16,7 @@ _commands.unique = data => getTopWords(data, true);
 _commands.graph = function(data) {
     let graphUsers = data.params.length === 0;
     let words = graphUsers ? [] : data.params.filter((p, i, a) => a.indexOf(p) === i);
-    let rxWords = words.map(w => w.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
-    let query = graphUsers ? {} : { content: new RegExp('(?:^|[^a-z])(' + rxWords.join('|') + ')(?:$|[^a-z])', 'gi') };
+    let query = graphUsers ? {} : { content: util.regExpify(words.join('|'), true) };
     messages.wrap(messages.db.find(query).sort({ time: 1 }), function(allMessages) {
         if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : ` containing _${data.paramStr}_`));
         let dailyUsage = {};
@@ -33,9 +32,8 @@ _commands.graph = function(data) {
                 if(!words.includes(username)) words.push(username);
                 dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
             } else {
-                rxWords.forEach((rxWord, i) => {
-                    let rxMatches = util.getRegExpMatches(message.content,
-                        new RegExp('(?:^|[^a-z])(' + rxWord + ')(?:$|[^a-z])', 'gi'));
+                words.forEach((word, i) => {
+                    let rxMatches = util.getRegExpMatches(message.content, util.regExpify(word));
                     if(!rxMatches || rxMatches.length === 0 || !rxMatches[0]) return;
                     if(!firstDay) {
                         firstDate = new Date(message.time);

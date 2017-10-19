@@ -135,7 +135,9 @@ module.exports = {
             // }
         }
         for(let l = 0; l < msgListeners.length; l++) {
-            addons[msgListeners[l]].listen(Object.assign({}, msgData))
+            if(!addons[msgListeners[l]].dev || userID === config.owner) {
+                addons[msgListeners[l]].listen(Object.assign({}, msgData))
+            }
         }
         return msgData;
     }

@@ -6,15 +6,15 @@ var config = require('./config.js');
 var db = storage.nedb('messages');
 
 // db.ensureIndex({ fieldName: 'time', unique: true }, function (err) { console.log(err); });
-db.ensureIndex({ fieldName: 'id', unique: true }, function (err) { if(err)console.log(err); });
+db.ensureIndex({ fieldName: 'id', unique: true }, function (err) { if(err) console.log(err); });
 
 function wrapFind(command, callback) {
     command.exec(function(err, results) {
-        if (err) {
+        if(err) {
             console.log(err);
             return discord.pmOwner(`A message database error occurred while executing a command\n\`${err.message}\``);
         }
-        if (!results || results.length === 0 || !results[results.length - 1].hasOwnProperty('content')) {
+        if(!results || results.length === 0 || !results[results.length - 1].hasOwnProperty('content')) {
             return callback(false);
         }
         callback(results);

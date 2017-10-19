@@ -142,7 +142,7 @@ var util = {
         if(!isNaN(parseFloat(input)) && isFinite(input)) return input * -1;
         console.error('flip function received invalid input:', input);
     },
-    regExpify: function(str) {
+    regExpify: function(str, doNotEscapeRegex) {
         var rxParser = /^\/(.*)\/([gmi]{0,3})?$/;
         var parsed = str.match(rxParser);
         if(parsed) {
@@ -152,7 +152,8 @@ var util = {
                 return str; // Invalid regexp!
             }
         } else {
-            return new RegExp('(?:^|[^a-z])('+str+')(?:$|[^a-z])', 'gi');
+            if(!doNotEscapeRegex) str = str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            return new RegExp('(?:^|[^a-z])(' + str + ')(?![a-z])', 'gi');
         }
     },
     getRegExpMatches: function(str, rx) {
