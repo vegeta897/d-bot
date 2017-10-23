@@ -8,8 +8,9 @@ var discord = require('./discord.js');
 
 const prefixes = config.prefixes;
 
-var addons = {}; // Addon name -> Addon module
-var commands = {}; // Command name -> Addon name
+// TODO: Replace objects with maps
+var addons = new Map(); // Addon name -> Addon module
+var commands = new Map(); // Command name -> Addon name
 var msgListeners = []; // Addon names
 var tickers = []; // Addon names
 var help = {}; // Command reference
@@ -19,18 +20,12 @@ var help = {}; // Command reference
 scanAddons();
 
 setInterval(function tick() {
-    for(let i = 0; i < tickers.length; i++) {
-        addons[tickers[i]].tick();
-    }
+    for(let ticker of tickers) addons.get(ticker).tick();
 }, 1000);
 
 function scanAddons() {
-    // Clear all addons
-    for(var aKey in addons) {
-        if(!addons.hasOwnProperty(aKey)) continue;
-        delete addons[aKey];
-    }
-    var addonFiles = fs.readdirSync(__base+'addons');
+    addons.clear(); // Clear all addons
+    let addonFiles = fs.readdirSync(__base+'addons');
     addonFiles.forEach(function(add) {
         if(path.extname(add) !== '.js') return;
         var addonName = path.basename(add,'.js');
@@ -40,15 +35,16 @@ function scanAddons() {
 
 function loadAddon(name) {
     var addon = requireUncached(__base+'addons/'+name+'.js');
-    if(addons[name] && addons[name].unload) addons[name].unload(); // If addon already loaded and needs to be unloaded
-    addons[name] = addon;
+    // If addon already loaded and needs to be unloaded
+    if(addons.has(name) && addons.get(name).unload) addons.get(name).unload(); 
+    addons.set(name, addon);
     for(var cKey in addon.commands) {
         if(!addon.commands.hasOwnProperty(cKey)) continue;
-        if(commands[cKey] && commands[cKey] !== name) {
-            console.error(`Addon "${name}" tried to add command "${cKey}" already added by addon "${commands[cKey]}"`);
+        if(commands.has(cKey) && commands.get(cKey) !== name) {
+            console.error(`Addon "${name}" tried to add command "${cKey}" already added by "${commands.get(cKey)}"`);
             continue;
         }
-        commands[cKey] = name;
+        commands.set(cKey, name);
     }
     for(var hKey in addon.help) {
         if(!addon.help.hasOwnProperty(hKey)) continue;
@@ -63,15 +59,15 @@ function loadAddon(name) {
     if(addon.tick) tickers.push(name);
 }
 
-function reload(name, channel) {
+function reload(name, reply) {
     if(name) {
         try {
             loadAddon(name);
-            discord.sendMessage(channel, `Successfully reloaded addon \`${name}\``);
+            reply(`Successfully reloaded addon \`${name}\``);
         }
         catch(e) {
             console.log(e);
-            discord.sendMessage(channel, `Couldn't load addon \`${name}\`, see log for details`);
+            reply(`Couldn't load addon \`${name}\`, see log for details`);
         }
     } else {
         scanAddons();
@@ -117,13 +113,14 @@ module.exports = {
             msgData.params = params;
             msgData.paramStr = params.join(' ');
             // TODO: Implement config reloading
-            if(command === 'reload' && userID === config.owner) reload(msgData.paramStr, channelID); // Reload addon
+            if(command === 'reload' && userID === config.owner) reload(msgData.paramStr, msgData.reply); // Reload addon
             if(command === 'help' || command === 'commands') {
                 discord.sendMessages(userID, generateHelpMessage());
                 if(!isPM) discord.sendMessage(channelID, 'Command list sent, check your PMs!');
             }
-            if(commands[command] && (!commands[command].dev || userID === config.owner)) {
-                addons[commands[command]].commands[command](Object.assign({}, msgData));
+            let addon = addons.get(commands.get(command));
+            if(addon && (!addon.dev || userID === config.owner)) {
+                addon.commands[command](Object.assign({}, msgData));
             }
             // else if(!commands[command]) { // Unknown command
             //     if(message[2] == '/') return; // Ignore "/r/..."
@@ -134,9 +131,9 @@ module.exports = {
             //     return msgData;
             // }
         }
-        for(let l = 0; l < msgListeners.length; l++) {
-            if(!addons[msgListeners[l]].dev || userID === config.owner) {
-                addons[msgListeners[l]].listen(Object.assign({}, msgData))
+        for(let listener of msgListeners) {
+            if(!addons.get(listener).dev || userID === config.owner) {
+                addons.get(listener).listen(Object.assign({}, msgData));
             }
         }
         return msgData;

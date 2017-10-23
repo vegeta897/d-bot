@@ -25,7 +25,7 @@ module.exports = {
     db,
     wrap: wrapFind,
     logMessage: function(data) {
-        if(!data.message && data.attachments.length === 0) return; // Don't log empty messages
+        if(!data.message && !data.attachments) return; // Don't log empty messages
         if(config.noLogServers.includes(data.server)) return; // Don't log this server
         if(config.noLogChannels.includes(data.channel)) return; // Don't log this channel
         if(data.command) return; // Don't log commands

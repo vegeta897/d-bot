@@ -15,31 +15,33 @@ _commands.unique = data => getTopWords(data, true);
 
 _commands.graph = function(data) {
     let graphUsers = data.params.length === 0;
-    let words = graphUsers ? [] : data.params.filter((p, i, a) => a.indexOf(p) === i);
-    let query = graphUsers ? {} : { content: util.regExpify(words.join('|'), true) };
+    let words = graphUsers ? [] : data.params.filter((p, i, a) => a.indexOf(p) === i); // Remove dupes
+    let query = graphUsers ? {} : { $or: words.map(w => ({ content: util.regExpify(w) })) };
     messages.wrap(messages.db.find(query).sort({ time: 1 }), function(allMessages) {
         if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : ` containing _${data.paramStr}_`));
+        
+        // TODO: Rewrite using maps
+        
         let dailyUsage = {};
         words.forEach(w => dailyUsage[w] = []);
         let firstDate = graphUsers ? new Date(allMessages[0].time) : null, 
             firstDay = graphUsers ? Math.floor(firstDate.getTime() / 8.64e7) : null;
-        for(let m = 0; m < allMessages.length; m++) {
-            let message = allMessages[m];
-            let day = Math.floor(new Date(message.time) / 8.64e7 - firstDay);
+        for(let { content: text, time, user } of allMessages) {
+            let day = Math.floor(new Date(time) / 8.64e7 - firstDay);
             if(graphUsers) {
-                let username = discord.getUsernameFromID(message.user);
+                let username = discord.getUsernameFromID(user);
                 if(!username) continue;
                 if(!words.includes(username)) words.push(username);
                 dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
             } else {
                 words.forEach((word, i) => {
-                    let rxMatches = util.getRegExpMatches(message.content, util.regExpify(word));
+                    let rxMatches = util.getRegExpMatches(text, util.regExpify(word));
                     if(!rxMatches || rxMatches.length === 0 || !rxMatches[0]) return;
                     if(!firstDay) {
-                        firstDate = new Date(message.time);
+                        firstDate = new Date(time);
                         firstDay = Math.floor(firstDate.getTime() / 8.64e7);
                     }
-                    day = Math.floor(new Date(message.time) / 8.64e7 - firstDay);
+                    day = Math.floor(new Date(time) / 8.64e7 - firstDay);
                     dailyUsage[words[i]][day] = (dailyUsage[words[i]][day] || 0) + rxMatches.length;
                 });
             }
@@ -174,15 +176,14 @@ function getTopWords(data, unique) {
         if(!allMessages) return data.reply('No messages found' + (allUsers ? '' : ' for that user'));
         let dictionary = {};
         let exclude = {};
-        for(let m = 0; m < allMessages.length; m++) {
-            var text = allMessages[m].content.replace(util.urlRX, '');
-            var words = text.match(/([a-z'-]{3,})/gi);
+        for(let { content: text, user } of allMessages) {
+            var words = text.replace(util.urlRX, '').match(/([a-z'-]{3,})/gi);
             if(!words || words.length === 0) continue;
-            for(var w = 0; w < words.length; w++) {
-                var thisWord = words[w].toLowerCase();
-                if(!unique && junkWords.includes(thisWord)) continue;
-                var obj = (!unique || allMessages[m].user === userID) ? dictionary : exclude;
-                obj[thisWord] = (obj[thisWord] || 0) + 1;
+            for(let word of words) {
+                word = word.toLowerCase();
+                if(!unique && junkWords.includes(word)) continue;
+                var obj = (!unique || user === userID) ? dictionary : exclude;
+                obj[word] = (obj[word] || 0) + 1;
             }
         }
         for(var key in exclude) delete dictionary[key];

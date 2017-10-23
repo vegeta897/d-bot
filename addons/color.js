@@ -9,14 +9,13 @@ _commands.color = function(data) {
     if(!config.allowCustomColors) return;
     var hexColorRX = /^#(?:[0-9a-f]{6})$/i;
     if(!data.params[0] || !hexColorRX.test(data.params[0])) {
-        data.reply('You must specify a hex color, e.g. #897897');
-        return;
+        return data.reply('You must specify a hex color, e.g. #897897');
     }
     var userRole = false;
     var roles = discord.bot.servers[data.server].roles;
     for(var rKey in roles) {
         if(!roles.hasOwnProperty(rKey)) continue;
-        if(roles[rKey].name == 'user' + data.userID) {
+        if(roles[rKey].name === 'user' + data.userID) {
             userRole = rKey;
             break;
         }
@@ -28,9 +27,7 @@ _commands.color = function(data) {
             discord.bot.addToRole({ serverID: data.server, roleID: userRole, userID: data.userID }); // Assign new role
             editRole()
         });
-    } else { // Role found, edit it
-        editRole();
-    }
+    } else editRole(); // Role found, edit it
     
     function editRole() {
         discord.bot.editRole({

@@ -11,8 +11,7 @@ _commands.king = function(data) {
     messages.wrap(messages.db.find({ content: kingRX }), allMessages => {
         if(!allMessages) return data.reply(`Nobody is the king of _${data.paramStr}_`);
         var rankings = new Map();
-        for(let i = 0; i < allMessages.length; i++) {
-            let { content: text, user } = allMessages[i];
+        for(let { content: text, user } of allMessages) {
             var occurrences = util.getRegExpMatches(text, kingRX).length;
             if(!occurrences || occurrences.length === 0) continue;
             rankings.set(user, (rankings.get(user) || 0) + occurrences);
@@ -38,12 +37,10 @@ _commands.regicide = function(data) { // Find words that have changed kings the 
     messages.wrap(messages.db.find().sort({ time: 1 }), allMessages => {
         if(!allMessages) return data.reply(`No messages in database`);
         let dictionary = new Map();
-        for(let i = 0; i < allMessages.length; i++) {
-            let { content: text, user } = allMessages[i];
+        for(let { content: text, user } of allMessages) {
             let words = util.getRegExpMatches(text.toLowerCase(), util.regExpify('\\S+', true));
             if(!words || words.length === 0 || !words[0]) continue;
-            for(let w = 0; w < words.length; w++) {
-                let word = words[w];
+            for(let word of words) {
                 if(!dictionary.has(word)) dictionary.set(word, { overthrows: 0, users: new Map() });
                 let users = dictionary.get(word).users;
                 let newCount = (users.get(user) || 0) + 1;

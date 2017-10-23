@@ -1,10 +1,8 @@
 // Helper functions!
 var NodeEmoji = require('node-emoji');
 
-const alphabet = ['a','b','c','d','e','f','g','h','i','j','k','l','m',
-    'n','o','p','q','r','s','t','u','v','w','x','y','z'];
-const emojiAlphabet = ['🇦','🇧','🇨','🇩','🇪','🇫','🇬','🇭','🇮','🇯','🇰','🇱','🇲',
-    '🇳','🇴','🇵','🇶','🇷','🇸','🇹','🇺','🇻','🇼','🇽','🇾','🇿'];
+const alphabet = [ ...'abcdefghijklmnopqrstuvwxyz'];
+const emojiAlphabet = [ ...'🇦🇧🇨🇩🇪🇫🇬🇭🇮🇯🇰🇱🇲🇳🇴🇵🇶🇷🇸🇹🇺🇻🇼🇽🇾🇿'];
 
 var util = {
     contains: function(a, b) { // Check if string A contains string B, case insensitive
@@ -143,18 +141,16 @@ var util = {
         console.error('flip function received invalid input:', input);
     },
     regExpify: function(str, doNotEscapeRegex) {
-        var rxParser = /^\/(.*)\/([gmi]{0,3})?$/;
-        var parsed = str.match(rxParser);
+        var parsed = str.match(/^\/(.*)\/([gmi]{0,3})?$/);
         if(parsed) {
             try {
                 return new RegExp(parsed[1], parsed[2]);
             } catch(e) {
-                return str; // Invalid regexp!
+                // Invalid regexp!
             }
-        } else {
-            if(!doNotEscapeRegex) str = str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-            return new RegExp('(?:^|[^a-z])(' + str + ')(?![a-z])', 'gi');
         }
+        if(!doNotEscapeRegex) str = str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+        return new RegExp(`(?:${str}{0}|^|[^a-z])(${str})(?![a-z])`, 'gi');
     },
     getRegExpMatches: function(str, rx) {
         rx.lastIndex = 0; // Reset matching
@@ -218,9 +214,9 @@ var util = {
     urlRX: /(^|\s)((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi,
     matchWordsRX: /(?: |^)([a-z1-9'-]+)(?=$|[ ,.!?:])/gi,
     alphabet, emojiAlphabet,
-    vowels: ['a','e','i','o','u'],
-    consonants: ['b','c','d','f','g','h','j','k','l','m','n','p','q','r','s','t','v','w','x','y','z'],
-    hex: ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
+    vowels: [ ...'aeiou'],
+    consonants: [ ...'bcdfghjklmnpqrstvwxyz'],
+    hex: [ ...'0123456789abcdef']
 };
 
 module.exports = util;

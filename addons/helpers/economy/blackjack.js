@@ -41,7 +41,7 @@ function getScore(cards) {
 
 function dealerDraw(dHand, deck, pScore) {
     let dScore = getScore(dHand);
-    while(dHand.length === 1 || (dScore < 16 && dScore < pScore)) {
+    while(dHand.length === 1 || (dScore < 16 && dScore < pScore && pScore <= 21)) {
         dHand.push(deck.draw());
         dScore = getScore(dHand);
     }
@@ -55,7 +55,7 @@ function play({ userData, deck, pHand, pScore, dHand, dScore, net = 0, choices, 
     if(!pHand) { // New game
         deck.shuffle();
         pHand = [deck.draw(''), deck.draw('')];
-        dHand = [deck.draw('0')];
+        dHand = [deck.draw('')];
         choices = ['hit', 'stay'];
         if(userData.balance >= bet * 2) choices.push('double');
         pScore = getScore(pHand);

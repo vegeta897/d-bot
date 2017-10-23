@@ -1,5 +1,14 @@
 // Check the deck, y'all! Press eject, y'all!
 var util = require(__base+'core/util.js');
+var storage = require(__base+'core/storage.js');
+
+const statStorage = storage.json('stats',
+    {
+        decks: 0,
+        dealt: {}
+    }, '\t'
+);
+const stats = statStorage.data;
 
 CARDS = {};
 
@@ -25,11 +34,19 @@ CARDS = {};
 });
 
 function Deck(cards) {
+    if(!cards) {
+        stats.decks++;
+        statStorage.save();
+    }
     this.cards = cards || Object.keys(CARDS);
 }
 
 Deck.prototype.draw = function(card) {
-    return card ? this.cards.splice(this.cards.indexOf(card), 1) : this.cards.pop();
+    if(card) return this.cards.splice(this.cards.indexOf(card), 1);
+    card = this.cards.pop();
+    stats.dealt[card] = (stats.dealt[card] || 0) + 1;
+    statStorage.save();
+    return card;
 };
 
 Deck.prototype.shuffle = function() {

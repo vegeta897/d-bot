@@ -46,6 +46,7 @@ module.exports = {
         let account = bank.getAccount(data);
         let game = casino.players[data.userID];
         let newGame = data.command ? findGame(data.command) : false;
+        if(game && newGame) return data.reply(`${data.mention}, you're already playing **${games[game.id].properName}**!`);
         if(!game && !newGame || (game && game.wait)) return;
         let output = [data.mention];
         if(!game && newGame) {

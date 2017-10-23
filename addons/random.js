@@ -25,8 +25,7 @@ _commands.pick = function(data) {
     if(!data.params.length) return data.reply('Pick what?');
     var choices = [];
     var choice = '';
-    for(var p = 0; p < data.params.length; p++) {
-        var word = data.params[p];
+    for(let word of data.params) {
         if(word.slice(-1) === ',') {
             word = word.substr(0, word.length - 1);
             if(word.length) choice += (choice === '' ? '' : ' ') + word;
@@ -55,7 +54,7 @@ _commands.flip = function(data) {
 };
 
 _commands.whataretheodds = function(data) {
-    var odds = Math.pow(10,util.randomInt(1,8))*util.randomInt(1,9);
+    var odds = Math.pow(10, util.randomInt(1, 8)) * util.randomInt(1, 9);
     data.reply(`1 in ${odds.toLocaleString()}!`);
 };
 

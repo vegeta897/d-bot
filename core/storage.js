@@ -20,9 +20,10 @@ function JSONFile(filename, initData, space) {
     }
 }
 JSONFile.prototype.save = function() {
+    // TODO: Write to temporary file first to avoid corruption
     try {
         let json = JSON.stringify(this.data, null, this.space);
-        fs.writeFile(this.filename, json + '\n');
+        fs.writeFileSync(this.filename, json + '\n');
     } catch(err) {
         console.log('Error saving', this.filename, 'data', err);
     }
