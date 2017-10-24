@@ -158,7 +158,6 @@ function listenToBeggar(data) {
                 data.reply(`${prefix}gives you **${given}** credit${given > 1 ? 's' : ''}! ` +
                     `\`Bal: ${account.balance}\``);
                 economy.people[beggar.person].given = (economy.people[beggar.person].given || 0) + given;
-                economyStorage.save();
             }
             else data.reply(`${prefix}rolls ${pronoun} eyes and walks away.`);
             beggar.cooldown = Date.now() + given * 2500; // 2.5 sec per credit

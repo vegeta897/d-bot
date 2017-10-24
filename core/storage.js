@@ -1,6 +1,6 @@
 // Storage interface to keep files organized
 var path = require('path');
-var fs = require('fs');
+var fse = require('fs-extra');
 var Nedb = require('nedb');
 var callsite = require('callsite'); // For getting filename of calling module
 
@@ -11,7 +11,7 @@ function JSONFile(filename, initData, space) {
     this.filename = filename;
     this.space = space;
     try {
-        let data = JSON.parse(fs.readFileSync(filename));
+        let data = fse.readJsonSync(filename);
         this.data = Object.assign(initData || {}, data);
     } catch(err) {
         this.data = initData || {};
@@ -20,13 +20,20 @@ function JSONFile(filename, initData, space) {
     }
 }
 JSONFile.prototype.save = function() {
-    // TODO: Write to temporary file first to avoid corruption
-    try {
-        let json = JSON.stringify(this.data, null, this.space);
-        fs.writeFileSync(this.filename, json + '\n');
-    } catch(err) {
-        console.log('Error saving', this.filename, 'data', err);
-    }
+    if(this.saving) return;
+    this.saving = true;
+    setTimeout(() => { // Multiple saves called at once will collapse into a single save
+        fse.writeJson(this.filename + '.tmp', this.data, { spaces: this.space })
+            .then(() => {
+                fse.move(this.filename + '.tmp', this.filename, { overwrite: true })
+                    .then(() => this.saving = false)
+                    .catch(err => {
+                        console.error('Error writing to file', this.filename, err);
+                        this.saving = false;
+                    });
+            })
+            .catch(err => console.error('Error saving temporary file', this.filename + '.tmp', err));
+    }, 0);
 };
 JSONFile.prototype.reset = function() {
     Object.keys(this.data).forEach(function(key) { delete this.data[key]; }, this); // Empty the object
@@ -48,10 +55,6 @@ module.exports = {
 };
 
 function getDirectory(dir) {
-    try {
-        fs.readdirSync(dir);
-    } catch(err) {
-        fs.mkdirSync(dir);
-    }
+    fse.ensureDirSync(dir);
     return dir;
 }

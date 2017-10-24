@@ -1,6 +1,6 @@
 {
   "name": "d-bot",
-  "version": "1.0.44",
+  "version": "1.0.45",
   "description": "A quirky Discord bot made for single, small, private servers",
   "main": "main.js",
   "dependencies": {
@@ -12,6 +12,7 @@
     "download": "^5.0.3",
     "expect-telnet": "^0.5.5",
     "forever": "^0.15.3",
+    "fs-extra": "^4.0.2",
     "fuzzyset.js": "^0.0.1",
     "immutable": "^3.8.2",
     "json-schema-defaults": "^0.2.0",
