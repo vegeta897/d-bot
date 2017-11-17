@@ -8,7 +8,7 @@
     "canvas": "^1.6.6",
     "dateformat": "^1.0.12",
     "discord-spoiler-bot": "^2.0.5",
-    "discord.io": "^2.5.3",
+    "discord.io": "github:izy521/discord.io",
     "download": "^5.0.3",
     "expect-telnet": "^0.5.5",
     "forever": "^0.15.3",

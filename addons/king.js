@@ -13,7 +13,7 @@ _commands.king = function(data) {
         var rankings = new Map();
         for(let { content: text, user } of allMessages) {
             var occurrences = util.getRegExpMatches(text, kingRX).length;
-            if(!occurrences || occurrences.length === 0) continue;
+            if(occurrences === 0) continue;
             rankings.set(user, (rankings.get(user) || 0) + occurrences);
         }
         let kingCount = 0;

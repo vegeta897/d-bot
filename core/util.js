@@ -13,7 +13,7 @@ var util = {
             max = min < 0 ? 0 : min;
             min = min < 0 ? min : 0;
         }
-        return Math.random() * (+max - +min) + +min ;
+        return Math.random() * (+max - +min) + +min;
     },
     randomInt(min, max) {
         if(isNaN(max)) {
@@ -45,8 +45,8 @@ var util = {
         return timeUnit;
     },
     pickInArray: function(arr/*, splice */) {
-        var randomIndex = this.randomInt(arr.length-1);
-        if(arguments[1]) return arr.splice(randomIndex,1)[0];
+        var randomIndex = this.randomInt(arr.length - 1);
+        if(arguments[1]) return arr.splice(randomIndex, 1)[0];
         else return arr[randomIndex];
     },
     pickInObject: function(obj) { // Return random property name from object
@@ -157,7 +157,7 @@ var util = {
         var matches = [];
         var match;
         while(match = rx.exec(str)) {
-            matches = matches.concat(match.slice(1).filter(m => m));
+            matches = matches.concat(match.slice(Math.min(match.length - 1, 1)).filter(m => m));
         }
         return matches;
     },

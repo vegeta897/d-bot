@@ -24,7 +24,7 @@ function getCooldown(userID, game) {
 
 function setCooldown(userID, game, play) {
     let userCooldowns = casino.cooldowns[userID] || {};
-    userCooldowns[game] = Date.now() + Math.round(10 + 30 * play.bet / (play.bet + 1000)) * 1000;
+    userCooldowns[game] = Date.now() + Math.round(5 + 20 * play.bet / (play.bet + 1000)) * 1000;
     casino.cooldowns[userID] = userCooldowns;
 }
 

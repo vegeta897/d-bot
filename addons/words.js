@@ -32,6 +32,7 @@ _commands.graph = function(data) {
                 let username = discord.getUsernameFromID(user);
                 if(!username) continue;
                 if(!words.includes(username)) words.push(username);
+                if(!dailyUsage[username]) dailyUsage[username] = [];
                 dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
             } else {
                 words.forEach((word, i) => {
@@ -146,6 +147,7 @@ _commands.graph = function(data) {
             imgCtx.fillRect(x - 1, TOP, 3, GRAPH_H);
             if(d === totalDays) continue;
             if(prevLabelRight + 10 > x) continue;
+            if(halfMonthLines && !dayLines && month === prevMonth) continue;
             let monthStr = DateFormat(date, totalDays < 50 ? 'mmm d' : 'mmm');
             let labelRight = x + imgCtx.measureText(monthStr).width;
             if(labelRight > IMAGE_W) continue;
