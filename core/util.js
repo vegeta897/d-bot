@@ -158,6 +158,7 @@ var util = {
         var match;
         while(match = rx.exec(str)) {
             matches = matches.concat(match.slice(Math.min(match.length - 1, 1)).filter(m => m));
+            if(!rx.global) break; // Loop will go on endlessly if not global
         }
         return matches;
     },

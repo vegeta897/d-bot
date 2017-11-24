@@ -114,6 +114,8 @@ module.exports = {
             msgData.paramStr = params.join(' ');
             // TODO: Implement config reloading
             if(command === 'reload' && userID === config.owner) reload(msgData.paramStr, msgData.reply); // Reload addon
+            // TODO: Better module reloading?
+            // delete require.cache[require.resolve(`./${msgData.paramStr}.js`)];
             if(command === 'help' || command === 'commands') {
                 discord.sendMessages(userID, generateHelpMessage());
                 if(!isPM) discord.sendMessage(channelID, 'Command list sent, check your PMs!');

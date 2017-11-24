@@ -42,15 +42,19 @@ JSONFile.prototype.reset = function() {
 
 module.exports = {
     nedb: function(name) {
-        var dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
+        let dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
         return new Nedb({
             filename: dir + '/' + name + '.db', 
             autoload: true
         });
     },
     json: function(name, initData, space) {
-        var dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
+        let dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
         return new JSONFile(dir + '/' + name + '.json', initData, space);
+    },
+    getStoragePath: function(name) {
+        let dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
+        return dir + '/' + name;
     }
 };
 
