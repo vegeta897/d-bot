@@ -26,6 +26,10 @@ const PEG_SPACING = PEG_RADIUS * 4 + BALL_RADIUS * 2;
 const PEG_AREA_HEIGHT = HEIGHT - TOP_SPACE - BOTTOM_SPACE;
 const PEG_AREA_WIDTH = WIDTH - (BALL_RADIUS * 2 + PEG_RADIUS * 3) * 2;
 
+const GRAVITY = 0.1;
+const FRICTION = 0.9;
+const ELASTICITY = 0.85;
+
 const BORDER_COLOR = '#AAAAAA';
 const PEG_COLOR = '#CCCCCC';
 const BG_COLOR = '#202225';
@@ -62,10 +66,6 @@ function drawMap(map) {
     ctx.fillRect(0, 0, WIDTH * RES, HEIGHT * RES);
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(RES, RES, (WIDTH - 2) * RES, (HEIGHT - 2) * RES);
-    ctx.fillStyle = '#7E89DE';
-    ctx.beginPath();
-    ctx.arc(WIDTH / 2 * RES, (BALL_RADIUS + 4) * RES, BALL_RADIUS * RES, 0, 2 * Math.PI, false);
-    ctx.fill();
     ctx.fillStyle = PEG_COLOR;
     for(let [pegX, pegY] of map.pegs) {
         ctx.beginPath();
@@ -75,18 +75,53 @@ function drawMap(map) {
     return canvas;
 }
 
+let dotProduct = (a, b) => a.x * b.x + a.y * b.y;
+let subtract = (a, b) => ({ x: a.x - b.x, y: a.y - b.y });
+let multiply = (a, f) => ({ x: a.x * f, y: a.y * f });
+
 function simulate(map, cb) {
+    let frame = 0;
     let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
     let ctx = canvas.getContext('2d');
-    ctx.drawImage(map.image, 0, 0);
     let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
     encoder.createReadStream().pipe(fs.createWriteStream(IMAGE_PATH));
     encoder.start();
     encoder.setRepeat(0);
-    encoder.setDelay(40);
-    encoder.addFrame(ctx);
+    encoder.setDelay(33);
+    let x = WIDTH / 2;
+    let y = BALL_RADIUS;
+    let v = { x: 1.5, y: 0 };
+    ctx.fillStyle = '#7E89DE';
+    while(y < HEIGHT - BALL_RADIUS) {
+        if(frame % 2 === 0) {
+            ctx.drawImage(map.image, 0, 0);
+            ctx.beginPath();
+            ctx.arc(x * RES, y * RES, BALL_RADIUS * RES, 0, 2 * Math.PI, false);
+            ctx.fill();
+            encoder.addFrame(ctx);
+        }
+        v.y += GRAVITY;
+        y += v.y;
+        x += v.x;
+        for(let [pegX, pegY] of map.pegs) {
+            if(x + BALL_RADIUS <= pegX - PEG_RADIUS || x - BALL_RADIUS > pegX + PEG_RADIUS
+                || y + BALL_RADIUS <= pegY - PEG_RADIUS || y - BALL_RADIUS > pegY + PEG_RADIUS
+                || Math.pow(x - pegX, 2) + Math.pow(y - pegY, 2) > Math.pow(PEG_RADIUS + BALL_RADIUS, 2)) continue;
+            let n = { x: pegX - x, y: pegY - y }; // Normal
+            let u = multiply(n, dotProduct(v, n) / dotProduct(n, n)); // Perpendicular
+            let w = subtract(v, u); // Parallel
+            let nv = subtract(multiply(w, FRICTION), multiply(u, ELASTICITY));
+            v.x = nv.x;
+            v.y = nv.y;
+        }
+        if(x < BALL_RADIUS || x > WIDTH - BALL_RADIUS) {
+            v.x *= -ELASTICITY;
+            x = x < BALL_RADIUS ? BALL_RADIUS : WIDTH - BALL_RADIUS;
+        }
+        frame++;
+    }
     encoder.finish();
-    execFile(gifsicle, [IMAGE_PATH], err => {
+    execFile(gifsicle, [IMAGE_PATH], { maxBuffer: 1024 * 5000 }, err => {
         if(err) return console.log(err);
         fs.readFile(IMAGE_PATH, cb);
     });
@@ -103,12 +138,12 @@ _commands.pachinko = function(data) {
     });
     setTimeout(() => {
         simulate(game.map, (err, file) => {
-            if(err) return data.reply('Error: ' + err);
+            if(err) return data.reply(err);
             discord.bot.uploadFile({
                 to: data.channel, filename: `pachinko-${Date.now()}.gif`, file
             });
         });
-    }, 10000)
+    }, 3000)
 };
 
 module.exports = {
