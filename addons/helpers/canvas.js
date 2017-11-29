@@ -1,5 +1,5 @@
 // Canvas utilities
-var Canvas = require('canvas');
+const Canvas = require('canvas');
 
 function resizeCanvas(canvas, maxWidth, maxHeight) {
     let factor = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
@@ -85,5 +85,95 @@ module.exports = {
     cropCanvas,
     flipCanvas,
     rotateCanvas,
-    UnitContext
+    UnitContext,
+    Thumbnail
 };
+
+// Cleaner image down-scaling (adapted from https://stackoverflow.com/a/3223466/2612679)
+function Thumbnail(img, sx, lobes) {
+    this.canvas = new Canvas(img.width, img.height);
+    this.ctx = this.canvas.getContext('2d');
+    this.ctx.drawImage(img, 0, 0);
+    this.img = img;
+    this.src = this.ctx.getImageData(0, 0, img.width, img.height);
+    this.dest = {
+        width: sx,
+        height: Math.round(img.height * sx / img.width),
+        data: []
+    };
+    this.lanczos = lanczosCreate(lobes);
+    this.ratio = img.width / sx;
+    this.rcp_ratio = 2 / this.ratio;
+    this.range2 = Math.ceil(this.ratio * lobes / 2);
+    this.cacheLanc = {};
+    this.center = {};
+    this.icenter = {};
+    this.resample();
+    return this.canvas;
+}
+
+Thumbnail.prototype.resample = function(u = 0) {
+    this.center.x = (u + 0.5) * this.ratio;
+    this.icenter.x = Math.floor(this.center.x);
+    for(let v = 0; v < this.dest.height; v++) {
+        this.center.y = (v + 0.5) * this.ratio;
+        this.icenter.y = Math.floor(this.center.y);
+        let a, r, g, b;
+        a = r = g = b = 0;
+        for(let i = this.icenter.x - this.range2; i <= this.icenter.x + this.range2; i++) {
+            if(i < 0 || i >= this.src.width) continue;
+            let f_x = Math.floor(1000 * Math.abs(i - this.center.x));
+            if (!this.cacheLanc[f_x])
+                this.cacheLanc[f_x] = {};
+            for(let j = this.icenter.y - this.range2; j <= this.icenter.y + this.range2; j++) {
+                if(j < 0 || j >= this.src.height)
+                    continue;
+                let f_y = Math.floor(1000 * Math.abs(j - this.center.y));
+                if(this.cacheLanc[f_x][f_y] === undefined)
+                    this.cacheLanc[f_x][f_y] = this.lanczos(Math.sqrt(Math.pow(f_x * this.rcp_ratio, 2)
+                        + Math.pow(f_y * this.rcp_ratio, 2)) / 1000);
+                let weight = this.cacheLanc[f_x][f_y];
+                if(weight > 0) {
+                    let idx = (j * this.src.width + i) * 4;
+                    a += weight;
+                    r += weight * this.src.data[idx];
+                    g += weight * this.src.data[idx + 1];
+                    b += weight * this.src.data[idx + 2];
+                }
+            }
+        }
+        let idx = (v * this.dest.width + u) * 3;
+        this.dest.data[idx] = r / a;
+        this.dest.data[idx + 1] = g / a;
+        this.dest.data[idx + 2] = b / a;
+    }
+
+    if(++u < this.dest.width) this.resample(u);
+    else {
+        this.canvas.width = this.dest.width;
+        this.canvas.height = this.dest.height;
+        this.ctx.drawImage(this.img, 0, 0, this.dest.width, this.dest.height);
+        this.src = this.ctx.getImageData(0, 0, this.dest.width, this.dest.height);
+        let idx, idx2;
+        for(let i = 0; i < this.dest.width; i++) {
+            for(let j = 0; j < this.dest.height; j++) {
+                idx = (j * this.dest.width + i) * 3;
+                idx2 = (j * this.dest.width + i) * 4;
+                this.src.data[idx2] = this.dest.data[idx];
+                this.src.data[idx2 + 1] = this.dest.data[idx + 1];
+                this.src.data[idx2 + 2] = this.dest.data[idx + 2];
+            }
+        }
+        this.ctx.putImageData(this.src, 0, 0);
+    }
+};
+
+function lanczosCreate(lobes) {
+    return function(x) {
+        if(x > lobes) return 0;
+        x *= Math.PI;
+        if(Math.abs(x) < 1e-16) return 1;
+        let xx = x / lobes;
+        return Math.sin(x) * Math.sin(xx) / x / xx;
+    };
+}

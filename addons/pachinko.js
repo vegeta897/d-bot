@@ -3,6 +3,7 @@ const util = require(__base+'core/util.js');
 const discord = require(__base+'core/discord.js');
 const config = require(__base+'core/config.js');
 const storage = require(__base+'core/storage.js');
+const { Thumbnail } = require('./helpers/canvas.js');
 const Canvas = require('canvas');
 const GIFEncoder = require('gifencoder');
 const fs = require('fs');
@@ -23,23 +24,27 @@ const SLOTS = 6; // Deploy positions
 const SLOT_WIDTH = WIDTH / (SLOTS + 1);
 const GOALS = 8;
 const GOAL_HEIGHT = 20;
-const PEG_RADIUS = 3;
-const BALL_RADIUS = 6;
-const PEG_COLLISION_DIST = Math.pow(PEG_RADIUS + BALL_RADIUS, 2);
-const PEG_SPACING = PEG_RADIUS * 4 + BALL_RADIUS * 3;
+const PEG_RADIUS = 2.5;
+const BUMPER_RADIUS = 5;
+const BALL_RADIUS = 9;
+const PEG_SPACING = Math.ceil(PEG_RADIUS * 2 + BALL_RADIUS * 2.5);
 const PEG_AREA_HEIGHT = HEIGHT - TOP_SPACE - BOTTOM_SPACE;
-const PEG_AREA_WIDTH = WIDTH - (BALL_RADIUS * 2 + PEG_RADIUS * 3) * 2;
+const PEG_AREA_WIDTH = WIDTH - PEG_SPACING * 2;
 
 const GRAVITY = 0.01;
 const FRICTION = 0.9;
-const ELASTICITY = 0.75;
+const ELASTICITY = 0.7;
 
 const FRAME_DIVIDER = 6;
 const FPS = 30;
 
 const BORDER_COLOR = '#AAAAAA';
 const PEG_COLOR = '#CCCCCC';
+const DEFAULT_USER_COLOR = '#AAABAD';
+const DEFAULT_BALL_COLOR = '#CCCCCC';
 const BG_COLOR = '#202225';
+
+const AVATAR_URL = 'https://cdn.discordapp.com/avatars/';
 
 const SLOT_IMAGE = new Canvas(WIDTH * RES, TOP_SPACE * RES);
 
@@ -70,22 +75,27 @@ let game = false;
 function generateMap() {
     let pegs = [];
     let map = { width: WIDTH, height: HEIGHT, pegs };
-    let pegRows = Math.floor(PEG_AREA_HEIGHT / PEG_SPACING);
-    let pegRowHeight = Math.floor(PEG_AREA_HEIGHT / pegRows);
-    let maxXPegs = Math.floor(PEG_AREA_WIDTH / PEG_SPACING);
+    let pegRows = Math.floor(PEG_AREA_HEIGHT / PEG_SPACING) + 1;
+    let pegRowHeight = Math.floor(PEG_AREA_HEIGHT / (pegRows - 1));
+    let maxXPegs = Math.floor(PEG_AREA_WIDTH / PEG_SPACING) + 1;
     let prevXPegCount = 0;
-    //pegs.push([130, 40]);
-    for(let r = 0; r <= pegRows; r++) {
+    let prevBumpers = false;
+    for(let r = 0; r < pegRows; r++) {
         let pegY = TOP_SPACE + pegRowHeight * r;
         let xPegCount;
         do {
-            xPegCount = util.randomInt(3, maxXPegs);
-        } while(xPegCount % 2 === prevXPegCount % 2);
+            xPegCount = util.randomInt(Math.max(2, Math.ceil(maxXPegs * 2 / 3)), maxXPegs);
+        } while(xPegCount % 2 === prevXPegCount % 2 || (r === 0 && xPegCount === SLOTS));
         prevXPegCount = xPegCount;
-        let xPegWidth = util.random(PEG_SPACING, PEG_AREA_WIDTH / xPegCount);
-        let xPegPadding = (WIDTH - xPegCount * xPegWidth) / 2;
-        for(let x = 0; x <= xPegCount; x++) {
-            pegs.push([Math.round(xPegPadding + xPegWidth * x), pegY]);
+        let xPegWidth = util.random(PEG_SPACING, PEG_AREA_WIDTH / (xPegCount - 1));
+        let xPegPadding = (WIDTH - (xPegCount - 1) * xPegWidth) / 2;
+        if(xPegPadding > BUMPER_RADIUS + PEG_SPACING && !prevBumpers && r + 1 < pegRows) {
+            pegs.push([0, pegY + pegRowHeight / 2, BUMPER_RADIUS]);
+            pegs.push([WIDTH, pegY + pegRowHeight / 2, BUMPER_RADIUS]);
+            prevBumpers = true;
+        } else prevBumpers = false;
+        for(let x = 0; x < xPegCount; x++) {
+            pegs.push([Math.round(xPegPadding + xPegWidth * x), pegY, PEG_RADIUS]);
         }
     }
     return map;
@@ -94,16 +104,23 @@ function generateMap() {
 function drawMap(map) {
     let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
     let ctx = canvas.getContext('2d');
-    ctx.fillStyle = BORDER_COLOR;
-    ctx.fillRect(0, 0, WIDTH * RES, HEIGHT * RES);
     ctx.fillStyle = BG_COLOR;
-    ctx.fillRect(RES, RES, (WIDTH - 2) * RES, (HEIGHT - 2) * RES);
+    ctx.fillRect(0, 0, WIDTH * RES, HEIGHT * RES);
     ctx.fillStyle = PEG_COLOR;
-    for(let [pegX, pegY] of map.pegs) {
+    for(let [pegX, pegY, pegRadius] of map.pegs) {
         ctx.beginPath();
-        ctx.arc(pegX * RES, pegY * RES, PEG_RADIUS * RES, 0, 2 * Math.PI);
+        ctx.arc(pegX * RES, pegY * RES, pegRadius * RES, 0, 2 * Math.PI);
         ctx.fill();
     }
+    ctx.strokeStyle = BORDER_COLOR;
+    ctx.lineWidth = RES;
+    ctx.beginPath();
+    ctx.moveTo(RES / 2, RES / 2);
+    ctx.lineTo(WIDTH * RES - RES / 2, RES / 2);
+    ctx.lineTo(WIDTH * RES - RES / 2, HEIGHT * RES - RES / 2);
+    ctx.lineTo(RES / 2, HEIGHT * RES - RES / 2);
+    ctx.closePath();
+    ctx.stroke();
     return canvas;
 }
 
@@ -125,17 +142,27 @@ function simulate(map, cb) {
     let ballImg = player.avatarImg;
     let x = player.slot * SLOT_WIDTH;
     let y = BALL_RADIUS;
-    let v = { x: util.random(-0.2, 0.2), y: 0 };
-    ctx.fillStyle = '#7E89DE';
+    let v = { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 };
     //console.time('simulating result');
     //util.timer.reset();
     ctx.drawImage(map.image, 0, 0);
+    ctx.beginPath();
+    ctx.moveTo(RES, RES);
+    ctx.lineTo(WIDTH * RES - RES, RES);
+    ctx.lineTo(WIDTH * RES - RES, HEIGHT * RES - RES);
+    ctx.lineTo(RES, HEIGHT * RES - RES);
+    ctx.closePath();
+    ctx.clip();
     while(y < HEIGHT - BALL_RADIUS) {
         //util.timer.start('drawing frame');
         let subFrame = frame % FRAME_DIVIDER;
         ctx.globalAlpha = subFrame === 0 ? 1 : Math.pow(0.5, FRAME_DIVIDER - subFrame);
+        ctx.fillStyle = player.color;
+        ctx.beginPath();
+        ctx.arc(x * RES, y * RES, BALL_RADIUS * RES + RES, 0, 2 * Math.PI);
+        ctx.fill();
         ctx.save();
-        ctx.shadowColor = '#7E89DE';
+        ctx.shadowColor = player.color;
         ctx.shadowBlur = 5 * RES;
         ctx.drawImage(ballImg, (x - BALL_RADIUS) * RES, (y - BALL_RADIUS) * RES);
         ctx.restore();
@@ -149,10 +176,11 @@ function simulate(map, cb) {
             v.x *= -ELASTICITY;
             x = x < BALL_RADIUS ? BALL_RADIUS : WIDTH - BALL_RADIUS;
         }
-        for(let [pegX, pegY] of map.pegs) { // Detect peg collisions
-            if(x + BALL_RADIUS <= pegX - PEG_RADIUS || x - BALL_RADIUS > pegX + PEG_RADIUS
-                || y + BALL_RADIUS <= pegY - PEG_RADIUS || y - BALL_RADIUS > pegY + PEG_RADIUS
-                || Math.pow(x - pegX, 2) + Math.pow(y - pegY, 2) > PEG_COLLISION_DIST) continue;
+        for(let [pegX, pegY, pegRadius] of map.pegs) { // Detect peg collisions
+            let pegCollisionDist = Math.pow(pegRadius + BALL_RADIUS, 2);
+            if(x + BALL_RADIUS <= pegX - pegRadius || x - BALL_RADIUS > pegX + pegRadius
+                || y + BALL_RADIUS <= pegY - pegRadius || y - BALL_RADIUS > pegY + pegRadius
+                || Math.pow(x - pegX, 2) + Math.pow(y - pegY, 2) > pegCollisionDist) continue;
             //console.log('old velocity:', v.x, v.y);
             let n = { x: pegX - x, y: pegY - y }; // Collision normal
             let u = multiply(n, dotProduct(v, n) / dotProduct(n, n)); // Perpendicular
@@ -201,22 +229,21 @@ module.exports = {
         if(!game || game.channel !== data.channel || data.command !== 'p') return;
         let slot = +data.paramStr;
         if(!(slot > 0 && slot <= SLOTS)) return data.reply(`Pick a slot from 1 to ${SLOTS}`);
+        let user = discord.bot.servers[data.server].members[data.userID];
         game.players.set(data.userID, {
-            slot
+            slot, color: user.color !== null ? ('#' + user.color.toString(16)) : DEFAULT_USER_COLOR
         });
-        let avatarURL = `https://cdn.discordapp.com/avatars/${data.userID}/${discord.bot.users[data.userID].avatar}.png`;
+        let avatarCanvas = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
+        let avatarCtx = avatarCanvas.getContext('2d');
+        avatarCtx.beginPath();
+        avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
+        let avatarURL = `${AVATAR_URL}${data.userID}/${user.avatar}.png`;
         download(avatarURL).then(imgData => {
             let img = new Canvas.Image;
             img.src = imgData;
-            let avatarCanvas = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
-            let avatarCtx = avatarCanvas.getContext('2d');
-            avatarCtx.beginPath();
-            avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
             avatarCtx.clip();
-            avatarCtx.drawImage(
-                img, img.width / 5, img.width / 5, img.width * 3 / 5, img.height / 2, 
-                0, 0, avatarCanvas.width, avatarCanvas.height
-            );
+            let resizedAvatar = new Thumbnail(img, BALL_RADIUS * 2 * RES, 3);
+            avatarCtx.drawImage(resizedAvatar, 0, 0);
             game.players.get(data.userID).avatarImg = avatarCanvas;
             simulate(game.map, (err, file) => {
                 if(err) return console.log(err);
@@ -226,6 +253,8 @@ module.exports = {
             });
         }).catch(err => {
             console.log(err);
+            avatarCtx.fillStyle = DEFAULT_BALL_COLOR;
+            avatarCtx.fill();
             game.players.get(data.userID).avatarImg = false;
         });
     },
