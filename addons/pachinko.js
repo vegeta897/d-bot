@@ -37,6 +37,7 @@ const ELASTICITY = 0.7;
 
 const FRAME_DIVIDER = 6;
 const FPS = 30;
+const MAX_SUBFRAMES = 250 * 5 * FRAME_DIVIDER; // Avg 250 frames per megabyte, max 5mb upload
 
 const BORDER_COLOR = '#AAAAAA';
 const PEG_COLOR = '#CCCCCC';
@@ -137,12 +138,7 @@ function simulate(map, cb) {
     encoder.start();
     encoder.setRepeat(0);
     encoder.setDelay(Math.round(1000 / FPS));
-    encoder.setQuality(5);
-    let player = game.players.get('86913608335773696');
-    let ballImg = player.avatarImg;
-    let x = player.slot * SLOT_WIDTH;
-    let y = BALL_RADIUS;
-    let v = { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 };
+    encoder.setQuality(4);
     //console.time('simulating result');
     //util.timer.reset();
     ctx.drawImage(map.image, 0, 0);
@@ -153,47 +149,82 @@ function simulate(map, cb) {
     ctx.lineTo(RES, HEIGHT * RES - RES);
     ctx.closePath();
     ctx.clip();
-    while(y < HEIGHT - BALL_RADIUS) {
+    let playersDone = 0;
+    let safety = 0;
+    while(playersDone < game.players.size && safety < MAX_SUBFRAMES) {
+        safety++;
         //util.timer.start('drawing frame');
         let subFrame = frame % FRAME_DIVIDER;
-        ctx.globalAlpha = subFrame === 0 ? 1 : Math.pow(0.5, FRAME_DIVIDER - subFrame);
-        ctx.fillStyle = player.color;
-        ctx.beginPath();
-        ctx.arc(x * RES, y * RES, BALL_RADIUS * RES + RES, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.save();
-        ctx.shadowColor = player.color;
-        ctx.shadowBlur = 5 * RES;
-        ctx.drawImage(ballImg, (x - BALL_RADIUS) * RES, (y - BALL_RADIUS) * RES);
-        ctx.restore();
+        //util.timer.stop('drawing frame');
+        game.players.forEach(({ p, v, status, color, avatarImg }, playerID) => {
+            if(status.finished) return;
+            ctx.globalAlpha = subFrame === 0 ? 1 : Math.pow(0.5, FRAME_DIVIDER - subFrame);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(p.x * RES, p.y * RES, BALL_RADIUS * RES + RES, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 5 * RES;
+            ctx.drawImage(avatarImg, (p.x - BALL_RADIUS) * RES, (p.y - BALL_RADIUS) * RES);
+            ctx.restore();
+            v.y += GRAVITY;
+            if(p.x < BALL_RADIUS || p.x > WIDTH - BALL_RADIUS) {
+                v.x *= -ELASTICITY;
+                p.x = p.x < BALL_RADIUS ? BALL_RADIUS : WIDTH - BALL_RADIUS;
+            }
+            game.players.forEach(({ p: p2, v: v2, status }, player2ID) => {
+                if(playerID === player2ID) return;
+                let playerCollisionDist = Math.pow(BALL_RADIUS * 2, 2);
+                if(Math.abs(p.x - p2.x) > BALL_RADIUS * 2 || Math.abs(p.y - p2.y) > BALL_RADIUS * 2
+                    || Math.pow(p.x - p2.x, 2) + Math.pow(p.y - p2.y, 2) > playerCollisionDist) return;
+                let n = { x: p2.x - p.x, y: p2.y - p.y }; // Collision normal
+                let rv = subtract(v, v2); // Relative velocity
+                let dp = dotProduct(rv, n);
+                if(dp <= 0) return; // Already moving away
+                let u = multiply(n, dp / dotProduct(n, n)); // Perpendicular
+                let u2 = multiply(n, -dp / dotProduct(n, n)); // Perpendicular
+                let w = subtract(v, u); // Parallel
+                let w2 = subtract(v2, u2); // Parallel
+                let nv = subtract(multiply(w, FRICTION / 2), multiply(u, ELASTICITY / 2)); // New velocity
+                let nv2 = subtract(multiply(w2, FRICTION / 2), multiply(u2, ELASTICITY / 2)); // New velocity
+                v.x = nv.x; // Set new velocity
+                v.y = nv.y;
+                v2.x = nv2.x; // Set new velocity
+                v2.y = nv2.y;
+            });
+            for(let [pegX, pegY, pegRadius] of map.pegs) { // Detect peg collisions
+                let pegCollisionDist = Math.pow(pegRadius + BALL_RADIUS, 2);
+                if(p.x + BALL_RADIUS <= pegX - pegRadius || p.x - BALL_RADIUS > pegX + pegRadius
+                    || p.y + BALL_RADIUS <= pegY - pegRadius || p.y - BALL_RADIUS > pegY + pegRadius
+                    || Math.pow(p.x - pegX, 2) + Math.pow(p.y - pegY, 2) > pegCollisionDist) continue;
+                //console.log('old velocity:', v.x, v.y);
+                let n = { x: pegX - p.x, y: pegY - p.y }; // Collision normal
+                let dp = dotProduct(v, n);
+                if(dp <= 0) return; // Already moving away
+                let u = multiply(n, dp / dotProduct(n, n)); // Perpendicular
+                let w = subtract(v, u); // Parallel
+                let nv = subtract(multiply(w, FRICTION), multiply(u, ELASTICITY)); // New velocity
+                v.x = nv.x; // Set new velocity
+                v.y = nv.y;
+                //console.log('new velocity:', v.x, v.y);
+            }
+        });
+        game.players.forEach(({ p, v, status }) => {
+            if(p.y >= HEIGHT + BALL_RADIUS) return;
+            if(Math.abs(v.x) + Math.abs(v.y) <= GRAVITY) status.stillFrames++;
+            else status.stillFrames = 0;
+            p.x += v.x;
+            p.y += v.y;
+            if(p.y >= HEIGHT + BALL_RADIUS || status.stillFrames > 30) {
+                playersDone++;
+                status.finished = true;
+            }
+        });
         if(subFrame === 0) {
             encoder.addFrame(ctx);
             ctx.drawImage(map.image, 0, 0);
         }
-        //util.timer.stop('drawing frame');
-        v.y += GRAVITY;
-        if(x < BALL_RADIUS || x > WIDTH - BALL_RADIUS) {
-            v.x *= -ELASTICITY;
-            x = x < BALL_RADIUS ? BALL_RADIUS : WIDTH - BALL_RADIUS;
-        }
-        for(let [pegX, pegY, pegRadius] of map.pegs) { // Detect peg collisions
-            let pegCollisionDist = Math.pow(pegRadius + BALL_RADIUS, 2);
-            if(x + BALL_RADIUS <= pegX - pegRadius || x - BALL_RADIUS > pegX + pegRadius
-                || y + BALL_RADIUS <= pegY - pegRadius || y - BALL_RADIUS > pegY + pegRadius
-                || Math.pow(x - pegX, 2) + Math.pow(y - pegY, 2) > pegCollisionDist) continue;
-            //console.log('old velocity:', v.x, v.y);
-            let n = { x: pegX - x, y: pegY - y }; // Collision normal
-            let u = multiply(n, dotProduct(v, n) / dotProduct(n, n)); // Perpendicular
-            let w = subtract(v, u); // Parallel
-            let nv = subtract(multiply(w, FRICTION), multiply(u, ELASTICITY)); // New velocity
-            x -= n.x * 0.2; // De-collide
-            y -= n.y * 0.2;
-            v.x = nv.x; // Set new velocity
-            v.y = nv.y;
-            //console.log('new velocity:', v.x, v.y);
-        }
-        x += v.x;
-        y += v.y;
         frame++;
     }
     encoder.finish();
@@ -230,11 +261,20 @@ module.exports = {
         let slot = +data.paramStr;
         if(!(slot > 0 && slot <= SLOTS)) return data.reply(`Pick a slot from 1 to ${SLOTS}`);
         let user = discord.bot.servers[data.server].members[data.userID];
+        let avatarImg = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
+        let avatarCtx = avatarImg.getContext('2d');
         game.players.set(data.userID, {
-            slot, color: user.color !== null ? ('#' + user.color.toString(16)) : DEFAULT_USER_COLOR
+            slot, color: user.color !== null ? ('#' + user.color.toString(16)) : DEFAULT_USER_COLOR, avatarImg,
+            v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
+            p: { x: slot * SLOT_WIDTH, y: 0 },
+            status: { finished: false, stillFrames: 0 }
         });
-        let avatarCanvas = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
-        let avatarCtx = avatarCanvas.getContext('2d');
+        game.players.set('test', {
+            slot, color: '#aa22bb', avatarImg,
+            v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
+            p: { x: 5 * SLOT_WIDTH, y: 0 },
+            status: { finished: false, stillFrames: 0 }
+        });
         avatarCtx.beginPath();
         avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
         let avatarURL = `${AVATAR_URL}${data.userID}/${user.avatar}.png`;
@@ -244,7 +284,6 @@ module.exports = {
             avatarCtx.clip();
             let resizedAvatar = new Thumbnail(img, BALL_RADIUS * 2 * RES, 3);
             avatarCtx.drawImage(resizedAvatar, 0, 0);
-            game.players.get(data.userID).avatarImg = avatarCanvas;
             simulate(game.map, (err, file) => {
                 if(err) return console.log(err);
                 discord.bot.uploadFile({
@@ -255,7 +294,6 @@ module.exports = {
             console.log(err);
             avatarCtx.fillStyle = DEFAULT_BALL_COLOR;
             avatarCtx.fill();
-            game.players.get(data.userID).avatarImg = false;
         });
     },
     dev: true,
