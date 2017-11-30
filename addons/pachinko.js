@@ -7,8 +7,8 @@ const { Thumbnail } = require('./helpers/canvas.js');
 const Canvas = require('canvas');
 const GIFEncoder = require('gifencoder');
 const fs = require('fs');
-const { execFile } = require('child_process');
-const gifsicle = require('gifsicle');
+const imagemin = require('imagemin');
+const imageminGifsicle = require('imagemin-gifsicle');
 const download = require('download');
 
 const _commands = {};
@@ -31,13 +31,13 @@ const PEG_SPACING = Math.ceil(PEG_RADIUS * 2 + BALL_RADIUS * 2.5);
 const PEG_AREA_HEIGHT = HEIGHT - TOP_SPACE - BOTTOM_SPACE;
 const PEG_AREA_WIDTH = WIDTH - PEG_SPACING * 2;
 
-const GRAVITY = 0.01;
+const GRAVITY = 0.012;
 const FRICTION = 0.9;
 const ELASTICITY = 0.7;
 
 const FRAME_DIVIDER = 6;
 const FPS = 30;
-const MAX_SUBFRAMES = 250 * 5 * FRAME_DIVIDER; // Avg 250 frames per megabyte, max 5mb upload
+const MAX_SUBFRAMES = 150 * 7.5 * FRAME_DIVIDER; // Avg 150 frames per megabyte, max 7.5mb upload
 
 const BORDER_COLOR = '#AAAAAA';
 const PEG_COLOR = '#CCCCCC';
@@ -148,16 +148,24 @@ function simulate(map, cb) {
     ctx.lineTo(WIDTH * RES - RES, HEIGHT * RES - RES);
     ctx.lineTo(RES, HEIGHT * RES - RES);
     ctx.closePath();
-    ctx.clip();
+    ctx.clip(); // Don't draw over map border
     let playersDone = 0;
-    let safety = 0;
-    while(playersDone < game.players.size && safety < MAX_SUBFRAMES) {
-        safety++;
+    let slotRound = 0;
+    let roundFrames = Math.ceil(Math.sqrt(2 * HEIGHT / GRAVITY)); // t = sqrt(2d/a)
+    function nextRound() {
+        if(slotRound + 1 > game.maxSlotStack) return;
+        game.slots.forEach(slot => {
+            if(game.players.has(slot[slotRound])) game.players.get(slot[slotRound]).status.falling = true;
+        });
+        slotRound++;
+    }
+    nextRound();
+    while((playersDone < game.players.size || slotRound < game.maxSlotStack) && frame < MAX_SUBFRAMES) {
         //util.timer.start('drawing frame');
         let subFrame = frame % FRAME_DIVIDER;
         //util.timer.stop('drawing frame');
         game.players.forEach(({ p, v, status, color, avatarImg }, playerID) => {
-            if(status.finished) return;
+            if(!status.falling) return;
             ctx.globalAlpha = subFrame === 0 ? 1 : Math.pow(0.5, FRAME_DIVIDER - subFrame);
             ctx.fillStyle = color;
             ctx.beginPath();
@@ -165,7 +173,7 @@ function simulate(map, cb) {
             ctx.fill();
             ctx.save();
             ctx.shadowColor = color;
-            ctx.shadowBlur = 5 * RES;
+            ctx.shadowBlur = 3 * RES;
             ctx.drawImage(avatarImg, (p.x - BALL_RADIUS) * RES, (p.y - BALL_RADIUS) * RES);
             ctx.restore();
             v.y += GRAVITY;
@@ -173,8 +181,8 @@ function simulate(map, cb) {
                 v.x *= -ELASTICITY;
                 p.x = p.x < BALL_RADIUS ? BALL_RADIUS : WIDTH - BALL_RADIUS;
             }
-            game.players.forEach(({ p: p2, v: v2, status }, player2ID) => {
-                if(playerID === player2ID) return;
+            game.players.forEach(({ p: p2, v: v2, status: status2 }, player2ID) => {
+                if(playerID === player2ID || !status2.falling) return;
                 let playerCollisionDist = Math.pow(BALL_RADIUS * 2, 2);
                 if(Math.abs(p.x - p2.x) > BALL_RADIUS * 2 || Math.abs(p.y - p2.y) > BALL_RADIUS * 2
                     || Math.pow(p.x - p2.x, 2) + Math.pow(p.y - p2.y, 2) > playerCollisionDist) return;
@@ -211,14 +219,14 @@ function simulate(map, cb) {
             }
         });
         game.players.forEach(({ p, v, status }) => {
-            if(p.y >= HEIGHT + BALL_RADIUS) return;
+            if(!status.falling) return;
             if(Math.abs(v.x) + Math.abs(v.y) <= GRAVITY) status.stillFrames++;
             else status.stillFrames = 0;
             p.x += v.x;
             p.y += v.y;
             if(p.y >= HEIGHT + BALL_RADIUS || status.stillFrames > 30) {
                 playersDone++;
-                status.finished = true;
+                status.falling = false;
             }
         });
         if(subFrame === 0) {
@@ -226,23 +234,22 @@ function simulate(map, cb) {
             ctx.drawImage(map.image, 0, 0);
         }
         frame++;
+        if(frame % roundFrames === 0) nextRound();
     }
     encoder.finish();
     //util.timer.results();
     //console.timeEnd('simulating result');
     //console.time('optimizing gif');
-    execFile(gifsicle, [IMAGE_PATH], { maxBuffer: 1024 * 5000 }, err => {
-        if(err) return console.log(err);
-        //console.timeEnd('optimizing gif');
+    imagemin([IMAGE_PATH], { use: [imageminGifsicle({ optimizationLevel: 2 })] }).then(() => {
         setTimeout(() => fs.readFile(IMAGE_PATH, cb), 300); // Delay file read
-    });
+    }).catch(console.log);
 }
 
 _commands.pachinko = function(data) {
     game = false;
     if(game) return data.reply('There is already a pachinko game in progress!');
-    game = { players: new Map() };
-    game.channel = data.channel;
+    game = { players: new Map(), channel: data.channel, slots: [], maxSlotStack: 0 };
+    for(let i = 0; i <= SLOTS; i++) game.slots.push([]);
     game.map = generateMap();
     game.map.image = drawMap(game.map);
     let canvas = new Canvas(game.map.image.width, game.map.image.height);
@@ -267,14 +274,19 @@ module.exports = {
             slot, color: user.color !== null ? ('#' + user.color.toString(16)) : DEFAULT_USER_COLOR, avatarImg,
             v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
             p: { x: slot * SLOT_WIDTH, y: 0 },
-            status: { finished: false, stillFrames: 0 }
+            status: { stillFrames: 0 }
         });
-        game.players.set('test', {
-            slot, color: '#aa22bb', avatarImg,
-            v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
-            p: { x: 5 * SLOT_WIDTH, y: 0 },
-            status: { finished: false, stillFrames: 0 }
-        });
+        for(let i = 0; i < 12; i++) {
+            game.players.set('test' + i, {
+                slot, color: '#eaa5f3', avatarImg,
+                v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
+                p: { x: ((i % 6) + 1) * SLOT_WIDTH, y: 0 },
+                status: { stillFrames: 0 }
+            });
+            game.slots[i % 6 + 1].push('test' + i);
+        }
+        game.slots[slot].push(data.userID);
+        game.maxSlotStack = Math.max(game.maxSlotStack, game.slots[slot].length);
         avatarCtx.beginPath();
         avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
         let avatarURL = `${AVATAR_URL}${data.userID}/${user.avatar}.png`;
