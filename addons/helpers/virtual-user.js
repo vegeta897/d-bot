@@ -48,6 +48,7 @@ VirtualUser.prototype.getResponse = function(data) {
             responses.push(i);
         }
     }
+    if(responses.length === 0) responses.push(util.randomInt(this.exchanges.length - 1));
     return this.exchanges[util.pickInArray(responses)][1];
 };
 
