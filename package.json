@@ -5,7 +5,7 @@
   "main": "main.js",
   "dependencies": {
     "callsite": "^1.0.0",
-    "canvas": "^1.6.6",
+    "canvas": "^1.6.9",
     "dateformat": "^1.0.12",
     "discord-spoiler-bot": "^2.0.5",
     "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
@@ -23,6 +23,7 @@
     "nedb": "^1.8.0",
     "node-emoji": "^1.8.1",
     "nodecraft-api": "0.0.4",
+    "regexgen": "^1.3.0",
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
     "require-uncached": "^1.0.3",

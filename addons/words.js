@@ -3,6 +3,7 @@ var util = require('./../core/util.js');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
 var Canvas = require('canvas');
+var regexgen = require('regexgen');
 var requireUncached = require('require-uncached');
 const { UnitContext } = requireUncached('./helpers/canvas.js');
 var DateFormat = require('dateformat');
@@ -19,12 +20,12 @@ _commands.graph = function(data) {
     let query = graphUsers ? {} : { $or: words.map(w => ({ content: util.regExpify(w) })) };
     messages.wrap(messages.db.find(query).sort({ time: 1 }), function(allMessages) {
         if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : ` containing _${data.paramStr}_`));
-        
+
         // TODO: Rewrite using maps
-        
+
         let dailyUsage = {};
         words.forEach(w => dailyUsage[w] = []);
-        let firstDate = graphUsers ? new Date(allMessages[0].time) : null, 
+        let firstDate = graphUsers ? new Date(allMessages[0].time) : null,
             firstDay = graphUsers ? Math.floor(firstDate.getTime() / 8.64e7) : null;
         for(let { content: text, time, user } of allMessages) {
             let day = Math.floor(new Date(time) / 8.64e7 - firstDay);
@@ -183,7 +184,7 @@ function getTopWords(data, unique) {
             if(!words || words.length === 0) continue;
             for(let word of words) {
                 word = word.toLowerCase();
-                if(!unique && junkWords.includes(word)) continue;
+                if(!unique && junkRX.test(word)) continue;
                 var obj = (!unique || user === userID) ? dictionary : exclude;
                 obj[word] = (obj[word] || 0) + 1;
             }
@@ -212,6 +213,8 @@ var junkWords = [
     'off',"i'll",'here','other','looks','guess','time','said','time','use','mean',
     'say','look','http','https','youtu'
 ];
+
+var junkRX = new RegExp('^(' + regexgen(junkWords).toString().slice(1, -1) + ')$');
 
 const COLORS = [
     '#DDDDDD',
