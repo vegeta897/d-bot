@@ -36,7 +36,7 @@ function scanAddons() {
 function loadAddon(name) {
     var addon = requireUncached(__base+'addons/'+name+'.js');
     // If addon already loaded and needs to be unloaded
-    if(addons.has(name) && addons.get(name).unload) addons.get(name).unload(); 
+    if(addons.has(name) && addons.get(name).unload) addons.get(name).unload();
     addons.set(name, addon);
     for(var cKey in addon.commands) {
         if(!addon.commands.hasOwnProperty(cKey)) continue;
@@ -107,11 +107,11 @@ module.exports = {
         };
         if(prefixes.indexOf(message[0]) >= 0 && message[1] !== ' ') { // Command
             let command = message.substring(1, message.length).split(' ')[0].toLowerCase();
+            msgData.paramStr = message.substring(command.length + 2, message.length);
             msgData.command = command;
             let params = util.getRegExpMatches(message.trim(), /"(.*?)"|(\S+)/gi);
             params.shift();
             msgData.params = params;
-            msgData.paramStr = params.join(' ');
             // TODO: Implement config reloading
             if(command === 'reload' && userID === config.owner) reload(msgData.paramStr, msgData.reply); // Reload addon
             // TODO: Better module reloading?
