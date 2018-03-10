@@ -62,6 +62,13 @@ module.exports = {
         }
         return false;
     },
+    userHasRole: function(userID, roleID) {
+        for(let sKey in bot.servers) { if(!bot.servers.hasOwnProperty(sKey)) continue;
+            let members = bot.servers[sKey].members;
+            if(members[userID].roles.includes(roleID)) return true;
+        }
+        return false;
+    },
     getTimeFromID: _getTimeFromID
 };
 
@@ -121,7 +128,7 @@ function _editMessage(channel, id, message, polite, callback) {
 }
 
 function _getUsernameFromID(id) {
-    return bot.users[id] ? bot.users[id].username : 
+    return bot.users[id] ? bot.users[id].username :
         config.userAliases[id] ? config.userAliases[id][0] : false;
 }
 
@@ -145,7 +152,7 @@ bot.on('any', function(rawEvent) {
 });
 
 bot.on('disconnect', function(errMsg, code) {
-    console.log('Bot disconnected', errMsg, code);
+    console.log(new Date(), 'Bot disconnected', errMsg, code);
     setTimeout(function(){
         bot.connect(); //Auto reconnect after 5 seconds
     },5000);

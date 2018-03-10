@@ -5,6 +5,7 @@
     "/",
     "!"
   ],
+  "adminRole": "some_role_id",
   "privateChannels": [],
   "noLogServers": [],
   "noLogChannels": [],

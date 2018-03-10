@@ -22,6 +22,10 @@
         "maxLength": 1
       }
     },
+    "adminRole": {
+      "type": "string",
+      "default": null
+    },
     "privateChannels": {
       "type": "array",
       "items": {
@@ -110,7 +114,7 @@
           "items": {
             "type": "string",
             "minLength": 1
-          } 
+          }
         }
       },
       "default": {}
