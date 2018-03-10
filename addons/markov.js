@@ -22,6 +22,9 @@ _commands.markov = function(data) {
         buildWordMap();
         return data.reply('Sorry, try again...');
     }
+    if(data.paramStr.length > 400) {
+        return data.reply('tl;dr');
+    }
     lastMarkov = {
         inputString: data.paramStr,
         choices: []
@@ -58,7 +61,7 @@ _commands.markov = function(data) {
                     if(wordMap.links[nextWord][1].some(elem => elem > 0)) score += 3; // Not an ending word
                 } else {
                     score -= 1 + (messageLength - sequence.length); // More penalty for ending farther under max length
-                } 
+                }
             } else if(nextWord === 0) {
                 score += 1 + (sequence.length - messageLength); // More points for ending farther above max length
             }
@@ -76,7 +79,7 @@ _commands.markov = function(data) {
         }
         sequence.unshift(choices[0].word);
     } while(sequence[0] > 0);
-    
+
     // Output
     sequence.reverse();
     var output = lastMarkov.inputString;
@@ -102,7 +105,7 @@ _commands.mapkov = function(data) {
     const HEADER = 30;
     const LINE_HEIGHT = 24;
     const SPACE = '    ';
-    let canvas = new Canvas(400, 
+    let canvas = new Canvas(400,
         HEADER + lastMarkov.choices.length * LINE_HEIGHT);
     let ctx = canvas.getContext('2d');
     ctx.fillStyle = '#bbbbbb';

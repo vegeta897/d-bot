@@ -9,7 +9,7 @@ var contexts = {};
 function getContext(data, direction) {
     if(data.params.length === 0) {
         if(!contexts[data.channel]) return data.reply('Please specify a search string');
-        traverse(data.channel, direction);
+        traverse(data.channel, direction, data.reply);
     } else {
         var params = findHelper.parseParams(data.params);
         var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };

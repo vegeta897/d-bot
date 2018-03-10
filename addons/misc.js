@@ -1,13 +1,13 @@
 // Small commands not worth having their own file
 var util = require(__base+'core/util.js');
 var messages = require(__base+'core/messages.js');
-var discord = require(__base+'core/discord.js');
+var { bot } = require(__base+'core/discord.js');
 var DateFormat = require('dateformat');
 
 var _commands = {};
 
 _commands.me = function(data) {
-    discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id });
+    bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id });
     data.reply(`_${data.user} ${data.paramStr}_`);
 };
 
