@@ -18,6 +18,7 @@ _commands.find = function(data) {
     messages.wrap(messages.db.find(command.query).sort({time:-1}), function(results) {
         if(!results) return data.reply(`Couldn't find any messages matching _${params.string}_`, true);
         var msgNum = Math.min(results.length, params.limit);
+        command.limit = Math.min(msgNum, params.limit);
         var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
         data.reply(message, true, function(err, res) {
             command.responseID = res.id;
@@ -36,6 +37,7 @@ _commands.last = function(data) {
     messages.wrap(messages.db.find(command.query).sort({time:-1}), function(results) {
         if(!results) return data.reply(`Couldn't find any messages from **${params.string}**`, true);
         var msgNum = Math.min(results.length, params.limit);
+        command.limit = Math.min(msgNum, params.limit);
         var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
         data.reply(message, true, function(err, res) {
             command.responseID = res.id;
