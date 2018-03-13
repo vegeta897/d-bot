@@ -14,8 +14,8 @@ _commands.virtual = function(data) {
     if(data.isPM) return VirtualCustom.startMaintenance(data);
     if(virtual) return data.reply('Only one virtual chatter at a time!');
     var id = discord.getIDFromUsername(data.paramStr);
-    var virtualParams = { 
-        name: id ? discord.getUsernameFromID(id) : data.paramStr, id: id, channel: data.channel 
+    var virtualParams = {
+        name: id ? discord.getUsernameFromID(id) : data.paramStr, id: id, channel: data.channel
     };
     virtual = id ? new VirtualUser(virtualParams) : VirtualCustom.newSession(virtualParams);
     if(!virtual) return data.reply(`I don't know anyone named "${data.paramStr}"`);
@@ -26,11 +26,12 @@ _commands.virtual = function(data) {
 function listen(data) {
     if(!virtual || !virtual.ready || virtual.done || data.channel !== virtual.channel || data.message.length < 5) return;
     discord.bot.simulateTyping(data.channel);
+    virtual.responses++;
     var response = virtual.getResponse(data);
-    setTimeout(function(){
+    if(response) setTimeout(function(){
         data.reply(virtual.pre + response, true);
     }, Math.max(300, Math.min(2000, response.length * 30)));
-    virtual.responses++;
+    else virtual.responses = 6;
     if(virtual.responses === 6) {
         virtual.done = true;
         setTimeout(function(){

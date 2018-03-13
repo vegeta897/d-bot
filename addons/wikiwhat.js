@@ -80,7 +80,7 @@ function endRound() {
             to: wwData.channel,
             file: imgData, filename: 'wikihow.jpg',
             message: `**Round ${wwData.round} begins!** Submit your guesses!`
-        },function(err,res){
+        },function(err, res){
             wwData.stateBegan = new Date().getTime();
             wwStorage.save();
         });
@@ -91,19 +91,19 @@ function endGame(winningGuess) {
     if(winningGuess) {
         var winner = discord.getUsernameFromID(winningGuess.user);
         discord.sendMessage(wwData.channel, 'We have a winner!\n'
-            + `**${winner}** has correctly guessed the title of the article:\n`
+            + `**${winner}** has correctly guessed the title of the article: \n`
             + `**${wwData.answer}**`);
     } else {
         var roundSummary = '';
         wwData.bestGuesses.forEach(function(elem, index, arr) {
             if(elem.score < 0) return;
-            roundSummary += `Round ${index+1}:   **${util.toProperCase(elem.guess)}`
+            roundSummary += `Round ${index+1}: **${util.toProperCase(elem.guess)}`
                 + `** _by ${discord.getUsernameFromID(elem.user)}_`;
             if(index < arr.length-1) roundSummary += '\n';
         });
         discord.sendMessage(wwData.channel, 'The game is over, nobody guessed the title!\n'
             + `These were the best guesses for each round:\n${roundSummary}\n`
-            + `The article was actually called: __${wwData.answer}__\n`
+            + `The article was actually called: __${wwData.answer}__ \n`
             + `http://www.wikihow.com/${wwData.answer.split(' ').join('-')}`, true);
     }
     resetData();
@@ -120,13 +120,14 @@ function getArticle(callback) {
         imlimit: 150
     };
     request(apiRequest, getImageList);
-    
+
     function getImageList(err, response, body) {
+        console.log(err, response, body);
         if(err) return apiError(err);
         body = JSON.parse(body);
-        if(body) return resetData();
-        console.log('response:',response);
-        console.log('body:',body);
+        if(!body) return resetData();
+        // console.log('response:',response);
+        // console.log('body:',body);
         var imageList = [];
         for(var pageID in body.query.pages) {
             if(!body.query.pages.hasOwnProperty(pageID)) continue;
@@ -145,7 +146,7 @@ function getArticle(callback) {
         apiRequest.qs = { titles: imageList.join('|'), prop: 'imageinfo', iiprop: 'url|size' };
         request(apiRequest, getImageData);
     }
-    
+
     function getImageData(err, response, body) {
         if(err) return apiError(err);
         body = JSON.parse(body);
@@ -198,9 +199,9 @@ _commands.wikiwhat = function(data) {
         wwData.players = {};
         wwData.players[data.userID] = {};
         wwData.bestGuesses = [];
-        discord.sendMessage(wwData.channel, `*WikiWhat is currently undergoing maintenance, please try again later.*`);
-        // discord.sendMessage(wwData.channel, `**${discord.getUsernameFromID(data.userID)}**`
-        //     + ' wants to play **WikiWhat**! The game will begin shortly.');
+        // discord.sendMessage(wwData.channel, `*WikiWhat is currently undergoing maintenance, please try again later.*`);
+        discord.sendMessage(wwData.channel, `**${discord.getUsernameFromID(data.userID)}**`
+            + ' wants to play **WikiWhat**! The game will begin shortly.');
         getArticle(function(article) {
             wwData.answer = article.title;
             wwData.images = article.images;
