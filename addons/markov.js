@@ -17,14 +17,9 @@ const LM_CHOICES = 7;
 
 var _commands = {};
 
-_commands.markov = function(data) {
-    if(!wordMap.words) {
-        buildWordMap();
-        return data.reply('Sorry, try again...');
-    }
-    if(data.paramStr.length > 400) {
-        return data.reply('tl;dr');
-    }
+_commands.markov = async function(data) {
+    if(!wordMap.words) await buildWordMap();
+    if(data.paramStr.length > 400) return data.reply('tl;dr');
     lastMarkov = {
         inputString: data.paramStr,
         choices: []
@@ -153,19 +148,18 @@ function pickWord(beginning) {
     return beginWordIndex;
 }
 
-function buildWordMap() {
+async function buildWordMap() {
     wordMap.words = [null];
     wordMap.links = [null];
     // Get all messages containing at least 2 consecutive words
     var multiWordRX = /(?: |^)([a-z1-9'-]+) ([a-z1-9'-]+)(?=$|[ ,.!?])/gi;
-    messages.wrap(messages.db.find({ content: multiWordRX }).sort({ time: 1 }), function(allMessages) {
-        if(!allMessages) return console.log(`Can't create word map, no messages in log!`);
-        for(var i = 0; i < allMessages.length; i++) {
-            parseMessage(allMessages[i].content);
-        }
-        wordMapStorage.save();
-        console.log('Word map data built!');
-    });
+    let allMessages = await messages.cursor(db => db.cfind({ content: multiWordRX }).sort({ time: 1 }));
+    if(!allMessages) return console.log(`Can't create word map, no messages in log!`);
+    for(var i = 0; i < allMessages.length; i++) {
+        parseMessage(allMessages[i].content);
+    }
+    wordMapStorage.save();
+    console.log('Word map data built!');
 }
 
 function parseMessage(msg) {

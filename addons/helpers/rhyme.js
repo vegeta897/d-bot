@@ -9,35 +9,34 @@ var usedWords = rhymeStorage.data.words;
 const EXPIRE_TIME = 30 * 60 * 1000;
 
 var Rhyme = {
-    getRhyme(word) {
+    getRhyme: async function(word) {
         return rp(`https://api.datamuse.com/words?rel_rhy=${word}&qe=rel_rhy&md=sfp`)
-            .then(results => parseTags(JSON.parse(results)))
-            .catch(err => Promise.reject(`Sorry, I can't think about rhymes right now.`));
+            .then(results => parseTags(JSON.parse(results)));
     },
     chooseBest(words, inSentence, ignoreBlacklist) {
         var bestWord = {};
         var bestMatchesType = false;
-        for(var i = 1; i < words.length; i++) {
-            if(!ignoreBlacklist && inBlacklist(words[i].word)) continue;
+        for(let word of words) {
+            if(!ignoreBlacklist && inBlacklist(word.word)) continue;
             if(bestWord.numSyllables) {
-                if(inSentence && util.commonArrayElement(words[i].types, words[0].types)) {
-                    if(!bestMatchesType) bestWord = words[i];
+                if(inSentence && util.commonArrayElement(word.types, words[0].types)) {
+                    if(!bestMatchesType) bestWord = word;
                     bestMatchesType = true;
                 } else if(bestMatchesType) continue;
                 var bestSylDiff = Math.abs(bestWord.numSyllables - words[0].numSyllables);
-                var thisSylDiff = Math.abs(words[i].numSyllables - words[0].numSyllables);
-                if(thisSylDiff < bestSylDiff) bestWord = words[i];
-                else if(thisSylDiff === bestSylDiff && words[i].f > bestWord.f) bestWord = words[i];
-            } else bestWord = words[i]; // Best by default
+                var thisSylDiff = Math.abs(word.numSyllables - words[0].numSyllables);
+                if(thisSylDiff < bestSylDiff) bestWord = word;
+                else if(thisSylDiff === bestSylDiff && word.f > bestWord.f) bestWord = word;
+            } else bestWord = word; // Best by default
         }
         if(!bestWord.word) return false;
         return bestWord;
     },
     updateBlacklist(word) {
         var wordUpdated;
-        for(var i = 0; i < usedWords.length; i++) {
-            if(usedWords[i].word === word) {
-                usedWords[i].lastUsed = new Date().getTime();
+        for(let usedWord of usedWords) {
+            if(usedWord.word === word) {
+                usedWord.lastUsed = new Date().getTime();
                 wordUpdated = true;
                 break;
             }
@@ -49,14 +48,13 @@ var Rhyme = {
 
 function parseTags(words) {
     if(!Array.isArray(words)) return words;
-    for(var i = 0; i < words.length; i++) {
-        var word = words[i];
+    for(let word of words) {
         word.types = [];
         word.spellcor = [];
-        for(var t = 0; t < word.tags.length; t++) {
-            if(word.tags[t].substr(0, 2) === 'f:') word.f = +word.tags[t].substr(2);
-            if(['n','v','adj','adv','u','proper'].includes(word.tags[t])) word.types.push(word.tags[t]);
-            if(word.tags[t].substr(0, 9) === 'spellcor:') word.spellcor.push(word.tags[t].substr(9));
+        for(let tag of word.tags) {
+            if(tag.substr(0, 2) === 'f:') word.f = +tag.substr(2);
+            if(['n','v','adj','adv','u','proper'].includes(tag)) word.types.push(tag);
+            if(tag.substr(0, 9) === 'spellcor:') word.spellcor.push(tag.substr(9));
         }
     }
     return words;

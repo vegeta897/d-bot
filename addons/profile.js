@@ -13,7 +13,7 @@ function substitute(re) {
     for(var sKey in substitutes) { if(!substitutes.hasOwnProperty(sKey)) continue;
         src = src.split('_'+sKey).join(substitutes[sKey].source);
     }
-    return new RegExp(src,'gi');
+    return new RegExp(src, 'gi');
 }
 
 var infoPieces = {
@@ -84,7 +84,7 @@ function getBest(results) { // Return highest scoring result(s)
         var result = { count: results[rKey], value: rKey };
         if(results[rKey] > best.count) {
             best = result;
-        } else if(results[rKey] == best.count) {
+        } else if(results[rKey] === best.count) {
             if(best.ties) {
                 best.ties.push(result.value)
             } else {
@@ -105,46 +105,44 @@ function getWeightedRandom(results) {
     return util.pickInArray(exploded);
 }
 
-function Profile(channel,userID) {
-    var completedSearches = 0,
-        totalSearches = Object.keys(infoPieces).length,
-        profileText = '__' + util.capitalize(discord.getUsernameFromID(userID)) + '\'s Profile__';
+function Profile(channel, userID) {
     this.usedMessages = [];
-    for(var iKey in infoPieces) { if(!infoPieces.hasOwnProperty(iKey)) continue;
-        this.search(userID, infoPieces[iKey], function(result) {
-            completedSearches++;
-            if(result) profileText += '\n• ' + result;
-            if(completedSearches == totalSearches) { // If all searches complete, send message
-                discord.sendMessage(channel, profileText);
-            }
-        });
-    }
+    this.channel = channel;
+    this.userID = userID;
+    this.gatherInfo();
 }
 
-Profile.prototype.search = function(userID, info, cb) {
+Profile.prototype.gatherInfo = async function() {
+    var completedSearches = 0,
+        totalSearches = Object.keys(infoPieces).length,
+        profileText = '__' + util.capitalize(discord.getUsernameFromID(this.userID)) + '\'s Profile__';
+    for(var iKey in infoPieces) { if(!infoPieces.hasOwnProperty(iKey)) continue;
+        let searchResult = await this.search(infoPieces[iKey]);
+        completedSearches++;
+        if(searchResult) profileText += '\n• ' + searchResult;
+        if(completedSearches === totalSearches) discord.sendMessage(this.channel, profileText);
+    }
+};
+
+Profile.prototype.search = async function(info) {
     var used = this.usedMessages;
-    messages.wrap(messages.db.find({user:userID,content:info.re,$not:{id:{$in:used}}}),function(results) {
-        if(!results) {
-            cb(false);
-            return;
-        }
-        var values = {};
-        for(var i = 0; i < results.length; i++) {
-            used.push(results[i].id);
-            var msg = results[i].content;
-            info.re.lastIndex = 0; // Set search start at beginning
-            var matchArray;
-            while ((matchArray = info.re.exec(msg)) !== null) {
-                if(info.exclude.indexOf(matchArray[1]) >= 0) continue;
-                if(values[matchArray[1]]) {
-                    values[matchArray[1]]++;
-                } else {
-                    values[matchArray[1]] = 1;
-                }
+    let results = await messages.cursor(db => db.cfind({user:this.userID,content:info.re,$not:{id:{$in:used}}}));
+    if(!results) return false;
+    var values = {};
+    for(let result of results) {
+        used.push(result.id);
+        info.re.lastIndex = 0; // Set search start at beginning
+        var matchArray;
+        while ((matchArray = info.re.exec(result.content)) !== null) {
+            if(info.exclude.indexOf(matchArray[1]) >= 0) continue;
+            if(values[matchArray[1]]) {
+                values[matchArray[1]]++;
+            } else {
+                values[matchArray[1]] = 1;
             }
         }
-        cb(info.getResult(values));
-    });
+    }
+    return info.getResult(values);
 };
 
 var _commands = {};

@@ -11,19 +11,16 @@ _commands.me = function(data) {
     data.reply(`_${data.user} ${data.paramStr}_`);
 };
 
-_commands.earliest = function(data) {
-    messages.wrap(messages.db.find().sort({ time: 1 }).limit(1), firstMessage => {
-        var firstMsgTimestamp = DateFormat(new Date(firstMessage[0].time), 'mmmm dS, yyyy - h:MM:ss TT') + ' EST';
-        data.reply(`Earliest message in log was on: ${firstMsgTimestamp}`);
-    });
+_commands.earliest = async function(data) {
+    let firstMessage = await messages.cursor(db => db.cfind().sort({ time: 1 }).limit(1));
+    data.reply(`Earliest message logged was on ` +
+        DateFormat(new Date(firstMessage[0].time), 'mmmm dS, yyyy at h:MM:ss TT') + ' EST');
 };
 
-_commands.youtube = function(data) {
+_commands.youtube = async function(data) {
     let ytrx = /(http[s]?:\/\/\S*youtu\S*\.\S*)(?= |$)/gi; // I made this myself!
-    messages.wrap(messages.db.find({ content: ytrx }), messages => {
-        let msg = util.pickInArray(messages);
-        data.reply(util.pickInArray(util.getRegExpMatches(msg.content, ytrx)), true);
-    });
+    let ytMessages = await messages.cursor(db => db.cfind({ content: ytrx }));
+    data.reply(util.pickInArray(util.getRegExpMatches(util.pickInArray(ytMessages).content, ytrx)), true);
 };
 
 module.exports = {

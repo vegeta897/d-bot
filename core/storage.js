@@ -1,7 +1,7 @@
 // Storage interface to keep files organized
 var path = require('path');
 var fse = require('fs-extra');
-var Nedb = require('nedb');
+var Nedb = require('nedb-promise');
 var callsite = require('callsite'); // For getting filename of calling module
 
 const DEBUG = process.argv[2] === 'debug';
@@ -41,12 +41,18 @@ JSONFile.prototype.reset = function() {
 };
 
 module.exports = {
-    nedb: function(name) {
-        let dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
-        return new Nedb({
-            filename: dir + '/' + name + '.db', 
-            autoload: true
-        });
+    nedb: async function(name, index) {
+        try {
+            let dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));
+            let db = new Nedb({
+                filename: dir + '/' + name + '.db',
+                autoload: true
+            });
+            if(index) await db.ensureIndex(index);
+            return db;
+        } catch(e) {
+            console.log(`Error creating "${name}" nedb`, e);
+        }
     },
     json: function(name, initData, space) {
         let dir = getDirectory(PATH + path.basename(callsite()[1].getFileName(),'.js'));

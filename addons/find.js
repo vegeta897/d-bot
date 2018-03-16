@@ -7,7 +7,7 @@ var findHelper = requireUncached('./helpers/find.js');
 
 var _commands = {};
 
-_commands.find = function(data) {
+_commands.find = async function(data) {
     var params = findHelper.parseParams(data.params);
     if(!params) {
         data.reply('Please specify a search string');
@@ -15,55 +15,49 @@ _commands.find = function(data) {
     }
     var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };
     findHelper.addChannelQuery(command.query, data.channel);
-    messages.wrap(messages.db.find(command.query).sort({time:-1}), function(results) {
-        if(!results) return data.reply(`Couldn't find any messages matching _${params.string}_`, true);
-        var msgNum = Math.min(results.length, params.limit);
-        command.limit = Math.min(msgNum, params.limit);
-        var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
-        data.reply(message, true, function(err, res) {
-            command.responseID = res.id;
-            lastCommands[data.channel] = command;
-        });
+    let findResults = await messages.cursor(db => db.cfind(command.query).sort({time:-1}));
+    if(!findResults) return data.reply(`No messages found matching _${params.string}_`, true);
+    var msgNum = Math.min(findResults.length, params.limit);
+    command.limit = Math.min(msgNum, params.limit);
+    var message = findHelper.formatMessage(findResults[msgNum - 1], [msgNum, findResults.length]);
+    data.reply(message, true, function(err, res) {
+        command.responseID = res.id;
+        lastCommands[data.channel] = command;
     });
 };
 
-_commands.last = function(data) {
+_commands.last = async function(data) {
     var params = findHelper.parseParams(data.params);
     var userID = params ? discord.getIDFromUsername(params.string) : 'any';
     if(!userID) return data.reply(`That user doesn't seem to exist.`);
     var command = { query: { user: userID }, limit: params.limit || 1 };
     if(userID === 'any') delete command.query.user;
     findHelper.addChannelQuery(command.query, data.channel);
-    messages.wrap(messages.db.find(command.query).sort({time:-1}), function(results) {
-        if(!results) return data.reply(`Couldn't find any messages from **${params.string}**`, true);
-        var msgNum = Math.min(results.length, params.limit);
-        command.limit = Math.min(msgNum, params.limit);
-        var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
-        data.reply(message, true, function(err, res) {
-            command.responseID = res.id;
-            lastCommands[data.channel] = command;
-        });
+    let userMessages = await messages.cursor(db => db.cfind(command.query).sort({time:-1}));
+    if(!userMessages) return data.reply(`No messages found from **${params.string}**`, true);
+    var msgNum = Math.min(userMessages.length, params.limit);
+    command.limit = Math.min(msgNum, params.limit);
+    var message = findHelper.formatMessage(userMessages[msgNum - 1], [msgNum, userMessages.length]);
+    data.reply(message, true, function(err, res) {
+        command.responseID = res.id;
+        lastCommands[data.channel] = command;
     });
 };
 
-_commands.skip = function(data) {
+_commands.skip = async function(data) {
     var lastCommand = lastCommands[data.channel];
-    if(!lastCommand) {
-        return data.reply('The `skip` command must be used after `find` or `last`');
-    }
-    if(!data.params[0]) data.params = ['1'];
-    if(data.params[0] != parseInt(data.params[0])) {
-        return data.reply('Skip number must be an integer, you silly');
-    }
-    lastCommand.limit += +data.params[0];
-    messages.wrap(messages.db.find(lastCommand.query).sort({time:-1}), function(results) {
-        if(!results) return data.reply(`If you're seeing this message, something went wrong`);
-        var msgNum = Math.min(results.length, lastCommand.limit);
-        var message = findHelper.formatMessage(results[msgNum - 1], [msgNum, results.length]);
-        discord.editMessage(data.channel, lastCommand.responseID, message, true,
-            // Delete skip command after edit complete
-            function() { discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id }); });
-    });
+    if(!lastCommand) return data.reply('The `skip` command must be used after `find` or `last`');
+    let skip = data.params[0];
+    if(!skip) skip = ['1'];
+    if(skip != parseInt(skip)) return data.reply('Skip number must be an integer, you silly');
+    lastCommand.limit += +skip;
+    let findResults = await messages.cursor(db => db.cfind(lastCommand.query).sort({time:-1}));
+    if(!findResults) return data.reply(`Something went very wrong! Tell Vegeta`);
+    var msgNum = Math.min(findResults.length, lastCommand.limit);
+    var message = findHelper.formatMessage(findResults[msgNum - 1], [msgNum, findResults.length]);
+    discord.editMessage(data.channel, lastCommand.responseID, message, true,
+        // Delete skip command after edit complete
+        () => discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id }));
 };
 
 var lastCommands = {}; // Store last command per channel, so skip command can be used

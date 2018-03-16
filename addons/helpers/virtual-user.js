@@ -22,20 +22,19 @@ VirtualUser.prototype.prepare = function() {
     var virtual = this;
     var msgQuery = {};
     findHelper.addChannelQuery(msgQuery, this.channel);
-    setTimeout(function() {
-        messages.wrap(messages.db.find(msgQuery).sort({time:1}), function(allMessages) {
-            if(allMessages) for(var i = 1; i < allMessages.length; i++) {
-                if(allMessages[i-1].user !== virtual.id && allMessages[i].user === virtual.id) {
-                    virtual.exchanges.push([allMessages[i-1].content.toLowerCase(), allMessages[i].content]);
-                    virtual.fuzzy.add(allMessages[i-1].content.toLowerCase());
-                }
+    setTimeout(async function() {
+        let allMessages = await messages.cursor(db => db.cfind(msgQuery).sort({time:1}));
+        if(allMessages) for(var i = 1; i < allMessages.length; i++) {
+            if(allMessages[i-1].user !== virtual.id && allMessages[i].user === virtual.id) {
+                virtual.exchanges.push([allMessages[i-1].content.toLowerCase(), allMessages[i].content]);
+                virtual.fuzzy.add(allMessages[i-1].content.toLowerCase());
             }
-            virtual.ready = true;
-            if(!virtual.exchanges[0]) {
-                discord.sendMessage(virtual.channel, virtual.pre + `Actually, never mind. I'm leaving.`);
-                virtual = false;
-            }
-        });
+        }
+        virtual.ready = true;
+        if(!virtual.exchanges[0]) {
+            discord.sendMessage(virtual.channel, virtual.pre + `Actually, never mind. I'm leaving.`);
+            virtual = false;
+        }
     }, 100);
 };
 

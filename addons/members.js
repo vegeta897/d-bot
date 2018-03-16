@@ -5,7 +5,7 @@ var DateFormat = require('dateformat');
 
 var _commands = {};
 
-_commands.members = function(data) {
+_commands.members = async function(data) {
     let message;
     if(data.params[0] === 'joined') {
         message = '**Members sorted by join date**';
@@ -19,23 +19,40 @@ _commands.members = function(data) {
         });
         return data.reply(message);
     }
-    messages.wrap(messages.db.find(),function(allMessages) {
-        if(!allMessages) return;
-        var members = {};
-        for(let { content, user } of allMessages) {
-            if(!members[user]) members[user] = { msgCount: 0, wordCount: 0 };
-            members[user].msgCount += 1;
-            members[user].wordCount += content.split(' ').length;
-        }
-        message = '**Members sorted by message count**';
-        for(let memberID of Object.keys(members).sort((a, b) => members[b].msgCount - members[a].msgCount)) {
-            if(!discord.getUsernameFromID(memberID)) continue;
-            message += '\n**' + discord.getUsernameFromID(memberID) + '** — ' +
-                members[memberID].msgCount.toLocaleString() + ' messages - ' +
-                members[memberID].wordCount.toLocaleString() + ' words';
-        }
-        data.reply(message);
-    });
+    let allMessages = await messages.cursor(db => db.cfind());
+    if(!allMessages) return;
+    let members = new Map();
+    for(let { content, user } of allMessages) {
+        if(!members.has(user)) members.set(user, {
+            msgCount: 0,
+            wordCount: 0,
+            name: discord.getUsernameFromID(user)
+        });
+        members.get(user).msgCount += 1;
+        members.get(user).wordCount += content.split(' ').length;
+    }
+    let maxNameLength = 'Name'.length;
+    let maxMsgCount = 'Messages'.length;
+    let maxWordCount = 'Words'.length;
+    let ranks = Array.from(members).sort((a, b) => b[1].msgCount - a[1].msgCount)
+        .map(([memberID, member]) => {
+            if(!member.name) return;
+            maxNameLength = Math.max(maxNameLength, member.name.length);
+            maxMsgCount = Math.max(maxMsgCount, member.msgCount.toLocaleString().length);
+            maxWordCount = Math.max(maxWordCount, member.wordCount.toLocaleString().length);
+            return member;
+        });
+    let header = 'Name'.padEnd(maxNameLength) + '   ' +
+        'Messages'.padStart(maxMsgCount) + '   ' +
+        'Words'.padStart(maxWordCount);
+    header += '\n' + '-'.repeat(header.length);
+    message = ranks.reduce((msg, member) => member && msg + '\n' +
+        member.name.padEnd(maxNameLength) + '   ' +
+        member.msgCount.toLocaleString().padStart(maxMsgCount) + '   ' +
+        member.wordCount.toLocaleString().padStart(maxWordCount) || msg,
+        '**Members sorted by message count**\n```xl\n' + header);
+    message += '\n```';
+    data.reply(message);
 };
 
 module.exports = {

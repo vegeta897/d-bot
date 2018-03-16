@@ -6,7 +6,7 @@ var findHelper = requireUncached('./helpers/find.js');
 
 var contexts = {};
 
-function getContext(data, direction) {
+async function getContext(data, direction) {
     if(data.params.length === 0) {
         if(!contexts[data.channel]) return data.reply('Please specify a search string');
         traverse(data.channel, direction, data.reply);
@@ -14,19 +14,18 @@ function getContext(data, direction) {
         var params = findHelper.parseParams(data.params);
         var command = { query: { content: util.regExpify(params.string) }, limit: params.limit };
         findHelper.addChannelQuery(command.query, data.channel);
-        messages.wrap(messages.db.find(command.query).sort({time:-1}).limit(command.limit), function(results) {
-            if(!results) return data.reply(`Couldn't find any messages matching _${params.string}_`);
-            var foundMessage = results[results.length-1];
-            contexts[data.channel] = {
-                pivotMessage: foundMessage,
-                first: foundMessage.time, last: foundMessage.time
-            };
-            traverse(data.channel, direction, data.reply)
-        });
+        let contextMessages = await messages.cursor(db => db.cfind(command.query).sort({time:-1}).limit(command.limit));
+        if(!contextMessages) return data.reply(`No messages found matching _${params.string}_`);
+        var foundMessage = contextMessages[contextMessages.length - 1];
+        contexts[data.channel] = {
+            pivotMessage: foundMessage,
+            first: foundMessage.time, last: foundMessage.time
+        };
+        traverse(data.channel, direction, data.reply);
     }
 }
 
-function traverse(channel, direction, reply) {
+async function traverse(channel, direction, reply) {
     var findOptions = { channel: contexts[channel].pivotMessage.channel };
     var sortDir = 1;
     if(direction === 'before') {
@@ -35,35 +34,30 @@ function traverse(channel, direction, reply) {
     } else {
         findOptions.time = { $gt: contexts[channel].last };
     }
-    messages.wrap(messages.db.find(findOptions).sort({time:sortDir}).limit(3), function(results) {
-        if(!results) return reply(`Sorry, couldn't find any messages ${direction} that`);
-        // Include pivot message if found from a search and message is older than a day
-        if(contexts[channel].first === contexts[channel].last && contexts[channel].pivotMessage
-            && new Date().getTime() - contexts[channel].pivotMessage.time > 3600000) {
-            results.unshift(contexts[channel].pivotMessage);
-        }
-        if(direction === 'before') {
-            results.reverse();
-            contexts[channel].first = results[0].time;
-        } else {
-            contexts[channel].last = results[results.length-1].time;
-        }
-        var contextSummary = '';
-        for(let message of results) {
-            contextSummary += findHelper.formatMessage(message, 0, true) + '\n';
-        }
-        contextSummary.slice(0,-2); // Remove last newline
-        reply(contextSummary, true);
-    });
+    let contextMessages = await messages.cursor(db => db.cfind(findOptions).sort({time:sortDir}).limit(3));
+    if(!contextMessages) return reply(`No messages found ${direction} that`);
+    // Include pivot message if found from a search and message is older than a day
+    if(contexts[channel].first === contexts[channel].last && contexts[channel].pivotMessage
+        && new Date().getTime() - contexts[channel].pivotMessage.time > 3600000) {
+        contextMessages.unshift(contexts[channel].pivotMessage);
+    }
+    if(direction === 'before') {
+        contextMessages.reverse();
+        contexts[channel].first = contextMessages[0].time;
+    } else {
+        contexts[channel].last = contextMessages[contextMessages.length-1].time;
+    }
+    let contextSummary = '';
+    for(let message of contextMessages) {
+        contextSummary += findHelper.formatMessage(message, 0, true) + '\n';
+    }
+    contextSummary.slice(0,-2); // Remove last newline
+    reply(contextSummary, true);
 }
 
 var _commands = {};
-_commands.before = function(data) {
-    getContext(data,'before');
-};
-_commands.after = function(data) {
-    getContext(data,'after');
-};
+_commands.before = data => getContext(data, 'before');
+_commands.after = data => getContext(data, 'after');
 
 module.exports = {
     commands: _commands,

@@ -12,7 +12,7 @@ var subs = subsStorage.data;
 
 var _commands = {};
 
-_commands.mentions = function(data) {
+_commands.mentions = async function(data) {
     // Change subscription
     if(data.paramStr.toLowerCase().includes('sub')) {
         var channel = data.params[1] && data.params[1].toLowerCase() == 'all' ? 'all' : data.channel;
@@ -32,23 +32,18 @@ _commands.mentions = function(data) {
     var rx = new RegExp('<@!?' + data.userID + '>','g');
     var query = {content: rx};
     findHelper.addChannelQuery(query, data.channel);
-    messages.wrap(messages.db.find(query).limit(mCount).sort({time: -1}), function(results) {
-        if(!results) return data.reply(`Sorry, I don't have any record of you being mentioned.`);
-        var mentionRecap = `__Your last ${results.length}mentions__`;
-        results.reverse();
-        for(var m = 0; m < results.length; m++) {
-            mentionRecap += '\n' + findHelper.formatMessage(results[m]);
-        }
-        data.reply(mentionRecap, true);
-    });
+    let mentionMessages = await messages.cursor(db => db.cfind(query).limit(mCount).sort({time: -1}));
+    if(!mentionMessages) return data.reply(`Sorry, I don't have any record of you being mentioned.`);
+    data.reply(mentionMessages.reverse().reduce((recap, msg) => recap + '\n' + findHelper.formatMessage(msg),
+        `__Your last ${mentionMessages.length}mentions__`), true);
 };
 
 function addSub(id, channel) {
     if(!subs[id]) subs[id] = [];
-    if(subs[id] == 'all') {
+    if(subs[id] === 'all') {
         return 'You are already subscribed to all channels.';
     }
-    if(channel == 'all') {
+    if(channel === 'all') {
         subs[id] = 'all';
         return 'You are now subscribed to mentions in all channels.';
     }
@@ -61,14 +56,14 @@ function addSub(id, channel) {
 
 function removeSub(id, channel) {
     if(!subs[id]) return `You aren't subscribed to any channel!`;
-    if(channel == 'all') {
+    if(channel === 'all') {
         delete subs[id];
         return 'You have unsubscribed from all channels.';
     }
-    if(subs[id] != 'all' && !subs[id].includes(channel)) {
+    if(subs[id] !== 'all' && !subs[id].includes(channel)) {
         return `You aren't subscribed to this channel!`;
     }
-    if(subs[id] == 'all') {
+    if(subs[id] === 'all') {
         var server = discord.bot.channels[channel].guild_id;
         subs[id] = Object.keys(discord.bot.servers[server].channels); // Add all channels
         config.privateChannels.forEach(function(elem) {
@@ -76,7 +71,7 @@ function removeSub(id, channel) {
         });
     }
     util.findAndRemove(channel, subs[id]);
-    if(subs[id].length == 0) delete subs[id];
+    if(subs[id].length === 0) delete subs[id];
     return 'You have unsubscribed from this channel.';
 }
 
@@ -87,9 +82,9 @@ module.exports = {
         data.rawEvent.d.mentions.forEach(function(mention) {
             if(config.privateChannels.includes(data.channel)) return;
             if(!subs[mention.id]) return;
-            if(subs[mention.id] != 'all' && !subs[mention.id].includes(data.channel)) return;
+            if(subs[mention.id] !== 'all' && !subs[mention.id].includes(data.channel)) return;
             var userStatus = discord.bot.servers[data.server].members[mention.id].status;
-            if(userStatus && userStatus != 'offline') return;
+            if(userStatus && userStatus !== 'offline') return;
             var pm = `**${data.user}** mentioned you!\n` + findHelper.formatMessage({
                     user: data.userID, time: new Date(data.rawEvent.d.timestamp).getTime(), content: data.message
                 }, 0, true);
