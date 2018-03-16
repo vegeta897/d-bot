@@ -1,6 +1,8 @@
 # D-Bot
 A quirky Discord bot made for single, small, private servers
 
+Requires node `8.2.1` or newer
+
 1. Install: `npm install d-bot`
 2. Set up: `config.json`
 3. Run: `start bot.bat`
