@@ -3,7 +3,7 @@ var util = require(__base+'core/util.js');
 var storage = require(__base+'core/storage.js');
 const validator = require('./../param-validator.js');
 
-const gameStorage = storage.json('coin',
+const game = storage.json('coin',
     {
         multi: 1,
         min: 1,
@@ -11,7 +11,6 @@ const gameStorage = storage.json('coin',
         tails: 0
     }, '\t'
 );
-const game = gameStorage.data;
 
 module.exports = {
     properName: 'Coin Flip',
@@ -21,7 +20,7 @@ module.exports = {
         let choiceValidator = new validator.Param().oneOf(['heads', 'tails'], '❓ Choose "heads" or "tails"');
         let betValidator = new validator.Param().numeric('❌ Provide a bet amount')
             .whole('❌ Your bet must be a whole number')
-            .min(game.min, `🔺 Minimum bet: ${game.min}`)
+            .min(game.get('min'), `🔺 Minimum bet: ${game.get('min')}`)
             .max(userData.balance, `❗ You only have ${userData.balance} credits`);
         let validated = validator.validate([
             new validator.Pattern(['choice', 'bet'], params, [choiceValidator, betValidator]),
@@ -35,11 +34,11 @@ module.exports = {
     },
     play(sessionID, playData) {
         let side = util.flip() ? 'Heads' : 'Tails';
-        if(side === 'Heads') game.heads++;
-        else game.tails++;
-        gameStorage.save();
+        if(side === 'Heads') game.set('heads', game.get('heads') + 1);
+        else game.set('tails', game.get('tails') + 1);
+        game.save();
         let win = side.toLowerCase() === playData.choice;
-        let net = win ? playData.bet * game.multi : -playData.bet;
+        let net = win ? playData.bet * game.get('multi') : -playData.bet;
         return {
             output: 'The coin flips into the air...',
             noMention: true,

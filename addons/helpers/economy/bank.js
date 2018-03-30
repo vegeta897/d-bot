@@ -3,23 +3,22 @@ var util = require(__base+'core/util.js');
 var storage = require(__base+'core/storage.js');
 var discord = require(__base+'core/discord.js');
 
-const bankStorage = storage.json('bank',
+const bank = storage.json('bank',
     {
         startCredits: 100,
         users: {}
     }, '\t'
 );
-const bank = bankStorage.data;
 
 function getAccount(data, output) {
-    let account = bank.users[data.userID];
+    let account = bank.get('users')[data.userID];
     if(account) {
         account.has = amount => account.balance >= amount;
         account.balanceWarning = () => `❗ You only have ${account.balance} credits`;
         account.showBalance = () => `\`\`\`xl\n${data.nick}’s account balance: ${account.balance}\`\`\``;
         account.addCredits = amount => {
             account.balance += amount;
-            bankStorage.save();
+            bank.save();
         };
         if(output) output.push(account.showBalance());
     }
@@ -30,29 +29,29 @@ module.exports = {
     register(data, output) {
         if(!getAccount(data)) {
             if(output) output.push(`🏦 Welcome to **D-Bank**, ${data.mention}`);
-            bank.users[data.userID] = {
+            bank.get('users')[data.userID] = {
                 created: Date.now(),
-                balance: bank.startCredits
+                balance: bank.get('startCredits')
             };
-            bankStorage.save();
+            bank.save();
         }
         return getAccount(data);
     },
     getAccount,
     deleteAccount(data) {
-        if(bank.users[data.userID]) {
-            delete bank.users[data.userID];
-            bankStorage.save();
+        if(bank.get('users')[data.userID]) {
+            delete bank.get('users')[data.userID];
+            bank.save();
         }
     },
     addCredits(userID, amount) {
-        let account = bank.users[userID];
+        let account = bank.get('users')[userID];
         if(account) account.balance += amount;
-        bankStorage.save();
+        bank.save();
     },
     leaderboard() {
-        return '```xl\n' + Object.keys(bank.users).map(u => {
-            return [discord.getUsernameFromID(u), bank.users[u]];
+        return '```xl\n' + Object.keys(bank.get('users')).map(u => {
+            return [discord.getUsernameFromID(u), bank.get('users')[u]];
         }).sort((a, b) => {
             return b[1].balance - a[1].balance || a[1].created - b[1].created;
         }).map((u, i) => {

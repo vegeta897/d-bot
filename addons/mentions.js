@@ -7,8 +7,7 @@ var storage = require(__base+'core/storage.js');
 var requireUncached = require('require-uncached');
 var findHelper = requireUncached('./helpers/find.js');
 
-var subsStorage = storage.json('subscriptions', {}, '\t');
-var subs = subsStorage.data;
+var subs = storage.json('subscriptions', {}, '\t');
 
 var _commands = {};
 
@@ -19,7 +18,7 @@ _commands.mentions = async function(data) {
         var result;
         if(data.paramStr.toLowerCase().includes('un')) result = removeSub(data.userID, channel);
         else result = addSub(data.userID, channel);
-        subsStorage.save();
+        subs.save();
         return data.reply(result);
     }
     // Get mentions
@@ -39,39 +38,39 @@ _commands.mentions = async function(data) {
 };
 
 function addSub(id, channel) {
-    if(!subs[id]) subs[id] = [];
-    if(subs[id] === 'all') {
+    if(!subs.get(id)) subs.set(id, []);
+    if(subs.get(id) === 'all') {
         return 'You are already subscribed to all channels.';
     }
     if(channel === 'all') {
-        subs[id] = 'all';
+        subs.set(id, 'all');
         return 'You are now subscribed to mentions in all channels.';
     }
-    if(subs[id].includes(channel)) {
+    if(subs.get(id).includes(channel)) {
         return 'You are already subscribed to this channel.';
     }
-    subs[id].push(channel);
+    subs.get(id).push(channel);
     return 'You are now subscribed to mentions in this channel.';
 }
 
 function removeSub(id, channel) {
-    if(!subs[id]) return `You aren't subscribed to any channel!`;
+    if(!subs.get(id)) return `You aren't subscribed to any channel!`;
     if(channel === 'all') {
-        delete subs[id];
+        subs.delete(id);
         return 'You have unsubscribed from all channels.';
     }
-    if(subs[id] !== 'all' && !subs[id].includes(channel)) {
+    if(subs.get(id) !== 'all' && !subs.get(id).includes(channel)) {
         return `You aren't subscribed to this channel!`;
     }
-    if(subs[id] === 'all') {
+    if(subs.get(id) === 'all') {
         var server = discord.bot.channels[channel].guild_id;
-        subs[id] = Object.keys(discord.bot.servers[server].channels); // Add all channels
+        subs.set(id, Object.keys(discord.bot.servers[server].channels)); // Add all channels
         config.privateChannels.forEach(function(elem) {
-            util.findAndRemove(elem, subs[id]); // Remove private channels
+            util.findAndRemove(elem, subs.get(id)); // Remove private channels
         });
     }
-    util.findAndRemove(channel, subs[id]);
-    if(subs[id].length === 0) delete subs[id];
+    util.findAndRemove(channel, subs.get(id));
+    if(subs.get(id).length === 0) subs.delete(id);
     return 'You have unsubscribed from this channel.';
 }
 
@@ -81,8 +80,8 @@ module.exports = {
         if(!data.rawEvent.d.mentions.length) return;
         data.rawEvent.d.mentions.forEach(function(mention) {
             if(config.privateChannels.includes(data.channel)) return;
-            if(!subs[mention.id]) return;
-            if(subs[mention.id] !== 'all' && !subs[mention.id].includes(data.channel)) return;
+            if(!subs.get(mention.id)) return;
+            if(subs.get(mention.id) !== 'all' && !subs.get(mention.id).includes(data.channel)) return;
             var userStatus = discord.bot.servers[data.server].members[mention.id].status;
             if(userStatus && userStatus !== 'offline') return;
             var pm = `**${data.user}** mentioned you!\n` + findHelper.formatMessage({

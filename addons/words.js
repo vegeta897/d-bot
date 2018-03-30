@@ -16,18 +16,20 @@ _commands.unique = data => getTopWords(data, true);
 
 _commands.graph = async function(data) {
     let graphUsers = data.params.length === 0;
-    let words = graphUsers ? [] : data.params.filter((p, i, a) => a.indexOf(p) === i); // Remove dupes
-    let query = graphUsers ? {} : { $or: words.map(w => ({ content: util.regExpify(w) })) };
+    let graphChannels = data.paramStr = 'by channel';
+    let words = graphUsers || graphChannels ? [] : data.params.filter((p, i, a) => a.indexOf(p) === i); // Remove dupes
+    let query = graphUsers || graphChannels ? {} : { $or: words.map(w => ({ content: util.regExpify(w) })) };
     let allMessages = await messages.cursor(db => db.cfind(query).sort({ time: 1 }));
     if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : ` containing _${data.paramStr}_`));
 
     // TODO: Rewrite using maps
+    // TODO: Use logarithmic scale when appropriate
 
     let dailyUsage = {};
     words.forEach(w => dailyUsage[w] = []);
-    let firstDate = graphUsers ? new Date(allMessages[0].time) : null,
-        firstDay = graphUsers ? Math.floor(firstDate.getTime() / 8.64e7) : null;
-    for(let { content: text, time, user } of allMessages) {
+    let firstDate = graphUsers || graphChannels ? new Date(allMessages[0].time) : null,
+        firstDay = graphUsers || graphChannels ? Math.floor(firstDate.getTime() / 8.64e7) : null;
+    for(let { content: text, time, user, channel: channelID } of allMessages) {
         let day = Math.floor(new Date(time) / 8.64e7 - firstDay);
         if(graphUsers) {
             let username = discord.getUsernameFromID(user);
@@ -35,6 +37,13 @@ _commands.graph = async function(data) {
             if(!words.includes(username)) words.push(username);
             if(!dailyUsage[username]) dailyUsage[username] = [];
             dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
+        } else if(graphChannels) {
+            if(channelID === '86915384589967360') continue;
+            let channel = discord.bot.channels[channelID] && discord.bot.channels[channelID].name;
+            if(!channel) continue;
+            if(!words.includes(channel)) words.push(channel);
+            if(!dailyUsage[channel]) dailyUsage[channel] = [];
+            dailyUsage[channel][day] = (dailyUsage[channel][day] || 0) + 1;
         } else {
             words.forEach((word, i) => {
                 let rxMatches = util.getRegExpMatches(text, util.regExpify(word));

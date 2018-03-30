@@ -5,9 +5,8 @@ var discord = require(__base+'core/discord.js');
 var storage = require(__base+'core/storage.js');
 var Canvas = require('canvas');
 
-var wordMapStorage = storage.json('word-map');
-var wordMap = wordMapStorage.data;
-if(!wordMap.words) {
+var wordMap = storage.json('word-map');
+if(!wordMap.get('words')) {
     console.log('Markov addon could not find word map data, building now...');
     buildWordMap();
 }
@@ -18,7 +17,7 @@ const LM_CHOICES = 7;
 var _commands = {};
 
 _commands.markov = async function(data) {
-    if(!wordMap.words) await buildWordMap();
+    if(!wordMap.get('words')) await buildWordMap();
     if(data.paramStr.length > 400) return data.reply('tl;dr');
     lastMarkov = {
         inputString: data.paramStr,
@@ -28,23 +27,23 @@ _commands.markov = async function(data) {
     let inputWordCount = inputWords.length;
     let sequence;
     if(inputWordCount === 0) {
-        inputWords = [wordMap.words[pickWord(true)]];
+        inputWords = [wordMap.get('words')[pickWord(true)]];
         lastMarkov.inputString = inputWords[0];
         inputWordCount++;
     } else {
     }
-    sequence = inputWords.map(word => wordMap.words.indexOf(word.toLowerCase()));
+    sequence = inputWords.map(word => wordMap.get('words').indexOf(word.toLowerCase()));
     if(sequence[sequence.length - 1] < 1) {
         let addedWord = pickWord();
         sequence.push(addedWord);
-        lastMarkov.inputString += ' ' + wordMap.words[addedWord];
+        lastMarkov.inputString += ' ' + wordMap.get('words')[addedWord];
         inputWordCount++;
     }
     sequence.reverse();
     var messageLength = Math.max(inputWordCount + 1, 15); // Ideal max message length;
     do {
-        var prevWords = wordMap.links[sequence[0]][0];
-        var nextWords = wordMap.links[sequence[0]][1];
+        var prevWords = wordMap.get('links')[sequence[0]][0];
+        var nextWords = wordMap.get('links')[sequence[0]][1];
         if(prevWords.length + nextWords.length === 0) break;
         let maxScore = 0;
         var choiceSet = [];
@@ -53,7 +52,7 @@ _commands.markov = async function(data) {
             if(prevWords[index] === sequence[1]) score += 3;
             if(sequence.length < messageLength) {
                 if(nextWord > 0) {
-                    if(wordMap.links[nextWord][1].some(elem => elem > 0)) score += 3; // Not an ending word
+                    if(wordMap.get('links')[nextWord][1].some(elem => elem > 0)) score += 3; // Not an ending word
                 } else {
                     score -= 1 + (messageLength - sequence.length); // More penalty for ending farther under max length
                 }
@@ -66,7 +65,7 @@ _commands.markov = async function(data) {
         choices.sort((a, b) => b.score - a.score + util.random(Math.floor(-maxScore/2), Math.ceil(maxScore/2)));
         if(choices[0].word) {
             for(let i = 0; i < choices.length; i++) {
-                let word = wordMap.words[choices[i].word];
+                let word = wordMap.get('words')[choices[i].word];
                 if(word && !choiceSet.includes(word)) choiceSet.push(word);
                 if(choiceSet.length === LM_CHOICES) break;
             }
@@ -80,7 +79,7 @@ _commands.markov = async function(data) {
     var output = lastMarkov.inputString;
     lastMarkov.finalWords = [];
     for(var f = inputWordCount; f < sequence.length; f++) {
-        var word = wordMap.words[sequence[f]];
+        var word = wordMap.get('words')[sequence[f]];
         if(word) {
             output += ' ' + (['i','im','i\'m'].includes(word) ? util.capitalize(word) : word);
         } else if(sequence[f] === 0) {
@@ -142,15 +141,15 @@ _commands.mapkov = function(data) {
 
 function pickWord(beginning) {
     do {
-        var beginWordIndex = util.randomInt(1, wordMap.words.length - 1);
-        var beginWordLink = wordMap.links[beginWordIndex];
+        var beginWordIndex = util.randomInt(1, wordMap.get('words').length - 1);
+        var beginWordLink = wordMap.get('links')[beginWordIndex];
     } while ((beginning && !beginWordLink[0].includes(0)) || beginWordLink[1].includes(0));
     return beginWordIndex;
 }
 
 async function buildWordMap() {
-    wordMap.words = [null];
-    wordMap.links = [null];
+    wordMap.set('words', [null]);
+    wordMap.set('links', [null]);
     // Get all messages containing at least 2 consecutive words
     var multiWordRX = /(?: |^)([a-z1-9'-]+) ([a-z1-9'-]+)(?=$|[ ,.!?])/gi;
     let allMessages = await messages.cursor(db => db.cfind({ content: multiWordRX }).sort({ time: 1 }));
@@ -158,7 +157,7 @@ async function buildWordMap() {
     for(var i = 0; i < allMessages.length; i++) {
         parseMessage(allMessages[i].content);
     }
-    wordMapStorage.save();
+    wordMap.save();
     console.log('Word map data built!');
 }
 
@@ -176,26 +175,26 @@ function parseMessage(msg) {
 function addWords(words) {
     var indices = words.map(word => {
         word = word.toLowerCase();
-        var wordIndex = wordMap.words.indexOf(word);
+        var wordIndex = wordMap.get('words').indexOf(word);
         if(wordIndex < 0) {
-            wordIndex = wordMap.words.length;
-            wordMap.words[wordIndex] = word;
-            wordMap.links[wordIndex] = [[],[]]
+            wordIndex = wordMap.get('words').length;
+            wordMap.get('words')[wordIndex] = word;
+            wordMap.get('links')[wordIndex] = [[],[]]
         }
         return wordIndex;
     });
     for(var i = 0; i < indices.length; i++) {
         var prev = indices[i-1] || 0;
         var next = indices[i+1] || 0;
-        wordMap.links[indices[i]][0].push(prev);
-        wordMap.links[indices[i]][1].push(next);
+        wordMap.get('links')[indices[i]][0].push(prev);
+        wordMap.get('links')[indices[i]][1].push(next);
     }
 }
 
 module.exports = {
     commands: _commands,
     listen: function(data) {
-        if(!data.command && parseMessage(data.message)) wordMapStorage.save();
+        if(!data.command && parseMessage(data.message)) wordMap.save();
     },
     help: {
         markov: ['Build markov chain sentences from chat history', 'This is really'],

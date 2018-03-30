@@ -4,14 +4,13 @@ var storage = require(__base+'core/storage.js');
 const Deck = require('./deck.js');
 const validator = require('./../param-validator.js');
 
-const gameStorage = storage.json('blackjack',
+const game = storage.json('blackjack',
     {
         multi: 1,
         min: 10,
         sessions: {}
     }, '\t'
 );
-const game = gameStorage.data;
 
 const CHOICES = {
     hit: '🃏 Hit', stay: '🔒 Stay', double: '⏭️ Double', safety: '💸 Safety'
@@ -93,11 +92,11 @@ function play({ userData, deck, pHand, pScore, dHand, dScore, net = 0, choices, 
             if(dScore === 21 && dHand.length <= pHand.length) result = 'push'; // Dealer ties
             else { // 21!!
                 result = '21';
-                net += bet * 1.5 * game.multi;
+                net += bet * 1.5 * game.get('multi');
             }
         } else if(pScore <= 21 && pScore === dScore) result = 'push'; // Tie
         else if(pScore > dScore || dScore > 21) { // Better score or dealer busted
-            net += bet * game.multi;
+            net += bet * game.get('multi');
             result = 'win';
         }
     }
@@ -121,13 +120,13 @@ module.exports = {
     names: ['blackjack', 'black-jack', 'bj', '21', 'twentyone', 'twenty-one'],
     parsePlay(sessionID, userData, params) {
         let playData = { userData },
-            session = game.sessions[sessionID];
+            session = game.get('sessions')[sessionID];
         if(!session) {
             let validated = validator.validate([
                 new validator.Pattern(['bet'], params, [
                     new validator.Param().numeric('❌ Provide a bet amount')
                         .whole('❌ Your bet must be a whole number')
-                        .min(game.min, `🔺 Minimum bet: ${game.min}`)
+                        .min(game.get('min'), `🔺 Minimum bet: ${game.get('min')}`)
                         .max(userData.balance, `❗ You only have ${userData.balance} credits`)
                 ])
             ]);
@@ -142,15 +141,15 @@ module.exports = {
         ]);
     },
     play(sessionID, playData) {
-        let session = game.sessions[sessionID] || { userData: playData.userData };
-        game.sessions[sessionID] = session;
+        let session = game.get('sessions')[sessionID] || { userData: playData.userData };
+        game.get('sessions')[sessionID] = session;
         Object.assign(session, play(session, playData));
         let result = { output: getOutput(session), net: session.net };
         if(session.gameOver) {
-            delete game.sessions[sessionID];
+            delete game.get('sessions')[sessionID];
             result.done = true;
         }
-        gameStorage.save();
+        game.save();
         return result;
     }
 };

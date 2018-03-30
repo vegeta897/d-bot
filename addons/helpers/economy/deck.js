@@ -2,13 +2,12 @@
 var util = require(__base+'core/util.js');
 var storage = require(__base+'core/storage.js');
 
-const statStorage = storage.json('stats',
+const stats = storage.json('stats',
     {
         decks: 0,
         dealt: {}
     }, '\t'
 );
-const stats = statStorage.data;
 
 CARDS = {};
 
@@ -34,18 +33,15 @@ CARDS = {};
 });
 
 function Deck(cards) {
-    if(!cards) {
-        stats.decks++;
-        statStorage.save();
-    }
+    if(!cards) stats.set('decks', stats.get('decks') + 1);
     this.cards = cards || Object.keys(CARDS);
 }
 
 Deck.prototype.draw = function(card) {
     if(card) return this.cards.splice(this.cards.indexOf(card), 1);
     card = this.cards.pop();
-    stats.dealt[card] = (stats.dealt[card] || 0) + 1;
-    statStorage.save();
+    stats.get('dealt')[card] = (stats.get('dealt')[card] || 0) + 1;
+    stats.save();
     return card;
 };
 

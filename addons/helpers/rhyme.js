@@ -4,7 +4,7 @@ var storage = require(__base+'core/storage.js');
 var rp = require('request-promise');
 
 var rhymeStorage = storage.json('rhymes', { words: [] }, '\t');
-var usedWords = rhymeStorage.data.words;
+var usedWords = rhymeStorage.get('words');
 
 const EXPIRE_TIME = 30 * 60 * 1000;
 

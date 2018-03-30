@@ -15,26 +15,26 @@ const NAMES = NAMES_MALE.concat(NAMES_FEMALE);
 const FACES_MALE = ['👱🏻','👱🏼','👱🏽','👱🏾','👱🏿','👨🏻','👨🏼','👨🏽','👨🏾','👨🏿','👴🏻','👴🏼','👴🏽','👴🏾','👴🏿','👳🏻','👳🏼','👳🏽','👳🏾','👳🏿','🎅🏻'];
 const FACES_FEMALE = ['👩🏻','👩🏼','👩🏽','👩🏾','👩🏿','👵🏻','👵🏼','👵🏽','👵🏾','👵🏿','👧🏻','👧🏼','👧🏽','👧🏾','👧🏿','👸🏻','👸🏼','👸🏽','👸🏾','👸🏿','🤶🏻'];
 const TRAITS = ['sympathetic', 'scared', 'generous'];
-const economyStorage = storage.json('economy',
+const economy = storage.json('economy',
     {
         // TODO: Store user's current task here (gambling, begging, etc) to block other activities
         people: {},
         beggars: {}
     }, '\t'
 );
-const economy = economyStorage.data;
-const PEOPLE = economy.people;
-if(Object.keys(PEOPLE).length === 0) {
+if(Object.keys(economy.get('people')).length === 0) {
+    let people = {};
     for(let i = 0; i < NAMES.length; i++) {
-        PEOPLE[NAMES[i]] = {
+        people[NAMES[i]] = {
             trait: util.pickInArray(TRAITS),
             face: util.pickInArray(i < NAMES_MALE.length ? FACES_MALE : FACES_FEMALE, 1),
             difficulty: util.randomInt(80),
             wealth: util.randomInt(1, 10) * 100 * util.randomInt(1, 10)
         }
     }
-    economyStorage.save();
+    economy.set('people', people);
 }
+let PEOPLE = economy.get('people');
 
 function requireAccount(command, silent) {
     return function(data) {
@@ -93,24 +93,23 @@ _commands.give = requireAccount(function(data, account) {
 });
 
 _commands.beg = requireAccount(function(data, account) {
-    if(economy.beggars[data.userID]) {
-        if(economy.beggars[data.userID].state) return data.reply(data.mention +
+    if(economy.get('beggars')[data.userID]) {
+        if(economy.get('beggars')[data.userID].state) return data.reply(data.mention +
             '```\n🙏 You\'re already begging! Choose from the list above.```');
-        if(account.balance === 0) economy.beggars[data.userID].cooldown = 0;
-        let cooldown = economy.beggars[data.userID].cooldown - Date.now();
+        if(account.balance === 0) economy.get('beggars')[data.userID].cooldown = 0;
+        let cooldown = economy.get('beggars')[data.userID].cooldown - Date.now();
         if(cooldown > 0) return data.reply(data.mention +
             '```\n⏳ Wait ' +  util.getTimeUnits(cooldown).join(' ') + ` before begging again` + '```');
     }
     let people = Object.keys(PEOPLE);
     let choices = [util.pickInArray(people, true), util.pickInArray(people, true), util.pickInArray(people, true)];
-    economy.beggars[data.userID] = { state: 'approach', choices };
-    economyStorage.save();
+    economy.get('beggars')[data.userID] = { state: 'approach', choices };
     data.reply(data.mention + '```css\n' + `Who do you want to beg from?\n` +
         choices.map((p, i) => `${(i + 1)}. ${PEOPLE[p].face} ${util.capitalize(p)}`).join('\n') + '```');
 });
 
 function listenToBeggar(data) {
-    let beggar = economy.beggars[data.userID];
+    let beggar = economy.get('beggars')[data.userID];
     if(!beggar || !beggar.state) return;
     let choice;
     if(beggar.state === 'amount') {
@@ -157,7 +156,7 @@ function listenToBeggar(data) {
                 account.addCredits(given);
                 data.reply(`${prefix}gives you **${given}** credit${given > 1 ? 's' : ''}! ` +
                     `\`Bal: ${account.balance}\``);
-                economy.people[beggar.person].given = (economy.people[beggar.person].given || 0) + given;
+                economy.get('people')[beggar.person].given = (economy.get('people')[beggar.person].given || 0) + given;
             }
             else data.reply(`${prefix}rolls ${pronoun} eyes and walks away.`);
             beggar.cooldown = Date.now() + given * 2500; // 2.5 sec per credit
@@ -166,7 +165,7 @@ function listenToBeggar(data) {
             delete beggar.score;
             break;
     }
-    economyStorage.save();
+    economy.save();
 }
 
 // TODO: Create a module for chat interfaces like casino games and begging
@@ -174,11 +173,11 @@ function listenToBeggar(data) {
 
 module.exports = {
     listen(data) {
-        if(!economy.beggars[data.userID] || !economy.beggars[data.userID].state) casino.listen(data);
+        if(!economy.get('beggars')[data.userID] || !economy.get('beggars')[data.userID].state) casino.listen(data);
         requireAccount(listenToBeggar, true)(data); // Improve this one-thing-at-a-time checking
     },
     // tick() {
-    //    
+    //
     // },
     commands: _commands
 };
@@ -186,5 +185,5 @@ module.exports = {
 // Ideas
 /*
     - Beg command, randomly generates choices of AI people to beg from, with varying results
-    
+
 */
