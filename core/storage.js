@@ -28,6 +28,11 @@ JSONFile.prototype.set = function(key, value) {
     this.save();
     return this.data;
 };
+JSONFile.prototype.trans = function(key, fn) {
+    this.data.set(key, fn(this.data.get(key)));
+    this.save();
+    return this.data;
+};
 JSONFile.prototype.save = function() {
     if(this.saving) return;
     this.saving = true;

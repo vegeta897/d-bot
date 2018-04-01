@@ -122,7 +122,8 @@ module.exports = {
             }
             let addon = addons.get(commands.get(command));
             if(addon && (!addon.dev || userID === config.owner)) {
-                addon.commands[command](Object.assign({}, msgData));
+                let commanded = addon.commands[command](Object.assign({}, msgData));
+                if(commanded && commanded.catch) commanded.catch(err => console.error(`Error: ${command} command`, err));
             }
             // else if(!commands[command]) { // Unknown command
             //     if(message[2] == '/') return; // Ignore "/r/..."
@@ -135,7 +136,8 @@ module.exports = {
         }
         for(let listener of msgListeners) {
             if(!addons.get(listener).dev || userID === config.owner) {
-                addons.get(listener).listen(Object.assign({}, msgData));
+                let listened = addons.get(listener).listen(Object.assign({}, msgData));
+                if(listened && listened.catch) listened.catch(err => console.error(`Error: ${listener} listener`, err));
             }
         }
         return msgData;

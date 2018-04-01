@@ -4,8 +4,8 @@ var discord = require(__base+'core/discord.js');
 var storage = require(__base+'core/storage.js');
 
 var virtualStorage = storage.json('customs', { profiles: {}, maintenance: {} }, '\t');
-var profiles = virtualStorage.data.profiles;
-var maintenance = virtualStorage.data.maintenance;
+var profiles = virtualStorage.get('profiles');
+var maintenance = virtualStorage.get('maintenance');
 
 var timeouts = {};
 
