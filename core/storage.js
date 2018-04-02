@@ -53,6 +53,11 @@ JSONFile.prototype.delete = function(key) {
     this.data.delete(key);
     this.save();
 };
+JSONFile.prototype.setData = function(data) {
+    this.data = objToMap(data);
+    this.save();
+    return this.data;
+};
 JSONFile.prototype.reset = function() {
     this.data.clear();
     this.save();
@@ -89,9 +94,7 @@ function getDirectory(dir) {
 
 function objToMap(obj) { // https://stackoverflow.com/a/36644532/2612679
     let map = new Map();
-    Object.keys(obj).forEach(key => {
-        map.set(key, obj[key]);
-    });
+    Object.keys(obj).forEach(key => map.set(key, obj[key]));
     return map;
 }
 

@@ -41,7 +41,7 @@ function submitGuess(newGuess, user) {
             break;
         }
     }
-    if(everyoneGuessed && wwData.round > 1) { // End the round if everyone has guessed and not 1st round
+    if(everyoneGuessed && wwData.get('round') > 1) { // End the round if everyone has guessed and not 1st round
         wwData.set('stateBegan', 0);
     }
     wwData.save();
@@ -113,17 +113,23 @@ function getArticle(callback) {
     apiRequest.qs = { // Get list of images from random pages
         generator: 'random',
         grnnamespace: 0,
-        grnlimit: 5,
+        grnlimit: 2,
         prop: 'revisions|images',
         rvprop: 'content',
         imlimit: 150
     };
+    // https://www.wikihow.com/api.php?action=query&format=json&generator=random&grnnamespace=0&grnlimit=3&prop=revisions|images&rvprop=content&imlimit=150
     request(apiRequest, getImageList);
 
+    // TODO: Change grnlimit to 1, and just retry if not enough valid images are found
+
     function getImageList(err, response, body) {
-        console.log(err, response, body);
         if(err) return apiError(err);
-        body = JSON.parse(body);
+        try {
+            body = JSON.parse(body);
+        } catch(e) {
+            return apiError(e);
+        }
         if(!body) return resetData();
         // console.log('response:',response);
         // console.log('body:',body);
@@ -148,7 +154,11 @@ function getArticle(callback) {
 
     function getImageData(err, response, body) {
         if(err) return apiError(err);
-        body = JSON.parse(body);
+        try {
+            body = JSON.parse(body);
+        } catch(e) {
+            return apiError(e);
+        }
         for(var imageID in body.query.pages) {
             if(!body.query.pages.hasOwnProperty(imageID)) continue;
             var image = body.query.pages[imageID];
@@ -189,7 +199,7 @@ function getArticle(callback) {
 var _commands = {};
 
 _commands.wikiwhat = function(data) {
-    if(data.params[0] === 'reset' && userID === config.owner) {
+    if(data.params[0] === 'reset' && data.userID === config.owner) {
         resetData();
     } else if(wwData.get('state') === 'idle') {
         wwData.set('state', 'starting');

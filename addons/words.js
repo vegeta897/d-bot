@@ -16,7 +16,7 @@ _commands.unique = data => getTopWords(data, true);
 
 _commands.graph = async function(data) {
     let graphUsers = data.params.length === 0;
-    let graphChannels = data.paramStr = 'by channel';
+    let graphChannels = data.paramStr === 'by channel';
     let words = graphUsers || graphChannels ? [] : data.params.filter((p, i, a) => a.indexOf(p) === i); // Remove dupes
     let query = graphUsers || graphChannels ? {} : { $or: words.map(w => ({ content: util.regExpify(w) })) };
     let allMessages = await messages.cursor(db => db.cfind(query).sort({ time: 1 }));
