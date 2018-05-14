@@ -54,7 +54,7 @@ _commands.flip = function(data) {
 };
 
 _commands.whataretheodds = function(data) {
-    var odds = Math.pow(10, util.randomInt(1, 8)) * util.randomInt(1, 9);
+    var odds = Math.pow(10, util.randomInt(8)) * util.randomInt(1, 9);
     data.reply(`1 in ${odds.toLocaleString()}!`);
 };
 

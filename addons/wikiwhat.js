@@ -96,13 +96,12 @@ function endGame(winningGuess) {
         var roundSummary = '';
         wwData.get('bestGuesses').forEach(function(elem, index, arr) {
             if(elem.score < 0) return;
-            roundSummary += `Round ${index+1}: **${util.toProperCase(elem.guess)}`
-                + `** _by ${discord.getUsernameFromID(elem.user)}_`;
+            roundSummary += `${index+1}. **${discord.getUsernameFromID(elem.user)}**: ` + util.toProperCase(elem.guess);
             if(index < arr.length-1) roundSummary += '\n';
         });
-        discord.sendMessage(wwData.get('channel'), 'The game is over, nobody guessed the title!\n'
-            + `These were the best guesses for each round:\n${roundSummary}\n`
-            + `The article was actually called: __${wwData.get('answer')}__ \n`
+        discord.sendMessage(wwData.get('channel'), 'Game over, nobody guessed the title!\n'
+            + `Best guesses for each round:\n${roundSummary}\n`
+            + `Actual title: __${wwData.get('answer')}__ \n`
             + `http://www.wikihow.com/${wwData.get('answer').split(' ').join('-')}`, true);
     }
     resetData();

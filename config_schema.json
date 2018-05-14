@@ -118,6 +118,14 @@
         }
       },
       "default": {}
+    },
+    "timezones": {
+      "type": "object",
+      "patternProperties": {
+        ".+": {
+          "type": "IANATimeZone"
+        }
+      }
     }
   }
 }

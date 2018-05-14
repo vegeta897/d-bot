@@ -1,6 +1,6 @@
 {
   "name": "d-bot",
-  "version": "1.0.49",
+  "version": "1.0.50",
   "description": "A quirky Discord bot made for single, small, private servers",
   "main": "main.js",
   "dependencies": {
@@ -20,6 +20,7 @@
     "immutable": "^3.8.2",
     "json-schema-defaults": "^0.2.0",
     "jsonschema": "^1.2.0",
+    "moment-timezone": "^0.5.17",
     "nedb-promise": "^2.0.1",
     "node-emoji": "^1.8.1",
     "nodecraft-api": "0.0.4",

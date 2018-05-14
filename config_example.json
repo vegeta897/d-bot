@@ -29,5 +29,9 @@
   "debugChannel": "some_channel_id",
   "userAliases": {
     "some_user_id": ["joe", "joey"]
-  }
+  },
+  "timezones": [
+    "America/New_York",
+    "Pacific/Auckland"
+  ]
 }

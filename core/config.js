@@ -1,7 +1,13 @@
 // Loads, validates, and provides config values
 var schema = require('./../config_schema.json');
-var validator = new (require('jsonschema').Validator)();
+var { Validator } = require('jsonschema');
 var schemaDefaults = require('json-schema-defaults');
+var moment = require('moment-timezone');
+
+Validator.prototype.customFormats.IANATimeZone = function(input) {
+    let m = moment();
+    return m.tz(input)._isUTC;
+};
 
 var config;
 try {
@@ -11,7 +17,7 @@ try {
     process.exit(); // Exit if config did not load successfully
 }
 
-var validation = validator.validate(config, schema);
+var validation = new Validator().validate(config, schema);
 
 if(validation.errors.length > 0) {
     console.log('Config validation failed, see errors below:');

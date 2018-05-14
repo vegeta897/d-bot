@@ -10,18 +10,21 @@ _commands.topic = function(data) {
     if(!discord.userHasRole(data.userID, config.adminRole)) {
         return data.reply('You do not have admin permissions!');
     }
+    if(data.paramStr === '') {
+        return data.reply('Type the topic you want after the command, e.g. `/topic hello`');
+    }
     if(data.paramStr.length > 1024) {
         return data.reply(`Sorry, that topic is \`${1024 - data.paramStr.length}\` characters too long!`);
     }
     discord.bot.editChannelInfo({ channelID: data.channel, topic: data.paramStr }, function(err, res) {
         if(err) return data.reply('Error setting topic!', err);
-        data.reply(`Topic set: **${data.paramStr}**`);
+        data.reply(`Topic set!`);
     });
 };
 
 module.exports = {
     commands: _commands,
     help: {
-        topic: ['Set the current channel\'s topic']
+        topic: ['Set the current channel\'s topic', 'Welcome to this channel']
     }
 };

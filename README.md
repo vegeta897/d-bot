@@ -37,6 +37,7 @@ The config file is mostly optional things. You can remove any optional property 
 * `7d` *object* - If you have a 7 Days to Die server, input the server IP and telnet info (see serverconfig.xml)
 * `debugChannel` *string* - Channel ID to simulate when running the `debug` script.
 * `userAliases` *object* - Lists of alternate names that users go by, for username lookups within the bot and for getting the username of a user no longer in the server. Property name should be the user ID, value should be an array of strings.
+* `timezones` *object* - Time zones used with the `time` command. Property names should be [IANA](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) time zone names, and the values are aliases shown by the command.
 
 ## And Also
 Eternal thanks and respect to Izy521 for his awesome library, [discord.io](https://github.com/izy521/discord.io), and all the assistance he has provided
