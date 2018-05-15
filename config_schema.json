@@ -6,6 +6,7 @@
     "owner",
     "prefixes"
   ],
+  "additionalProperties": false,
   "properties": {
     "token": {
       "type": "string"
@@ -64,7 +65,8 @@
           "type": "integer"
         }
       },
-      "default": null
+      "default": null,
+      "additionalProperties": false
     },
     "mumble": {
       "type": "object",
@@ -76,7 +78,8 @@
           "type": "string"
         }
       },
-      "default": null
+      "default": null,
+      "additionalProperties": false
     },
     "starbound": {
       "type": "object",
@@ -85,7 +88,8 @@
           "type": "url"
         }
       },
-      "default": null
+      "default": null,
+      "additionalProperties": false
     },
     "7d": {
       "type": "object",
@@ -100,7 +104,8 @@
           "type": "string"
         }
       },
-      "default": null
+      "default": null,
+      "additionalProperties": false
     },
     "debugChannel": {
       "type": "string",
@@ -123,7 +128,8 @@
       "type": "object",
       "patternProperties": {
         ".+": {
-          "type": "IANATimeZone"
+          "type": "string",
+          "format": "IANATimeZone"
         }
       }
     }

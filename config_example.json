@@ -30,8 +30,8 @@
   "userAliases": {
     "some_user_id": ["joe", "joey"]
   },
-  "timezones": [
-    "America/New_York",
-    "Pacific/Auckland"
-  ]
+  "timezones": {
+    "Eastern": "America/New_York",
+    "New Zealand": "Pacific/Auckland"
+  }
 }

@@ -31,7 +31,7 @@ _commands.time = async function(data) {
     let message = '__Local Times__';
     let now = moment();
     for(let tz of Object.keys(timezones)) {
-        message += `\n${timezones[tz]} - ${now.tz(tz).format('dddd, h:mm a')}`;
+        message += `\n${tz} - ${now.tz(timezones[tz]).format('dddd, h:mm a')}`;
     }
     data.reply(message);
 };
