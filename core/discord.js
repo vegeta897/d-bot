@@ -75,17 +75,20 @@ module.exports = {
 function _sendMessages(ID, messageArr, polite, callback) {
     messageArr = Array.isArray(messageArr) ? messageArr : [messageArr];
     let server = bot.channels[ID] ? bot.channels[ID].guild_id : 'dm';
+    let noMentions = polite === true || polite.noMentions;
+    let noEmbeds = polite === true || polite.noEmbeds;
     let sent = sentMessages[server] || [];
     sentMessages[server] = sent;
     let queue = msgQueue[server] || [];
     msgQueue[server] = queue;
     let emptyQueue = queue.length === 0;
     for(let i = 0; i < messageArr.length; i++) { // Add messages to buffer
-        if(polite) messageArr[i] = suppressMentionsAndLinks(messageArr[i]);
+        if(noMentions) messageArr[i] = suppressMentions(messageArr[i]);
+        if(noEmbeds) messageArr[i] = suppressLinks(messageArr[i]);
         if(messageArr[i].length === 0) messageArr[i] = '`empty message`';
         if(messageArr[i].length > 2000) {
             // TODO: Auto-split messages over 2000 chars
-            console.log('Trimming message over 2000 chars');
+            console.log((new Date()).toString().substr(0,24), 'Trimming message over 2000 chars');
             messageArr[i] = messageArr[i].substr(0, 2000);
         }
         queue.push({
@@ -94,7 +97,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
         })
     }
     function _sendMessage() {
-        if(waitUntil) console.log('sending message at', Date.now(),'after waiting', waitUntil);
+        if(waitUntil) console.log('sending msg at', new Date(),'after waiting for ', new Date(waitUntil));
         waitUntil = 0;
         sent.unshift(Date.now());
         sent = sent.slice(0, MSG_LIMIT);
@@ -104,7 +107,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
             if(err) {
                 console.log(new Date().toLocaleString(), 'Error sending message:', err);
                 if(err.statusMessage === 'TOO MANY REQUESTS') {
-                    console.log('rate limit received at',Date.now());
+                    console.log('rate limit received at', new Date());
                     waitUntil = Date.now() + err.response.retry_after + SAFETY;
                 }
             }
@@ -136,11 +139,15 @@ function _getTimeFromID(id) { // Converts Discord snowflake ID to timestamp, tha
     return new Date((id / 4194304) + 1420070400000);
 }
 
-function suppressMentionsAndLinks(message) {
-    return message.replace(/<@!?[0-9]+>/g, match => {
+function suppressMentions(message) {
+    return message.split('@everyone').join('(@)everyone').replace(/<@!?[0-9]+>/g, match => {
         match = match.replace('!', '');
         return "(@)" + _getUsernameFromID(match.substring(2, match.length - 1))
-    }).replace(util.urlRX, match => (match[0] === ' ' ? ' ' : '') + '<' + match.trim() + '>');
+    });
+}
+
+function suppressLinks(message) {
+    return message.replace(util.urlRX, match => (match[0] === ' ' ? ' ' : '') + '<' + match.trim() + '>');
 }
 
 bot.on('presence', function(user, userID, status, game, rawEvent) {

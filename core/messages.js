@@ -11,6 +11,7 @@ storage.nedb('messages', { fieldName: 'id', unique: true }).then(d => {
 });
 
 async function cursor(command) {
+    if(!db) return;
     try {
         let results = await command(db).exec();
         if(!results || results.length === 0 || !results[results.length - 1].hasOwnProperty('content')) return false;

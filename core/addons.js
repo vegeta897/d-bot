@@ -17,7 +17,7 @@ var help = {}; // Command reference
 
 //var commandAttempts = {}; // Tracking unknown command attempts to offer help when needed
 
-scanAddons();
+//scanAddons();
 
 setInterval(function tick() {
     for(let ticker of tickers) addons.get(ticker).tick();
@@ -94,6 +94,7 @@ function generateHelpMessage() {
 }
 
 module.exports = {
+    scanAddons,
     readMessage(user, userID, channelID, message, rawEvent) {
         let isWebhook = !!rawEvent.d.webhook_id;
         let isPM = !discord.bot.channels[channelID];

@@ -17,7 +17,7 @@ _commands.topic = function(data) {
         return data.reply(`Sorry, that topic is \`${1024 - data.paramStr.length}\` characters too long!`);
     }
     discord.bot.editChannelInfo({ channelID: data.channel, topic: data.paramStr }, function(err, res) {
-        if(err) return data.reply('Error setting topic!', err);
+        if(err) return data.reply('Error setting topic! ' + err);
         data.reply(`Topic set!`);
     });
 };

@@ -17,6 +17,7 @@ bot.on('ready', function(event) {
         `Logged in as: ${bot.username} - (${bot.id})`);
     if(DEBUG) return setTimeout(setupConsoleInput, 500);
     require('fs').writeFile('./debug/bot.json', JSON.stringify(bot, null, '\t'), () => {});
+    addons.scanAddons();
     spoilBot.connect();
 });
 
