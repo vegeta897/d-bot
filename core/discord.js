@@ -75,8 +75,8 @@ module.exports = {
 function _sendMessages(ID, messageArr, polite, callback) {
     messageArr = Array.isArray(messageArr) ? messageArr : [messageArr];
     let server = bot.channels[ID] ? bot.channels[ID].guild_id : 'dm';
-    let noMentions = polite === true || polite.noMentions;
-    let noEmbeds = polite === true || polite.noEmbeds;
+    let noMentions = polite === true || (polite && polite.noMentions);
+    let noEmbeds = polite === true || (polite && polite.noEmbeds);
     let sent = sentMessages[server] || [];
     sentMessages[server] = sent;
     let queue = msgQueue[server] || [];
@@ -124,10 +124,11 @@ function _sendMessages(ID, messageArr, polite, callback) {
 }
 
 function _editMessage(channel, id, message, polite, callback) {
-    bot.editMessage({
-        channelID: channel, messageID: id,
-        message: polite ? suppressMentionsAndLinks(message) : message
-    }, callback);
+    let noMentions = polite === true || (polite && polite.noMentions);
+    let noEmbeds = polite === true || (polite && polite.noEmbeds);
+    message = noMentions ? suppressMentions(message) : message;
+    message = noEmbeds ? suppressLinks(message) : message;
+    bot.editMessage({ channelID: channel, messageID: id, message }, callback);
 }
 
 function _getUsernameFromID(id) {
