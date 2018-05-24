@@ -32,19 +32,29 @@ _commands.time = async function(data) {
     let { timezones } = config;
     if(!timezones || Object.keys(timezones).length === 0) return data.reply(`No timezones are configured.\nD-Bot's local time is **${DateFormat(new Date(), 'dddd, h:mm a')}**`);
     if(data.params.length > 0) {
-        if(!timezones[data.paramStr]) return data.reply('Invalid timezone, you must choose one of: '
-            + Object.keys(timezones));
         timeData.trans('zoneUsers', zu => {
-            let z = zu[data.paramStr] || [];
-            if(z.includes(data.userID)) {
-                data.reply(`You're already in that timezone`);
-                return zu;
+            let assigned = false;
+            for(let zKey of Object.keys(timezones)) {
+                let match = zKey.toLowerCase() === data.paramStr.toLowerCase();
+                if(zu[zKey] && zu[zKey].includes(data.userID)) {
+                    if(match) {
+                        data.reply(`You're already in that timezone`);
+                        return zu;
+                    }
+                    util.findAndRemove(data.userID, zu[zKey]);
+                }
+                if(match) {
+                    let z = zu[zKey] || [];
+                    z.push(data.userID);
+                    zu[zKey] = z;
+                    assigned = zKey;
+                }
             }
-            z.push(data.userID);
-            zu[data.paramStr] = z;
+            if(!assigned) data.reply('Invalid timezone, you must choose one of: ' + Object.keys(timezones).split(', '));
+            else data.reply(`You've been assigned to timezone \`${assigned}\``);
             return zu;
         });
-        return data.reply(`You have been assigned to timezone \`${data.paramStr}\``);
+        return;
     }
     let message = '__Local Times__';
     let now = moment();
