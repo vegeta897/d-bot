@@ -2,14 +2,17 @@
 var util = require(__base+'core/util.js');
 var messages = require(__base+'core/messages.js');
 var config = require(__base+'core/config.js');
-var { bot } = require(__base+'core/discord.js');
+var storage = require(__base+'core/storage.js');
+var discord = require(__base+'core/discord.js');
 var DateFormat = require('dateformat');
 var moment = require('moment-timezone');
+
+const timeData = storage.json('time', { zoneUsers: {} }, '\t');
 
 var _commands = {};
 
 _commands.me = function(data) {
-    bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id });
+    discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id });
     data.reply(`_${data.user} ${data.paramStr}_`);
 };
 
@@ -28,10 +31,27 @@ _commands.youtube = async function(data) {
 _commands.time = async function(data) {
     let { timezones } = config;
     if(!timezones || Object.keys(timezones).length === 0) return data.reply(`No timezones are configured.\nD-Bot's local time is **${DateFormat(new Date(), 'dddd, h:mm a')}**`);
+    if(data.params.length > 0) {
+        if(!timezones[data.paramStr]) return data.reply('Invalid timezone, you must choose one of: '
+            + Object.keys(timezones));
+        timeData.trans('zoneUsers', zu => {
+            let z = zu[data.paramStr] || [];
+            if(z.includes(data.userID)) {
+                data.reply(`You're already in that timezone`);
+                return zu;
+            }
+            z.push(data.userID);
+            zu[data.paramStr] = z;
+            return zu;
+        });
+        return data.reply(`You have been assigned to timezone \`${data.paramStr}\``);
+    }
     let message = '__Local Times__';
     let now = moment();
+    let zoneUsers = timeData.get('zoneUsers');
     for(let tz of Object.keys(timezones)) {
-        message += `\n${tz} - ${now.tz(timezones[tz]).format('dddd, h:mm a')}`;
+        message += `\n${now.tz(timezones[tz]).format('ddd h:mm a')} - ${tz}`;
+        if(zoneUsers[tz]) message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u));
     }
     data.reply(message);
 };
@@ -42,6 +62,6 @@ module.exports = {
         earliest: ['Get the time and date of the earliest recorded message'],
         me: ['Make D-Bot narrate your life', 'is eating cotton candy'],
         youtube: ['Grab a random YouTube video from the chat log'],
-        time: ['Get everybody\'s local time']
+        time: ['Get everybody\'s local time, or assign a timezone to yourself', 'Eastern']
     }
 };
