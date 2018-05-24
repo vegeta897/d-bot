@@ -33,26 +33,31 @@ _commands.time = async function(data) {
     if(!timezones || Object.keys(timezones).length === 0) return data.reply(`No timezones are configured.\nD-Bot's local time is **${DateFormat(new Date(), 'dddd, h:mm a')}**`);
     if(data.params.length > 0) {
         timeData.trans('zoneUsers', zu => {
+            let zuNew = {};
             let assigned = false;
             for(let zKey of Object.keys(timezones)) {
+                zuNew[zKey] = zu[zKey] ? zu[zKey].slice(0) : [];
                 let match = zKey.toLowerCase() === data.paramStr.toLowerCase();
-                if(zu[zKey] && zu[zKey].includes(data.userID)) {
+                if(zuNew[zKey].includes(data.userID)) {
                     if(match) {
                         data.reply(`You're already in that timezone`);
                         return zu;
                     }
-                    util.findAndRemove(data.userID, zu[zKey]);
+                    util.findAndRemove(data.userID, zuNew[zKey]);
                 }
                 if(match) {
-                    let z = zu[zKey] || [];
-                    z.push(data.userID);
-                    zu[zKey] = z;
+                    zuNew[zKey].push(data.userID);
                     assigned = zKey;
                 }
             }
-            if(!assigned) data.reply('Invalid timezone, you must choose one of: ' + Object.keys(timezones).split(', '));
-            else data.reply(`You've been assigned to timezone \`${assigned}\``);
-            return zu;
+            if(!assigned) {
+                data.reply('Invalid timezone, you must choose one of: ' + Object.keys(timezones).join(', '));
+                return zu; // Return original data
+            }
+            else {
+                data.reply(`You've been assigned to timezone \`${assigned}\``);
+                return zuNew; // Return new data
+            }
         });
         return;
     }
@@ -60,8 +65,8 @@ _commands.time = async function(data) {
     let now = moment();
     let zoneUsers = timeData.get('zoneUsers');
     for(let tz of Object.keys(timezones)) {
-        message += `\n${now.tz(timezones[tz]).format('ddd h:mm a')} - ${tz}`;
-        if(zoneUsers[tz]) message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u));
+        message += `\n${now.tz(timezones[tz]).format('ddd h:mm a')} - **${tz}**`;
+        if(zoneUsers[tz]) message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u)).join(', ');
     }
     data.reply(message);
 };
