@@ -37,7 +37,7 @@ _commands.regicide = async function(data) { // Find words that have changed king
     if(!allMessages) return data.reply(`No messages in database`);
     let dictionary = new Map();
     for(let { content: text, user } of allMessages) {
-        let words = util.getRegExpMatches(text.toLowerCase(), util.regExpify('\\S+', true));
+        let words = util.getRegExpMatches(text.toLowerCase(), new RegExp(`(?:\\S{0}|^|[^a-z])(\\S+)(?![a-z])`, 'gi'));
         if(!words || words.length === 0 || !words[0]) continue;
         for(let word of words) {
             if(!dictionary.has(word)) dictionary.set(word, { overthrows: 0, users: new Map() });

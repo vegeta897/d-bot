@@ -4,13 +4,7 @@ var config = require('./core/config.js');
 var { bot } = require('./core/discord.js');
 var messages = require('./core/messages.js');
 var addons = require('./core/addons.js');
-var SpoilerBot = require('discord-spoiler-bot');
 const DEBUG = process.argv[2] === 'debug';
-
-var spoilBot = DEBUG ? null : new SpoilerBot({
-    client: bot,
-    markAllowAll: true
-});
 
 bot.on('ready', function(event) {
     console.log((new Date()).toString().substr(0,24),
@@ -18,7 +12,6 @@ bot.on('ready', function(event) {
     if(DEBUG) return setTimeout(setupConsoleInput, 500);
     require('fs').writeFile('./debug/bot.json', JSON.stringify(bot, null, '\t'), () => {});
     addons.scanAddons();
-    spoilBot.connect();
 });
 
 bot.on('message', function(user, userID, channelID, message, rawEvent) {

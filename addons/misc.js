@@ -66,7 +66,7 @@ _commands.time = async function(data) {
     let zoneUsers = timeData.get('zoneUsers');
     for(let tz of Object.keys(timezones)) {
         message += `\n${now.tz(timezones[tz]).format('ddd h:mm a')} - **${tz}**`;
-        if(zoneUsers[tz]) message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u)).join(', ');
+        if(zoneUsers[tz] && zoneUsers[tz].length > 0) message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u)).join(', ');
     }
     data.reply(message);
 };
