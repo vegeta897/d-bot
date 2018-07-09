@@ -27,7 +27,7 @@ org.eclipse.*
 *.m4a
 *.m4v
 *.avi
-*.mpggit 
+*.mpggit
 *.mkv
 *.band
 *.au
@@ -42,8 +42,8 @@ org.eclipse.*
 debug/*
 storage/*
 config.json
-junk/comic/dev-log
-junk/comic/fonts
+addons/helpers/comic/dev-log
+addons/helpers/comic/fonts
 
 # Visual Studio
 *.sln

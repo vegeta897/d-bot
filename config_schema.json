@@ -132,6 +132,25 @@
           "format": "IANATimeZone"
         }
       }
+    },
+    "comic": {
+      "properties": {
+        "channel": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "users": {
+          "type": "object",
+          "patternProperties": {
+            "[0-9]+": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "default": null,
+      "additionalProperties": false
     }
   }
 }

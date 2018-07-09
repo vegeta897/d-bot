@@ -1,11 +1,60 @@
 // A comic strip generator using the message log
-var util = require('./../util.js');
+var util = require(__base+'core/util.js');
 var Canvas = require('canvas');
+var messages = require(__base+'core/messages.js');
+var discord = require(__base+'core/discord.js');
+var config = require(__base+'core/config.js');
+var images = require('./helpers/comic/images.js');
 
-var sendMsg, bot, messages, members;
+// ✔️️ Multiple messages from the same user can clump into one frame
+// ✔️ Pay attention to message times to create conversations, and insert pauses with silent frames
+// ✔️ If message contains only a URL, character should be holding up a link symbol
+// ✔️ Randomly transpose actors alone in frame horizontally
+// Make random platforms for viper to be on, so he is in frame (separate image drawn under viper)
+// Markov can show up randomly in the last frame to deliver a non-sequitur
+// Create "themes" with location backgrounds and/or activities and/or outfits for the actors
+
 var cWidth = 400*2, cHeight = 300*2; // Max embedded image dimensions
 var fWidth = 200*2, fHeight = 150*2; // Frame dimensions
 var defaultFontSize = 36;
+var main = createCanvas(cWidth, cHeight),
+    canvas = main.canvas,
+    ctx = main.ctx;
+
+var _commands = {};
+
+_commands.comic = async function(data) {
+    if(!config.comic) return data.reply('The comic command has not been configured!');
+    let query = {
+        channel: config.comic.channel,
+        $not: { content: '' }
+    };
+    let skip = 30; // Grab a pool of 30 messages
+    if(data.params[0] === 'random') { // Grab messages from a random point
+        let count = await messages.cursor(db => db.ccount(query));
+        skip = util.randomInt(count - skip);
+    }
+    let msgPool = await messages.cursor(db => db.cfind(query).sort({time:-1}).limit(30).skip(skip));
+
+    msgPool = msgPool.map(({ content: text, user, time }) => ({
+        text, time, user: config.comic.users[user] || 'anon'
+    }));
+
+    var dialogue = buildDialogue(msgPool);
+    //console.log(dialogue);
+    var frames = placeActors(dialogue);
+    frames = drawActors(frames);
+    frames = fillText(frames);
+    for(var f = 0; f < frames.length; f++) {
+        frames[f].number = f + 1;
+        //frames[f].canvas = drawFrame(frames[f]);
+        drawFrameToComic(frames[f]);
+    }
+
+    discord.bot.uploadFile({
+        to: data.channel, filename: `comic-${Date.now()}.png`, file: canvas.toBuffer()
+    });
+};
 
 function createCanvas(width, height) {
     var newCanvas = new Canvas(width, height), newCtx = newCanvas.getContext('2d');
@@ -13,58 +62,6 @@ function createCanvas(width, height) {
     newCtx.font = defaultFontSize + 'px "SF Action Man"';
     return { canvas: newCanvas, ctx: newCtx };
 }
-
-var main = createCanvas(cWidth, cHeight), canvas = main.canvas, ctx = main.ctx;
-
-var images = require('./images.js');
-
-module.exports = {
-    init: function(sm,b,msgs) { 
-        sendMsg = sm; bot = b; messages = msgs;
-        members = bot.users;
-    },
-    generate: function(channel,option) {
-        // ✔️️ Multiple messages from the same user can clump into one frame
-        // ✔️ Pay attention to message times to create conversations, and insert pauses with silent frames
-        // Make random platforms for viper to be on, so he is in frame (separate image drawn under viper)
-        // ✔️ If message contains only a URL, character should be holding up a link symbol
-        // Markov can show up randomly in the last frame to deliver a non-sequitur
-        // Create "themes" with location backgrounds and/or activities and/or outfits for the actors
-        // ✔️ Randomly transpose actors alone in frame horizontally
-
-        // TODO: Replace hard-coded MSF channel with `channel`
-        getMessages(channel,option,function(msgData) {
-            var lastMessages = [];
-            for(var m = 0; m < msgData.length; m++) {
-                if(msgData[m].content === '') continue;
-                lastMessages.push({
-                    text: msgData[m].content,
-                    user: members[msgData[m].user] ? members[msgData[m].user].user.username.toLowerCase() : 'anon',
-                    time: new Date(msgData[m].time)
-                });
-            }
-            
-            var dialogue = buildDialogue(lastMessages);
-            //console.log(dialogue);
-            var frames = placeActors(dialogue);
-            frames = drawActors(frames);
-            frames = fillText(frames);
-            for(var f = 0; f < frames.length; f++) {
-                frames[f].number = f+1;
-                //frames[f].canvas = drawFrame(frames[f]);
-                drawFrameToComic(frames[f]);
-            }
-            
-            var fs = require('fs'), out = fs.createWriteStream(__dirname + '/comic.png'), stream = canvas.pngStream();
-            stream.on('data', function(chunk) { out.write(chunk); });
-            stream.on('end', function() {
-                out.end(function() { // Image ready
-                    bot.uploadFile({ to: channel, file: fs.createReadStream(__dirname + '/comic.png') });
-                });
-            });
-        });
-    }
-};
 
 function buildDialogue(messages) {
     var dialogue = [];
@@ -81,16 +78,16 @@ function buildDialogue(messages) {
         beat = {};
     };
     for(var m = 0; m < messages.length; m++) { // Loop through messages, newest to oldest
-        if(dialogue.length == 5) break; // Stop at 5 beats (extra for first frame context)
+        if(dialogue.length === 5) break; // Stop at 5 beats (extra for first frame context)
         var message = messages[m];
-        //console.log('m =',m,'user:',message.user,'message:',message.text,'time:',message.time);
-        //console.log('user:',message.user);
-        //console.log('message:',message.text);
-        //console.log('time:',message.time);
-        //console.log('beat:',beat);
+        // console.log('m =',m,'user:',message.user,'message:',message.text,'time:',message.time);
+        // console.log('user:',message.user);
+        // console.log('message:',message.text);
+        // console.log('time:',message.time);
+        // console.log('beat:',beat);
         if(beat.speaker) { // If speaker already defined for this beat
             //console.log('speaker already defined:',beat.speaker);
-            if(beat.speaker == message.user) { // If beat speaker matches current message speaker
+            if(beat.speaker === message.user) { // If beat speaker matches current message speaker
                 //console.log('speaker matches message user');
                 var joinedText = message.text + ' \n ' + beat.text;
                 var textFit = planText(joinedText,'left',images.genericCollisions,6); // Test fit
@@ -121,7 +118,7 @@ function buildDialogue(messages) {
         // Check if pause time is more than twice the average, and at least 3 minutes
         var pauseTime = dialogue[b].time - dialogue[b-1].time;
         if(pauseTime > Math.max(180*1000,averagePauseLength * 2)) {
-            dialogue.splice(b,0,{ pause: true, time: new Date(dialogue[b-1].time.getTime() + pauseTime/2) });
+            dialogue.splice(b,0,{ pause: true, time: dialogue[b-1].time + pauseTime/2 });
             break; // Only one pause per comic
         }
     }
@@ -264,9 +261,9 @@ function fillText(frames) {
         //            console.log('splitting messages');
         //            frame.text = splitAttempt.join(' \n ');
         //            var splitText = messageSplit.splice(0,sa).join(' \n ');
-        //            var newFrame = { 
+        //            var newFrame = {
         //                actors: frame.actors, speaker: frame.speaker, text: splitText,
-        //                collisionMaps: frame.collisionMaps, 
+        //                collisionMaps: frame.collisionMaps,
         //                actorImage: frame.actorImage, bgImage: frame.bgImage
         //            };
         //            frames.splice(f,0,newFrame);
@@ -305,7 +302,7 @@ function drawTextPlan(context, plan) {
     context.textAlign = plan.align;
     context.fillStyle = '#fff';
     context.shadowColor = '#fff';
-    context.shadowBlur = 10;
+    context.shadowBlur = 14;
     context.shadowOffsetX = 0;
     context.shadowOffsetY = 0;
     for(var t = 0; t < 5; t++) {
@@ -337,7 +334,7 @@ function planText(text, align, collisionMaps, maxShrink) {
         var y = Math.round(plan.fontSize),
             textHeight = Math.round(plan.fontSize * 0.7);
         var space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
-        var x = align == 'left' ? space.left + horizontalPadding : space.right - horizontalPadding, 
+        var x = align == 'left' ? space.left + horizontalPadding : space.right - horizontalPadding,
             maxWidth = space.right - space.left - horizontalPadding * 2;
         for(var n = 0; n < words.length; n++) {
             var urlDomain = words[n].indexOf('://') > 0 ? util.getDomain(words[n]) : false;
@@ -374,25 +371,11 @@ function planText(text, align, collisionMaps, maxShrink) {
     return false;
 }
 
-function getMessages(channel,option,callback) {
-    var executeQuery = function(skip) {
-        // TODO: Replace hard-coded MSF channel with `channel`
-        messages.find({$or:[{channel:/*channel*/'86915384589967360'},{ channel:{$exists:false}}]}) // Matches channel or has no channel
-            .sort({time:-1}).limit(30).skip(skip).exec(function(err,msgData) {
-            if(err) { console.log(err); return; }
-            if (!msgData || msgData.length == 0 || !msgData[msgData.length-1].hasOwnProperty('content')) {
-                console.log('missing or invalid data:',msgData);
-                return;
-            }
-            callback(msgData);
-        });
-    };
-    if(option == 'random') {
-        messages.count({}, function (err, count) {
-            if(err) { console.log(err); return; }
-            executeQuery(util.randomInt(count-30));
-        });
-    } else {
-        executeQuery(option);
+
+module.exports = {
+    commands: _commands,
+    dev: true,
+    help: {
+        comic: ['Generate a comic', '', 'random']
     }
-}
+};

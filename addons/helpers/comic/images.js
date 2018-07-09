@@ -1,6 +1,6 @@
 'use strict';
 var fs = require('fs');
-var util = require('./../util.js');
+var util = require(__base+'core/util.js');
 var Canvas = require('canvas'),
     Image = Canvas.Image;
 
@@ -23,9 +23,9 @@ for(var i = 0; i < imageList.length; i++) {
     for(var by = 0; by < fHeight / collisionPrecision; by++) {
         var firstSolidX = false;
         for(var bx = 0; bx < fWidth / collisionPrecision; bx++) {
-            for(var px = 0; px < collisionPrecision; px++) { 
+            for(var px = 0; px < collisionPrecision; px++) {
                 for(var py = 0; py < collisionPrecision; py++) {
-                    var pixelAlpha = imgData[(bx * collisionPrecision + px) * 4 + 
+                    var pixelAlpha = imgData[(bx * collisionPrecision + px) * 4 +
                         (by * collisionPrecision + py) * fWidth * 4 + 3];
                     if(pixelAlpha > 0.3) {
                         firstSolidX = bx;
@@ -44,14 +44,14 @@ for(var i = 0; i < imageList.length; i++) {
 function flipCollision(collisionMap) { // Flip collision map side
     var flipped = { side: collisionMap.side == 'right' ? 'left' : 'right', rows: [] };
     for(var fc = 0; fc < fHeight/collisionPrecision; fc++) {
-        flipped.rows.push(collisionMap.rows[fc] !== false ? 
+        flipped.rows.push(collisionMap.rows[fc] !== false ?
             fWidth/collisionPrecision-collisionMap.rows[fc] : false)
     }
     return flipped;
 }
 
 // Build average shaped collision box for rough text planning
-var genericCollisionLeft = { side: 'left', rows: [] }; 
+var genericCollisionLeft = { side: 'left', rows: [] };
 for(var gc = 0; gc < fHeight/collisionPrecision; gc++) {
     genericCollisionLeft.rows.push(gc > 75/collisionPrecision ? 300/collisionPrecision : false);
 }

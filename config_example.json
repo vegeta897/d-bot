@@ -33,5 +33,11 @@
   "timezones": {
     "Eastern": "America/New_York",
     "New Zealand": "Pacific/Auckland"
+  },
+  "comic": {
+    "channel": "busy_channel_id",
+    "users": {
+      "user_id": "user_name"
+    }
   }
 }
