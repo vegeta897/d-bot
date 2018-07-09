@@ -42,7 +42,7 @@ for(var i = 0; i < imageList.length; i++) {
 }
 
 function flipCollision(collisionMap) { // Flip collision map side
-    var flipped = { side: collisionMap.side == 'right' ? 'left' : 'right', rows: [] };
+    var flipped = { side: collisionMap.side === 'right' ? 'left' : 'right', rows: [] };
     for(var fc = 0; fc < fHeight/collisionPrecision; fc++) {
         flipped.rows.push(collisionMap.rows[fc] !== false ?
             fWidth/collisionPrecision-collisionMap.rows[fc] : false)

@@ -4,7 +4,8 @@ var Canvas = require('canvas');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
 var config = require(__base+'core/config.js');
-var images = require('./helpers/comic/images.js');
+var requireUncached = require('require-uncached');
+var images = requireUncached('./helpers/comic/images.js');
 
 // ✔️️ Multiple messages from the same user can clump into one frame
 // ✔️ Pay attention to message times to create conversations, and insert pauses with silent frames
@@ -37,7 +38,7 @@ _commands.comic = async function(data) {
     let msgPool = await messages.cursor(db => db.cfind(query).sort({time:-1}).limit(30).skip(skip));
 
     msgPool = msgPool.map(({ content: text, user, time }) => ({
-        text, time, user: config.comic.users[user] || 'anon'
+        text, time, user: config.comic.users[user] || user
     }));
 
     var dialogue = buildDialogue(msgPool);
@@ -187,10 +188,10 @@ function placeActors(dialogue) {
 
 function drawActors(frames) {
     var bgColor = { h: Math.random(), s: 0.15, v: 0.9 };
-    console.log('drawing actors to frames');
+    // console.log('drawing actors to frames');
     // Draw actors to frames
     for(var da = 0; da < frames.length; da++) {
-        console.log('drawing frame',da-frames.length+5);
+        // console.log('drawing frame',da-frames.length+5);
         var frame = frames[da];
         frame.bgImage = createCanvas(fWidth,fHeight);
         frame.bgImage.ctx.rect(0,0,fWidth,fHeight);
@@ -280,9 +281,9 @@ function fillText(frames) {
 }
 
 function drawFrameToComic(frame) {
-    console.log('drawFrameToComic');
-    console.log('drawing:',frame.number,frame.speaker,frame.actors);
-    console.log('text plan:',JSON.stringify(frame.textPlan, null, '\t'));
+    // console.log('drawFrameToComic');
+    // console.log('drawing:',frame.number,frame.speaker,frame.actors);
+    // console.log('text plan:',JSON.stringify(frame.textPlan, null, '\t'));
     var frameX = (frame.number-1) % 2 * fWidth,
         frameY = Math.floor((frame.number-1) / 2) * fHeight;
     //ctx.fillStyle = '#eeeeee'; // Draw frame BG color
