@@ -14,6 +14,8 @@ var images = requireUncached('./helpers/comic/images.js');
 // Make random platforms for viper to be on, so he is in frame (separate image drawn under viper)
 // Markov can show up randomly in the last frame to deliver a non-sequitur
 // Create "themes" with location backgrounds and/or activities and/or outfits for the actors
+// Grab linked images and draw them in the frame
+// Allow generating a comic from a search term
 
 var cWidth = 400*2, cHeight = 300*2; // Max embedded image dimensions
 var fWidth = 200*2, fHeight = 150*2; // Frame dimensions
@@ -31,14 +33,15 @@ _commands.comic = async function(data) {
         $not: { content: '' }
     };
     let skip = 30; // Grab a pool of 30 messages
-    if(data.params[0] === 'random') { // Grab messages from a random point
+    if(data.params[0] !== 'that') { // Grab messages from a random point
         let count = await messages.cursor(db => db.ccount(query));
         skip = util.randomInt(count - skip);
     }
     let msgPool = await messages.cursor(db => db.cfind(query).sort({time:-1}).limit(30).skip(skip));
 
-    msgPool = msgPool.map(({ content: text, user, time }) => ({
-        text, time, user: config.comic.users[user] || user
+    msgPool = msgPool.map(({ content, user, time }) => ({
+        text: discord.bot.fixMessage(util.emojiToText(content).replace(/<(:\w+:)\d+>/gi,'$1')),
+        time, user: config.comic.users[user] || user
     }));
 
     var dialogue = buildDialogue(msgPool);
@@ -90,11 +93,11 @@ function buildDialogue(messages) {
             //console.log('speaker already defined:',beat.speaker);
             if(beat.speaker === message.user) { // If beat speaker matches current message speaker
                 //console.log('speaker matches message user');
-                var joinedText = message.text + ' \n ' + beat.text;
+                var joinedText = message.text + ' \n \n ' + beat.text;
                 var textFit = planText(joinedText,'left',images.genericCollisions,6); // Test fit
                 if(textFit && beat.time - message.time < 180*1000) { // If fits and beat is less than 3 minutes before
                     //console.log('fits and less than 3 min, joining');
-                    beat.text = message.text + ' \n ' + beat.text;
+                    beat.text = message.text + ' \n \n ' + beat.text;
                     beat.time = message.time;
                 } else {
                     //console.log('pause too long or doesn't fit, adding beat');
@@ -158,7 +161,7 @@ function placeActors(dialogue) {
             }
         }
         frame.actors = JSON.parse(JSON.stringify(actors)); // Write actors to frame
-        console.log('actors placed in frame',pa,frame.actors);
+        // console.log('actors placed in frame',pa,frame.actors);
         frames.push(frame);
     }
     // Place actors (second pass to fill gaps)
@@ -182,7 +185,7 @@ function placeActors(dialogue) {
     //        }
     //    }
     //}
-    console.log(JSON.stringify(frames, null, '\t'));
+    // console.log(JSON.stringify(frames, null, '\t'));
     return frames;
 }
 
@@ -216,26 +219,26 @@ function drawActors(frames) {
         for(var aKey in frame.actors) { if(!frame.actors.hasOwnProperty(aKey)) continue;
             var actorState = 'idle';
             if(frame.speaker) {
-                if(frame.speaker == aKey) {
+                if(frame.speaker === aKey) {
                     actorState = frame.text.substr(0,4) == 'http' ? 'link' : 'talk';
                 } else {
                     actorState = 'listen';
                 }
             } else {
-                actorState = Object.keys(frame.actors).length == 1 ? 'alone' : 'idle';
+                actorState = Object.keys(frame.actors).length === 1 ? 'alone' : 'idle';
             }
             var frameImage = images.getImage(aKey,actorState);
-            console.log(aKey,actorState,frame.actors[aKey]);
-            if(frame.actors[aKey] == 'left') {
+            // console.log(aKey,actorState,frame.actors[aKey]);
+            if(frame.actors[aKey] === 'left') {
                 frame.actorImage.ctx.translate(fWidth,0);
                 frame.actorImage.ctx.scale(-1,1);
                 frameImage.collisionMap = images.flipCollision(frameImage.collisionMap);
             }
             var xOffset = 0;
-            if(actorState == 'alone') xOffset = util.randomInt(150);
+            if(actorState === 'alone') xOffset = util.randomInt(150);
             frame.collisionMaps.push(frameImage.collisionMap);
             frame.actorImage.ctx.drawImage(frameImage.img,0,0,fWidth,fHeight,xOffset*-1,0,fWidth,fHeight);
-            if(frame.actors[aKey] == 'left') {
+            if(frame.actors[aKey] === 'left') {
                 frame.actorImage.ctx.translate(fWidth,0);
                 frame.actorImage.ctx.scale(-1,1);
             }
@@ -375,8 +378,8 @@ function planText(text, align, collisionMaps, maxShrink) {
 
 module.exports = {
     commands: _commands,
-    dev: true,
+    // dev: true,
     help: {
-        comic: ['Generate a comic', '', 'random']
+        comic: ['Generate a comic', '', 'that']
     }
 };
