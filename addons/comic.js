@@ -134,7 +134,7 @@ function placeActors(dialogue) {
     var frames = [], actors = {};
     var placeActor = function(actor,side) {
         for(var aKey in actors) { if(!actors.hasOwnProperty(aKey)) continue;
-            if(actors[aKey] == side) delete actors[aKey]; // Remove actor already on this side
+            if(actors[aKey] === side) delete actors[aKey]; // Remove actor already on this side
         }
         actors[actor] = side;
     };
@@ -145,7 +145,7 @@ function placeActors(dialogue) {
         var frame = { actors: {}, speaker: beat.speaker, time: beat.time, text: beat.text };
         if(beat.speaker) { // If beat has a speaker
             if(pa > 0) { // If not on first frame
-                if(lastSpeaker && beat.speaker != lastSpeaker.actor) { // If different than last speaker
+                if(lastSpeaker && beat.speaker !== lastSpeaker.actor) { // If different than last speaker
                     // Put new speaker on opposite side
                     placeActor(beat.speaker,util.flip(lastSpeaker.side));
                 }
@@ -155,7 +155,7 @@ function placeActors(dialogue) {
             lastSpeaker = { side: actors[beat.speaker], actor: beat.speaker };
         }
         for(var aKey in actors) { if(!actors.hasOwnProperty(aKey)) continue;
-            if(aKey != beat.speaker && beat[pa+1] && aKey != beat[pa+1].speaker) {
+            if(aKey !== beat.speaker && beat[pa+1] && aKey !== beat[pa+1].speaker) {
                 // If actor not speaking this frame or next frame, chance of leaving
                 if(Math.random() > 0.7) delete actors[aKey];
             }
@@ -203,7 +203,7 @@ function drawActors(frames) {
             fWidth/2, fHeight/2, fHeight
         );
         var hueOffset = 0;
-        if(da == frames.length-1 && !frames[da-1].speaker) hueOffset = Math.random() * 0.3;
+        if(da === frames.length-1 && !frames[da-1].speaker) hueOffset = Math.random() * 0.3;
         var dark = util.hsvToRGB(bgColor.h+hueOffset,bgColor.s,bgColor.v),
             light = util.hsvToRGB(
                 bgColor.h+hueOffset+Math.random()*0.12,
@@ -220,7 +220,7 @@ function drawActors(frames) {
             var actorState = 'idle';
             if(frame.speaker) {
                 if(frame.speaker === aKey) {
-                    actorState = frame.text.substr(0,4) == 'http' ? 'link' : 'talk';
+                    actorState = frame.text.substr(0,4) === 'http' ? 'link' : 'talk';
                 } else {
                     actorState = 'listen';
                 }
@@ -294,7 +294,7 @@ function drawFrameToComic(frame) {
     ctx.drawImage(frame.bgImage.canvas, frameX, frameY);
     if(frame.textImage) ctx.drawImage(frame.textImage.canvas, frameX, frameY);
     ctx.drawImage(frame.actorImage.canvas, frameX, frameY);
-    if(frame.number == 4) { // Draw frame borders after last frame is drawn
+    if(frame.number === 4) { // Draw frame borders after last frame is drawn
         ctx.fillStyle = '#222222';
         ctx.clearRect(fWidth-4,0,8,cHeight);
         ctx.clearRect(0,fHeight-4,cWidth,8);
@@ -338,29 +338,29 @@ function planText(text, align, collisionMaps, maxShrink) {
         var y = Math.round(plan.fontSize),
             textHeight = Math.round(plan.fontSize * 0.7);
         var space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
-        var x = align == 'left' ? space.left + horizontalPadding : space.right - horizontalPadding,
+        var x = align === 'left' ? space.left + horizontalPadding : space.right - horizontalPadding,
             maxWidth = space.right - space.left - horizontalPadding * 2;
         for(var n = 0; n < words.length; n++) {
-            var urlDomain = words[n].indexOf('://') > 0 ? util.getDomain(words[n]) : false;
+            var urlDomain = util.getDomain(words[n]);
             var currentWord = urlDomain ? '<' + urlDomain + '>' : words[n];
-            if(currentWord == '') continue;
-            if(currentWord == '\n') {
-                if(line != '') plan.lines.push({ x: x, y: y, text: line });
+            if(currentWord === '') continue;
+            if(currentWord === '\n') {
+                if(line !== '') plan.lines.push({ x: x, y: y, text: line });
                 line = '';
                 y += plan.lineHeight;
                 space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
-                x = align == 'left' ? space.left + horizontalPadding : space.right - horizontalPadding;
+                x = align === 'left' ? space.left + horizontalPadding : space.right - horizontalPadding;
                 maxWidth = space.right - space.left - horizontalPadding * 2;
                 continue;
             }
-            var testLine = line + (line == '' ? '' : ' ') + currentWord;
+            var testLine = line + (line === '' ? '' : ' ') + currentWord;
             var testWidth = ctx.measureText(testLine).width;
             if ((!maxWidth || testWidth > maxWidth) && n > 0) {
                 plan.lines.push({ x: x, y: y, text: line });
                 line = currentWord;
                 y += plan.lineHeight;
                 space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
-                x = align == 'left' ? space.left + horizontalPadding : space.right - horizontalPadding;
+                x = align === 'left' ? space.left + horizontalPadding : space.right - horizontalPadding;
                 maxWidth = space.right - space.left - horizontalPadding * 2;
             } else {
                 line = testLine;

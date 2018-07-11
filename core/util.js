@@ -112,16 +112,13 @@ var util = {
     getDomain: function(url) {
         if(url.indexOf('://') < 0) return false;
         url = url.replace(':///','://'); // Undo triple-slashing
-        var firstPeriod = url.indexOf('.');
-        if(firstPeriod < 0) return false;
-        var afterFirstPeriod = url.substring(firstPeriod);
-        var firstFolder = afterFirstPeriod.indexOf('/');
-        firstFolder = firstFolder === -1 ? afterFirstPeriod.length : firstFolder;
-        var beforeFirstFolder = url.substring(0,firstPeriod + firstFolder);
-        var domainParts = beforeFirstFolder.split('.');
-        if(domainParts.length < 2) return false;
-        var finalized = domainParts[domainParts.length-2].split('://');
-        return finalized[finalized.length-1] + '.' + domainParts[domainParts.length-1];
+        url = url.replace(/(^\w+:|^)\/\//, ''); // Remove protocol
+        url = url.substring(0, url.indexOf('/')); // Remove subfolders
+        let parts = url.split('.').reverse();
+        let domain = parts.shift();
+        if(parts[0].length === 2) domain = parts.shift() + '.' + domain; // Get 2-part TLDs (like co.jp)
+        domain = parts.shift() + '.' + domain;
+        return domain;
     },
     hsvToRGB: function(h, s, v) {
         var r, g, b, i = Math.floor(h * 6);
