@@ -83,7 +83,7 @@ _commands.convert = async function(data) {
     }
     try {
         let result = convert(v).from(f).to(t);
-        data.reply(`\`${util.roundDecimals(result, 4)}\``);
+        data.reply(`\`${util.roundDecimals(result, 4)} ${t}\``);
     } catch(e) {
         let err = 'Error: Invalid unit';
         try {
@@ -124,9 +124,18 @@ const unitAliases = {
     'hr': 'h',
     'hour': 'h',
     'hours': 'h',
+    'day': 'd',
+    'days': 'd',
     'weeks': 'week',
     'months': 'month',
-    'years': 'year'
+    'years': 'year',
+    'ounce': 'oz',
+    'ounces': 'oz',
+    'gram': 'g',
+    'grams': 'g',
+    'mph': 'm/h',
+    'kmph': 'km/h',
+    'kmh': 'km/h'
 };
 
 module.exports = {

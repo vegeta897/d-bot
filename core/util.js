@@ -121,6 +121,7 @@ var util = {
         url = url.substring(0, url.indexOf('/')); // Remove subfolders
         let parts = url.split('.').reverse();
         let domain = parts.shift();
+        if(!parts[0]) return false;
         if(parts[0].length === 2) domain = parts.shift() + '.' + domain; // Get 2-part TLDs (like co.jp)
         domain = parts.shift() + '.' + domain;
         return domain;
