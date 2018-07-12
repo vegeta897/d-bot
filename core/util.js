@@ -23,6 +23,11 @@ var util = {
         return Math.floor(Math.random() * (+max - +min + 1)) + +min
     },
     isNumeric: n => !(''+n).includes(' ') && !isNaN(parseFloat(n)) && isFinite(n),
+    roundDecimals: (num, maxDecimals) => {
+        let wholeDigits = num.toString().replace(/^0+/, '').indexOf('.');
+        let decimals = Math.max(0, maxDecimals - wholeDigits);
+        return Math.round(num * 10 ** decimals) / 10 ** decimals;
+    },
     capitalize: s => s[0].toUpperCase() + s.substring(1),
     toProperCase: function(s) {
         var newstr = s.split(' ');
@@ -183,6 +188,7 @@ var util = {
         return NodeEmoji.unemojify(input).replace(new RegExp('(' + emojiAlphabet.join('|') + ')', 'g'),
             a => `:${alphabet[emojiAlphabet.indexOf(a)]}:`);
     },
+    arrayToList: (arr, quote, delimiter) => arr.map(e => `${quote}${e}${quote}`).join(delimiter),
     timer: {
         times: {},
         timing: {},

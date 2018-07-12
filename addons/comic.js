@@ -295,7 +295,6 @@ function drawFrameToComic(frame) {
     if(frame.textImage) ctx.drawImage(frame.textImage.canvas, frameX, frameY);
     ctx.drawImage(frame.actorImage.canvas, frameX, frameY);
     if(frame.number === 4) { // Draw frame borders after last frame is drawn
-        ctx.fillStyle = '#222222';
         ctx.clearRect(fWidth-4,0,8,cHeight);
         ctx.clearRect(0,fHeight-4,cWidth,8);
     }

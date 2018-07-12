@@ -6,6 +6,7 @@ var storage = require(__base+'core/storage.js');
 var discord = require(__base+'core/discord.js');
 var DateFormat = require('dateformat');
 var moment = require('moment-timezone');
+const convert = require('convert-units');
 
 const timeData = storage.json('time', { zoneUsers: {} }, '\t');
 
@@ -69,6 +70,63 @@ _commands.time = async function(data) {
         if(zoneUsers[tz] && zoneUsers[tz].length > 0) message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u)).join(', ');
     }
     data.reply(message);
+};
+
+_commands.convert = async function(data) {
+    let v, f, t;
+    try {
+        [,v, f, t] = data.paramStr.match(/^([0-9.]+)\s?([a-z]+)\sto\s([a-z]+)$/i);
+        f = unitAliases[f.toLowerCase()] || f;
+        t = unitAliases[t.toLowerCase()] || t;
+    } catch(e) {
+        return data.reply('Please input: `<value> <from_unit> to <to_unit>`');
+    }
+    try {
+        let result = convert(v).from(f).to(t);
+        data.reply(`\`${util.roundDecimals(result, 4)}\``);
+    } catch(e) {
+        let err = 'Error: Invalid unit';
+        try {
+            data.reply(`${err} \`${t}\`, use: ${util.arrayToList(convert().from(f).possibilities(), '`', ', ')}`);
+        } catch(e) {
+            try {
+                data.reply(`${err} \`${f}\`, use: ${util.arrayToList(convert().from(t).possibilities(), '`', ', ')}`);
+            } catch(e) {
+                data.reply(`${err}s, use abbreviations (e.g. ${util.arrayToList(['mi', 'km', 'lb', 'kg'], '`', ', ')})`);
+            }
+        }
+    }
+};
+
+const unitAliases = {
+    'mile': 'mi',
+    'miles': 'mi',
+    'foot': 'ft',
+    'feet': 'ft',
+    'inch': 'in',
+    'inches': 'in',
+    'meter': 'm',
+    'meters': 'm',
+    'kilometer': 'km',
+    'kilometers': 'km',
+    'centimeter': 'cm',
+    'centimeters': 'cm',
+    'millimeter': 'mm',
+    'millimeters': 'mm',
+    'celsius': 'C',
+    'fahrenheit': 'F',
+    'yard': 'yd',
+    'yards': 'yd',
+    'second': 's',
+    'seconds': 's',
+    'minute': 'min',
+    'minutes': 'min',
+    'hr': 'h',
+    'hour': 'h',
+    'hours': 'h',
+    'weeks': 'week',
+    'months': 'month',
+    'years': 'year'
 };
 
 module.exports = {
