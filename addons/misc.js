@@ -144,6 +144,7 @@ module.exports = {
         earliest: ['Get the time and date of the earliest recorded message'],
         me: ['Make D-Bot narrate your life', 'is eating cotton candy'],
         youtube: ['Grab a random YouTube video from the chat log'],
-        time: ['Get everybody\'s local time, or assign a timezone to yourself', 'Eastern']
+        time: ['Get everybody\'s local time, or assign a timezone to yourself', 'Eastern'],
+        convert: ['Convert all kinds of units!', '3 km to miles']
     }
 };

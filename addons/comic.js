@@ -28,6 +28,7 @@ var _commands = {};
 
 _commands.comic = async function(data) {
     if(!config.comic) return data.reply('The comic command has not been configured!');
+    // if(data.userID === '86919912156573696') return data.reply('No more comics for you, Raz');
     let query = {
         channel: config.comic.channel,
         $not: { content: '' }
@@ -48,13 +49,13 @@ _commands.comic = async function(data) {
     //console.log(dialogue);
     var frames = placeActors(dialogue);
     frames = drawActors(frames);
-    frames = fillText(frames);
+    frames = drawText(frames);
     for(var f = 0; f < frames.length; f++) {
         frames[f].number = f + 1;
         //frames[f].canvas = drawFrame(frames[f]);
         drawFrameToComic(frames[f]);
     }
-
+    fillText(ctx, (new Date(msgPool[0].time)).toLocaleDateString(), cWidth - 2, cHeight - 4, 28, 'right', 3, 1);
     discord.bot.uploadFile({
         to: data.channel, filename: `comic-${Date.now()}.png`, file: canvas.toBuffer()
     });
@@ -247,39 +248,17 @@ function drawActors(frames) {
     return frames;
 }
 
-function fillText(frames) {
+function drawText(frames) {
     for(var f = frames.length-1; f >= 0; f--) {
         var frame = frames[f];
         if(!frame.text) continue;
-        frame.textPlan = planText(frame.text, frame.actors[frame.speaker], frame.collisionMaps,defaultFontSize);
-        //var messageSplit = frame.text.split(' \n ');
-        //for(var sa = 0; sa < messageSplit.length; sa++) {
-        //    var splitAttempt = JSON.parse(JSON.stringify(messageSplit));
-        //    // Attempt to fit messages, start trimming as necessary
-        //    splitAttempt.splice(0,sa);
-        //    var maxShrink = messageSplit.length-sa == 1 ? defaultFontSize : 0; // Only shrink if 1 message remains
-        //    frame.textPlan = planText(
-        //        splitAttempt.join(' \n '), frame.actors[frame.speaker], frame.collisionMaps,maxShrink);
-        //    if(frame.textPlan) { // If text fits
-        //        if(sa > 0) { // If text was split off
-        //            console.log('splitting messages');
-        //            frame.text = splitAttempt.join(' \n ');
-        //            var splitText = messageSplit.splice(0,sa).join(' \n ');
-        //            var newFrame = {
-        //                actors: frame.actors, speaker: frame.speaker, text: splitText,
-        //                collisionMaps: frame.collisionMaps,
-        //                actorImage: frame.actorImage, bgImage: frame.bgImage
-        //            };
-        //            frames.splice(f,0,newFrame);
-        //            f++; // Process new frame
-        //        }
-        //        break;
-        //    }
-        //}
+        let { lines, fontSize, align } = planText(frame.text, frame.actors[frame.speaker], frame.collisionMaps,defaultFontSize);
         frame.textImage = createCanvas(fWidth,fHeight);
-        drawTextPlan(frame.textImage.ctx,frame.textPlan); // Draw plan
+        for(let { text, x, y } of lines) {
+            fillText(frame.textImage.ctx, text, x, y, fontSize, align, 10, 4);
+        }
     }
-    frames = frames.slice(-4); // Limit to 4 frames
+    frames = frames.slice(-4); // Limit to 4 frames TODO: Why is this here?
     return frames;
 }
 
@@ -294,32 +273,31 @@ function drawFrameToComic(frame) {
     ctx.drawImage(frame.bgImage.canvas, frameX, frameY);
     if(frame.textImage) ctx.drawImage(frame.textImage.canvas, frameX, frameY);
     ctx.drawImage(frame.actorImage.canvas, frameX, frameY);
-    if(frame.number === 4) { // Draw frame borders after last frame is drawn
+    if(frame.number === 4) {  // After last frame is drawn
+        // Draw frame borders
         ctx.clearRect(fWidth-4,0,8,cHeight);
         ctx.clearRect(0,fHeight-4,cWidth,8);
     }
 }
 
-function drawTextPlan(context, plan) {
-    context.font = plan.fontSize + 'px "SF Action Man"';
-    context.textAlign = plan.align;
+function fillText(context, text, x, y, size, align, shadowBlur, shadowSpread) {
+    context.font = size + 'px "SF Action Man"';
+    context.textAlign = align;
     context.fillStyle = '#fff';
     context.shadowColor = '#fff';
-    context.shadowBlur = 14;
+    context.shadowBlur = shadowBlur;
     context.shadowOffsetX = 0;
     context.shadowOffsetY = 0;
     for(var t = 0; t < 5; t++) {
         var ox = 0, oy = 0;
         switch(t) {
-            case 0: ox = -2; oy = -2; break;
-            case 1: ox = 2; oy = -2; break;
-            case 2: ox = -2; oy = 2; break;
-            case 3: ox = 2; oy = 2; break;
+            case 0: ox = -shadowSpread; oy = -shadowSpread; break;
+            case 1: ox = shadowSpread; oy = -shadowSpread; break;
+            case 2: ox = -shadowSpread; oy = shadowSpread; break;
+            case 3: ox = shadowSpread; oy = shadowSpread; break;
             case 4: context.fillStyle = '#222222';
         }
-        for(var l = 0; l < plan.lines.length; l++) {
-            context.fillText(plan.lines[l].text, plan.lines[l].x + ox, plan.lines[l].y + oy);
-        }
+        context.fillText(text, x + ox, y + oy);
     }
 }
 
