@@ -200,9 +200,11 @@ var util = {
         start(label) {
             if(!this.times[label]) this.times[label] = 0;
             this.timing[label] = this.now();
+            return this;
         },
         stop(label) {
             this.times[label] += this.now() - this.timing[label];
+            return this;
         },
         results() {
             console.log('---Timer Results---');
@@ -210,10 +212,12 @@ var util = {
                 console.log(label, this.times[label] / 1000000, 'ms');
             });
             console.log('-------------------');
+            return this;
         },
         reset() {
             this.times = {};
             this.timing = {};
+            return this;
         }
     },
     urlRX: /(^|\s)((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi,

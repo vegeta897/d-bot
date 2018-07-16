@@ -7,6 +7,7 @@ const config = require(__base+'core/config.js');
 const requireUncached = require('require-uncached');
 const images = requireUncached('./helpers/comic/images.js');
 const Canvas = require('canvas');
+const download = require('download');
 
 // ✔️️ Multiple messages from the same user can clump into one frame
 // ✔️ Pay attention to message times to create conversations, and insert pauses with silent frames
@@ -41,6 +42,7 @@ _commands.comic = async function(data) {
     // if(data.userID === '86919912156573696') return data.reply('No more comics for you, Raz');
     let query = {
         channel: config.comic.channel,
+        // content: /(^|\s)((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*\.(png)))/gi,
         $not: { content: '' }
     };
     let skip = 0;
@@ -61,7 +63,7 @@ _commands.comic = async function(data) {
     //console.log(dialogue);
     let frames = createFrames(dialogue);
     // util.timer.start('draw comic');
-    drawActors(frames);
+    await drawActors(frames);
     drawText(frames);
     let { canvas: mainCanvas, ctx: mainContext } = createCanvas(FRAME_WIDTH * FRAME_COLUMNS, FRAME_HEIGHT * 2);
     for(let f = 0; f < frames.length; f++) {
@@ -75,11 +77,7 @@ _commands.comic = async function(data) {
     require('fs').writeFile(storage.getStoragePath(filename), mainCanvas.toBuffer(), () => {});
     discord.bot.uploadFile({
         to: data.channel, filename, file: mainCanvas.toBuffer()
-    }, () => {
-        // util.timer.stop('upload');
-        // util.timer.results();
-        // util.timer.reset();
-    });
+    }/*, () => util.timer.stop('upload').results().reset()*/);
 };
 
 function createCanvas(width, height) {
@@ -148,7 +146,7 @@ function buildDialogue(messages) {
             break; // Only one pause per comic
         }
     }
-    // console.log(dialogue);
+    console.log(dialogue);
     return dialogue;
 }
 
@@ -200,33 +198,53 @@ function createFrames(dialogue) {
     return frames;
 }
 
-function drawActors(frames) {
+async function drawActors(frames) {
     let bgColor = { h: Math.random(), s: 0.15, v: 0.9 };
     // console.log('drawing actors to frames');
     // Draw actors to frames
     for(let i = 0; i < frames.length; i++) {
         // console.log('drawing frame',da-frames.length+5);
         let frame = frames[i];
-        frame.bgImage = createCanvas(FRAME_WIDTH,FRAME_HEIGHT);
-        frame.bgImage.ctx.rect(0,0,FRAME_WIDTH,FRAME_HEIGHT);
-        let bgGradient = frame.bgImage.ctx.createRadialGradient(
-            FRAME_WIDTH/2, 0, FRAME_HEIGHT/2,
-            FRAME_WIDTH/2, FRAME_HEIGHT/2, FRAME_HEIGHT
-        );
-        let hueOffset = 0;
-        if(i === frames.length-1 && !frames[i-1].speaker) hueOffset = Math.random() * 0.3;
-        let dark = util.hsvToRGB(bgColor.h+hueOffset,bgColor.s,bgColor.v),
-            light = util.hsvToRGB(
-                bgColor.h+hueOffset+Math.random()*0.12,
-                bgColor.s-Math.random()*0.07,
-                bgColor.v+Math.random()*0.07
+        let bgCanvas = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
+        let image = frame.text && frame.text.match(/(^|\s)((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*\.(png)))/gi);
+        let imageDownloaded = false;
+        if(image && image[0]) {
+            get_image: try {
+                let imgData = await download(image[0]);
+                let bgImage = new Canvas.Image;
+                bgImage.src = imgData;
+                if(!imgData || !bgImage.width) break get_image;
+                let scale = Math.max(FRAME_WIDTH / bgImage.width, FRAME_HEIGHT / bgImage.height);
+                let newWidth = bgImage.width * scale,
+                    newHeight = bgImage.height * scale;
+                let ox = (FRAME_WIDTH - newWidth) / 2,
+                    oy = (FRAME_HEIGHT - newHeight) / 2;
+                bgCanvas.ctx.drawImage(bgImage, 0, 0, bgImage.width, bgImage.height, ox, oy, newWidth, newHeight);
+                imageDownloaded = true;
+            } catch(e) { console.log(e); }
+        }
+        if(!imageDownloaded) {
+            bgCanvas.ctx.rect(0,0,FRAME_WIDTH,FRAME_HEIGHT);
+            let bgGradient = bgCanvas.ctx.createRadialGradient(
+                FRAME_WIDTH/2, 0, FRAME_HEIGHT/2,
+                FRAME_WIDTH/2, FRAME_HEIGHT/2, FRAME_HEIGHT
             );
-        bgGradient.addColorStop(0, 'rgba('+light.r+','+light.g+','+light.b+',1)');
-        bgGradient.addColorStop(1, 'rgba('+dark.r+','+dark.g+','+dark.b+',1)');
-        frame.bgImage.ctx.fillStyle = bgGradient;
-        frame.bgImage.ctx.fill();
+            let hueOffset = 0;
+            if(i === frames.length - 1 && !frames[i - 1].speaker) hueOffset = Math.random() * 0.3;
+            let dark = util.hsvToRGB(bgColor.h + hueOffset, bgColor.s, bgColor.v),
+                light = util.hsvToRGB(
+                    bgColor.h + hueOffset + Math.random() * 0.12,
+                    bgColor.s - Math.random() * 0.07,
+                    bgColor.v + Math.random() * 0.07
+                );
+            bgGradient.addColorStop(0, 'rgba(' + light.r + ',' + light.g + ',' + light.b + ',1)');
+            bgGradient.addColorStop(1, 'rgba(' + dark.r + ',' + dark.g + ',' + dark.b + ',1)');
+            bgCanvas.ctx.fillStyle = bgGradient;
+            bgCanvas.ctx.fill();
+        }
+        frame.bgImage = bgCanvas.canvas;
         frame.collisionMaps = [];
-        frame.actorImage = createCanvas(FRAME_WIDTH,FRAME_HEIGHT);
+        frame.actorImage = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
         for(let aKey of Object.keys(frame.actors)) {
             let actorState = 'idle';
             if(frame.speaker) {
@@ -277,7 +295,7 @@ function drawFrameToComic(ctx, canvas, frame) {
         frameY = Math.floor((frame.number - 1) / FRAME_COLUMNS) * FRAME_HEIGHT;
     //ctx.fillStyle = '#eeeeee'; // Draw frame BG color
     //ctx.fillRect((frame.number-1) % 2 * F_WIDTH, Math.floor((frame.number-1) / 2) * F_HEIGHT, F_WIDTH, F_HEIGHT);
-    ctx.drawImage(frame.bgImage.canvas, frameX, frameY);
+    ctx.drawImage(frame.bgImage, frameX, frameY);
     if(frame.textImage) ctx.drawImage(frame.textImage.canvas, frameX, frameY);
     ctx.drawImage(frame.actorImage.canvas, frameX, frameY);
     if(frame.number === DEFAULT_FRAME_COUNT) {  // After last frame is drawn
@@ -292,15 +310,15 @@ function fillText(context, text, x, y, size, align, shadowSpread) {
     context.textAlign = align;
     context.fillStyle = FONT_SHADOW_COLOR;
     context.shadowColor = FONT_SHADOW_COLOR;
-    context.shadowBlur = size / 10 * shadowSpread;
+    context.shadowBlur = size / 16 * shadowSpread;
     context.shadowOffsetX = 0;
     context.shadowOffsetY = 0;
     for(let s = 0; s < 4; s++) { // Draw shadows
-        let ox = shadowSpread, oy = shadowSpread;
+        let ox = 0, oy = shadowSpread;
         switch(s) {
-            case 0: ox = -shadowSpread; oy = -shadowSpread; break;
-            case 1: ox = shadowSpread; oy = -shadowSpread; break;
-            case 2: ox = -shadowSpread; oy = shadowSpread; break;
+            case 0: ox = -shadowSpread; break;
+            case 1: ox = shadowSpread; break;
+            case 2: oy = -shadowSpread; break;
         }
         context.fillText(text, x + ox, y + oy);
     }
@@ -362,7 +380,7 @@ function planText(text, align, collisionMaps, maxShrink) {
 
 module.exports = {
     commands: _commands,
-    // dev: true,
+    dev: true,
     help: {
         comic: ['Generate a comic', '', 'that']
     }
