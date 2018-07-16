@@ -1,11 +1,12 @@
 // A comic strip generator using the message log
 const util = require(__base+'core/util.js');
-const Canvas = require('canvas');
+const storage = require(__base+'core/storage.js');
 const messages = require(__base+'core/messages.js');
 const discord = require(__base+'core/discord.js');
 const config = require(__base+'core/config.js');
 const requireUncached = require('require-uncached');
 const images = requireUncached('./helpers/comic/images.js');
+const Canvas = require('canvas');
 
 // ✔️️ Multiple messages from the same user can clump into one frame
 // ✔️ Pay attention to message times to create conversations, and insert pauses with silent frames
@@ -24,6 +25,7 @@ const FRAME_HEIGHT = 150 * SCALE;
 const FRAME_COLUMNS = 2;
 
 const DEFAULT_FONT_SIZE = 36;
+const FONT_FAMILY = 'px "SF Action Man"';
 const FONT_COLOR = '#222222';
 const FONT_SHADOW_COLOR = '#FFFFFF';
 
@@ -69,8 +71,10 @@ _commands.comic = async function(data) {
     fillText(mainContext, (new Date(msgPool[0].time)).toLocaleDateString(), mainCanvas.width - 2, mainCanvas.height - 4, 28, RIGHT, 1);
     // util.timer.stop('draw comic');
     // util.timer.start('upload');
+    let filename = `comic-${Date.now()}.png`;
+    require('fs').writeFile(storage.getStoragePath(filename), mainCanvas.toBuffer(), () => {});
     discord.bot.uploadFile({
-        to: data.channel, filename: `comic-${Date.now()}.png`, file: mainCanvas.toBuffer()
+        to: data.channel, filename, file: mainCanvas.toBuffer()
     }, () => {
         // util.timer.stop('upload');
         // util.timer.results();
@@ -284,7 +288,7 @@ function drawFrameToComic(ctx, canvas, frame) {
 }
 
 function fillText(context, text, x, y, size, align, shadowSpread) {
-    context.font = size + 'px "SF Action Man"';
+    context.font = size + FONT_FAMILY;
     context.textAlign = align;
     context.fillStyle = FONT_SHADOW_COLOR;
     context.shadowColor = FONT_SHADOW_COLOR;
@@ -311,7 +315,7 @@ function planText(text, align, collisionMaps, maxShrink) {
         plan.lineHeight = Math.round(plan.fontSize * 0.85);
         let horizontalPadding = Math.round(plan.fontSize * 0.35);
         let ctx = createCanvas(FRAME_WIDTH, FRAME_HEIGHT).ctx;
-        ctx.font = plan.fontSize + 'px "SF Action Man"';
+        ctx.font = plan.fontSize + FONT_FAMILY;
         ctx.textAlign = align;
         let words = text.split(' ');
         let line = '';
