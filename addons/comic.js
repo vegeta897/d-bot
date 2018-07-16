@@ -1,11 +1,11 @@
 // A comic strip generator using the message log
-var util = require(__base+'core/util.js');
-var Canvas = require('canvas');
-var messages = require(__base+'core/messages.js');
-var discord = require(__base+'core/discord.js');
-var config = require(__base+'core/config.js');
-var requireUncached = require('require-uncached');
-var images = requireUncached('./helpers/comic/images.js');
+const util = require(__base+'core/util.js');
+const Canvas = require('canvas');
+const messages = require(__base+'core/messages.js');
+const discord = require(__base+'core/discord.js');
+const config = require(__base+'core/config.js');
+const requireUncached = require('require-uncached');
+const images = requireUncached('./helpers/comic/images.js');
 
 // ✔️️ Multiple messages from the same user can clump into one frame
 // ✔️ Pay attention to message times to create conversations, and insert pauses with silent frames
@@ -16,15 +16,23 @@ var images = requireUncached('./helpers/comic/images.js');
 // Create "themes" with location backgrounds and/or activities and/or outfits for the actors
 // Grab linked images and draw them in the frame
 // Allow generating a comic from a search term
+// Use Twemoji lib to draw emoji
 
-var cWidth = 400*2, cHeight = 300*2; // Max embedded image dimensions
-var fWidth = 200*2, fHeight = 150*2; // Frame dimensions
-var defaultFontSize = 36;
-var main = createCanvas(cWidth, cHeight),
-    canvas = main.canvas,
-    ctx = main.ctx;
+const SCALE = 2;
+const FRAME_WIDTH = 200 * SCALE; // Frame dimensions
+const FRAME_HEIGHT = 150 * SCALE;
+const FRAME_COLUMNS = 2;
 
-var _commands = {};
+const DEFAULT_FONT_SIZE = 36;
+const FONT_COLOR = '#222222';
+const FONT_SHADOW_COLOR = '#FFFFFF';
+
+const MSG_POOL_SIZE = 30;
+const DEFAULT_FRAME_COUNT = 4;
+const MIN_PAUSE_TIME = 3 * 60 * 1000;
+const LEFT = 'left', RIGHT = 'right';
+
+let _commands = {};
 
 _commands.comic = async function(data) {
     if(!config.comic) return data.reply('The comic command has not been configured!');
@@ -33,179 +41,177 @@ _commands.comic = async function(data) {
         channel: config.comic.channel,
         $not: { content: '' }
     };
-    let skip = 30; // Grab a pool of 30 messages
+    let skip = 0;
     if(data.params[0] !== 'that') { // Grab messages from a random point
+        // util.timer.start('count messages');
         let count = await messages.cursor(db => db.ccount(query));
+        // util.timer.stop('count messages');
         skip = util.randomInt(count - skip);
     }
-    let msgPool = await messages.cursor(db => db.cfind(query).sort({time:-1}).limit(30).skip(skip));
-
+    // util.timer.start('get messages');
+    let msgPool = await messages.cursor(db => db.cfind(query).sort({time:-1}).skip(skip).limit(MSG_POOL_SIZE));
     msgPool = msgPool.map(({ content, user, time }) => ({
-        text: discord.bot.fixMessage(util.emojiToText(content).replace(/<(:\w+:)\d+>/gi,'$1')),
+        text: discord.bot.fixMessage(util.emojiToText(content).replace(/<(:\w+:)\d+>/gi,'$1'), data.server),
         time, user: config.comic.users[user] || user
     }));
-
-    var dialogue = buildDialogue(msgPool);
+    // util.timer.stop('get messages');
+    let dialogue = buildDialogue(msgPool);
     //console.log(dialogue);
-    var frames = placeActors(dialogue);
-    frames = drawActors(frames);
-    frames = drawText(frames);
-    for(var f = 0; f < frames.length; f++) {
+    let frames = createFrames(dialogue);
+    // util.timer.start('draw comic');
+    drawActors(frames);
+    drawText(frames);
+    let { canvas: mainCanvas, ctx: mainContext } = createCanvas(FRAME_WIDTH * FRAME_COLUMNS, FRAME_HEIGHT * 2);
+    for(let f = 0; f < frames.length; f++) {
         frames[f].number = f + 1;
-        //frames[f].canvas = drawFrame(frames[f]);
-        drawFrameToComic(frames[f]);
+        drawFrameToComic(mainContext, mainCanvas, frames[f]);
     }
-    fillText(ctx, (new Date(msgPool[0].time)).toLocaleDateString(), cWidth - 2, cHeight - 4, 28, 'right', 3, 1);
+    fillText(mainContext, (new Date(msgPool[0].time)).toLocaleDateString(), mainCanvas.width - 2, mainCanvas.height - 4, 28, RIGHT, 1);
+    // util.timer.stop('draw comic');
+    // util.timer.start('upload');
     discord.bot.uploadFile({
-        to: data.channel, filename: `comic-${Date.now()}.png`, file: canvas.toBuffer()
+        to: data.channel, filename: `comic-${Date.now()}.png`, file: mainCanvas.toBuffer()
+    }, () => {
+        // util.timer.stop('upload');
+        // util.timer.results();
+        // util.timer.reset();
     });
 };
 
 function createCanvas(width, height) {
-    var newCanvas = new Canvas(width, height), newCtx = newCanvas.getContext('2d');
+    let newCanvas = new Canvas(width, height),
+        newCtx = newCanvas.getContext('2d');
     newCtx.patternQuality = 'best';
-    newCtx.font = defaultFontSize + 'px "SF Action Man"';
     return { canvas: newCanvas, ctx: newCtx };
 }
 
 function buildDialogue(messages) {
-    var dialogue = [];
-    var beat = {};
-    var longestPause = 0;
-    var totalPauseTime = 0;
-    var addBeat = function() {
-        if(dialogue.length) {
-            var pauseLength = dialogue[0].time - beat.time;
-            longestPause = Math.max(pauseLength,longestPause);
+    let dialogue = [];
+    let longestPause = 0;
+    let totalPauseTime = 0;
+    let addBeat = function() {
+        if(dialogue.length > 0) {
+            let pauseLength = dialogue[0].time - beat.time;
+            longestPause = Math.max(pauseLength, longestPause);
             totalPauseTime += pauseLength;
         }
-        dialogue.unshift(beat); // Add beat to dialogue
+        dialogue.unshift(beat); // Add beat to dialogue (reversed because the messages are reversed)
         beat = {};
     };
-    for(var m = 0; m < messages.length; m++) { // Loop through messages, newest to oldest
-        if(dialogue.length === 5) break; // Stop at 5 beats (extra for first frame context)
-        var message = messages[m];
-        // console.log('m =',m,'user:',message.user,'message:',message.text,'time:',message.time);
-        // console.log('user:',message.user);
-        // console.log('message:',message.text);
-        // console.log('time:',message.time);
+    let beat = {};
+    for(let i = 0; i < messages.length; i++) { // Loop through messages, newest to oldest
+        if(dialogue.length === DEFAULT_FRAME_COUNT) break;
+        let { user, text, time } = messages[i];
+        // console.log('m =',m,'user:',user,'text:',text,'time:',time);
         // console.log('beat:',beat);
         if(beat.speaker) { // If speaker already defined for this beat
             //console.log('speaker already defined:',beat.speaker);
-            if(beat.speaker === message.user) { // If beat speaker matches current message speaker
+            if(beat.speaker === user) { // If beat speaker matches current message speaker
                 //console.log('speaker matches message user');
-                var joinedText = message.text + ' \n \n ' + beat.text;
-                var textFit = planText(joinedText,'left',images.genericCollisions,6); // Test fit
-                if(textFit && beat.time - message.time < 180*1000) { // If fits and beat is less than 3 minutes before
+                let joinedText = text + ' \n \n ' + beat.text;
+                let textFit = planText.bind( // Test fit
+                    null, joinedText, LEFT, images.genericCollisions, DEFAULT_FONT_SIZE / 6
+                );
+                if(beat.time - time < MIN_PAUSE_TIME && textFit()) { // If msg is < min pause time & text fits
                     //console.log('fits and less than 3 min, joining');
-                    beat.text = message.text + ' \n \n ' + beat.text;
-                    beat.time = message.time;
-                } else {
+                    beat.text = text + ' \n \n ' + beat.text;
+                    beat.time = time;
+                } else { // Pause too long or doesn't fit, so this beat is done
                     //console.log('pause too long or doesn't fit, adding beat');
                     addBeat();
-                    m--; // Run through this message again
+                    i--; // Run through this message again
                 }
             } else { // If different speaker
                 //console.log('different speaker, adding beat');
                 addBeat();
-                m--; // Run through this message again
+                i--; // Run through this message again
             }
         }
         else { // Beat has no speaker
             //console.log('new beat, setting speaker time and text');
-            beat.speaker = message.user;
-            beat.text = message.text;
-            beat.time = message.time;
+            beat.speaker = user;
+            beat.text = text;
+            beat.time = time;
         }
     }
-    var averagePauseLength = (totalPauseTime / dialogue.length-1);
-    for(var b = dialogue.length - 1; b > 0; b--) {
-        // Check if pause time is more than twice the average, and at least 3 minutes
-        var pauseTime = dialogue[b].time - dialogue[b-1].time;
-        if(pauseTime > Math.max(180*1000,averagePauseLength * 2)) {
-            dialogue.splice(b,0,{ pause: true, time: dialogue[b-1].time + pauseTime/2 });
+    let averagePauseLength = (totalPauseTime / (dialogue.length - 1));
+    for(let b = dialogue.length - 1; b > 0; b--) {
+        // Check if pause time is more than twice the average, and more than min pause time
+        let pauseTime = dialogue[b].time - dialogue[b - 1].time;
+        if(pauseTime > Math.max(MIN_PAUSE_TIME, averagePauseLength * 2)) {
+            dialogue.splice(b, 0, { pause: true, time: dialogue[b - 1].time + pauseTime / 2 });
+            dialogue.shift();
             break; // Only one pause per comic
         }
     }
-    //dialogue = dialogue.slice(-4); // Limit to 4 beats
+    // console.log(dialogue);
     return dialogue;
 }
 
-function placeActors(dialogue) {
-    var frames = [], actors = {};
-    var placeActor = function(actor,side) {
-        for(var aKey in actors) { if(!actors.hasOwnProperty(aKey)) continue;
+function createFrames(dialogue) {
+    let frames = [], actors = {};
+    let placeActor = function(actor, side) {
+        for(let aKey of Object.keys(actors)) {
             if(actors[aKey] === side) delete actors[aKey]; // Remove actor already on this side
         }
         actors[actor] = side;
     };
-    var lastSpeaker = false;
+    let lastSpeaker;
     // Place actors (first pass)
-    for(var pa = 0; pa < dialogue.length; pa++) {
-        var beat = dialogue[pa];
-        var frame = { actors: {}, speaker: beat.speaker, time: beat.time, text: beat.text };
-        if(beat.speaker) { // If beat has a speaker
-            if(pa > 0) { // If not on first frame
-                if(lastSpeaker && beat.speaker !== lastSpeaker.actor) { // If different than last speaker
+    for(let i = 0; i < dialogue.length; i++) {
+        let { speaker, time, text } = dialogue[i];
+        let frame = { actors: {}, speaker, time, text };
+        if(speaker) { // If beat has a speaker
+            if(!lastSpeaker) { // First speaker
+                placeActor(speaker, util.flip() ? LEFT : RIGHT); // Put speaker on random side
+            } else { // If not on first frame
+                if(lastSpeaker && speaker !== lastSpeaker.actor) { // If different than last speaker
                     // Put new speaker on opposite side
-                    placeActor(beat.speaker,util.flip(lastSpeaker.side));
+                    placeActor(speaker,util.flip(lastSpeaker.side));
                 }
-            } else { // First frame
-                placeActor(beat.speaker,util.flip() ? 'left' : 'right'); // Put speaker on random side
             }
-            lastSpeaker = { side: actors[beat.speaker], actor: beat.speaker };
+            lastSpeaker = { side: actors[speaker], actor: speaker };
         }
-        for(var aKey in actors) { if(!actors.hasOwnProperty(aKey)) continue;
-            if(aKey !== beat.speaker && beat[pa+1] && aKey !== beat[pa+1].speaker) {
-                // If actor not speaking this frame or next frame, chance of leaving
-                if(Math.random() > 0.7) delete actors[aKey];
-            }
-        }
-        frame.actors = JSON.parse(JSON.stringify(actors)); // Write actors to frame
+        // for(let aKey in actors) { if(!actors.hasOwnProperty(aKey)) continue;
+        //     if(aKey !== speaker && dialogue[pa + 1] && aKey !== dialogue[pa + 1].speaker) {
+        //         // If actor not speaking this frame or next frame, chance of leaving
+        //         if(Math.random() > 0.7) delete actors[aKey];
+        //     }
+        // }
+        frame.actors = Object.assign({}, actors); // Write actors to frame
         // console.log('actors placed in frame',pa,frame.actors);
         frames.push(frame);
     }
-    // Place actors (second pass to fill gaps)
-    //for(var pa2 = 0; pa2 < frames.length; pa2++) {
-    //    frame = frames[pa2];
-    //    if(pa2 == 0) { // If on first frame
-    //        var secondFrameActor = Object.keys(frames[pa2+1].actors)[0];
-    //        frame.actors[secondFrameActor] = actors[secondFrameActor];
-    //    } else { // If not on first frame
-    //        var prevFrameActors = Object.keys(frames[pa2-1].actors);
-    //        for(var pfa = 0; pfa < prevFrameActors.length; pfa++) { // Loop previous frame actors
-    //            var thisPrevActor = prevFrameActors[pfa];
-    //            if(frames[pa2+1]) { // If there is a next frame
-    //                var nextFrameActor = frames[pa2+1].actors[Object.keys(frames[pa2+1].actors)[0]];
-    //                if(thisPrevActor == nextFrameActor) { // If previous and next frame's actors are the same
-    //                    frame.actors[nextFrameActor] = actors[nextFrameActor];
-    //                }
-    //            } else { // Last frame
-    //                frame.actors[thisPrevActor] = actors[thisPrevActor];
-    //            }
-    //        }
-    //    }
-    //}
+    let leftActorFill, rightActorFill;
+    for(let i = frames.length - 1; i >= 0; i--) {
+        let { actors } = frames[i];
+        let leftActor = Object.keys(actors).find(aKey => actors[aKey] === LEFT);
+        let rightActor = Object.keys(actors).find(aKey => actors[aKey] === RIGHT);
+        if(leftActor) leftActorFill = leftActor;
+        if(rightActor) rightActorFill = rightActor;
+        if(!leftActor && leftActorFill) actors[leftActorFill] = LEFT;
+        if(!rightActor && rightActorFill) actors[rightActorFill] = RIGHT;
+    }
     // console.log(JSON.stringify(frames, null, '\t'));
     return frames;
 }
 
 function drawActors(frames) {
-    var bgColor = { h: Math.random(), s: 0.15, v: 0.9 };
+    let bgColor = { h: Math.random(), s: 0.15, v: 0.9 };
     // console.log('drawing actors to frames');
     // Draw actors to frames
-    for(var da = 0; da < frames.length; da++) {
+    for(let i = 0; i < frames.length; i++) {
         // console.log('drawing frame',da-frames.length+5);
-        var frame = frames[da];
-        frame.bgImage = createCanvas(fWidth,fHeight);
-        frame.bgImage.ctx.rect(0,0,fWidth,fHeight);
-        var bgGradient = frame.bgImage.ctx.createRadialGradient(
-            fWidth/2, 0, fHeight/2,
-            fWidth/2, fHeight/2, fHeight
+        let frame = frames[i];
+        frame.bgImage = createCanvas(FRAME_WIDTH,FRAME_HEIGHT);
+        frame.bgImage.ctx.rect(0,0,FRAME_WIDTH,FRAME_HEIGHT);
+        let bgGradient = frame.bgImage.ctx.createRadialGradient(
+            FRAME_WIDTH/2, 0, FRAME_HEIGHT/2,
+            FRAME_WIDTH/2, FRAME_HEIGHT/2, FRAME_HEIGHT
         );
-        var hueOffset = 0;
-        if(da === frames.length-1 && !frames[da-1].speaker) hueOffset = Math.random() * 0.3;
-        var dark = util.hsvToRGB(bgColor.h+hueOffset,bgColor.s,bgColor.v),
+        let hueOffset = 0;
+        if(i === frames.length-1 && !frames[i-1].speaker) hueOffset = Math.random() * 0.3;
+        let dark = util.hsvToRGB(bgColor.h+hueOffset,bgColor.s,bgColor.v),
             light = util.hsvToRGB(
                 bgColor.h+hueOffset+Math.random()*0.12,
                 bgColor.s-Math.random()*0.07,
@@ -216,9 +222,9 @@ function drawActors(frames) {
         frame.bgImage.ctx.fillStyle = bgGradient;
         frame.bgImage.ctx.fill();
         frame.collisionMaps = [];
-        frame.actorImage = createCanvas(fWidth,fHeight);
-        for(var aKey in frame.actors) { if(!frame.actors.hasOwnProperty(aKey)) continue;
-            var actorState = 'idle';
+        frame.actorImage = createCanvas(FRAME_WIDTH,FRAME_HEIGHT);
+        for(let aKey of Object.keys(frame.actors)) {
+            let actorState = 'idle';
             if(frame.speaker) {
                 if(frame.speaker === aKey) {
                     actorState = frame.text.substr(0,4) === 'http' ? 'link' : 'talk';
@@ -228,116 +234,113 @@ function drawActors(frames) {
             } else {
                 actorState = Object.keys(frame.actors).length === 1 ? 'alone' : 'idle';
             }
-            var frameImage = images.getImage(aKey,actorState);
+            let frameImage = images.getImage(aKey,actorState);
             // console.log(aKey,actorState,frame.actors[aKey]);
-            if(frame.actors[aKey] === 'left') {
-                frame.actorImage.ctx.translate(fWidth,0);
+            if(frame.actors[aKey] === LEFT) {
+                frame.actorImage.ctx.translate(FRAME_WIDTH,0);
                 frame.actorImage.ctx.scale(-1,1);
                 frameImage.collisionMap = images.flipCollision(frameImage.collisionMap);
             }
-            var xOffset = 0;
+            let xOffset = 0;
             if(actorState === 'alone') xOffset = util.randomInt(150);
             frame.collisionMaps.push(frameImage.collisionMap);
-            frame.actorImage.ctx.drawImage(frameImage.img,0,0,fWidth,fHeight,xOffset*-1,0,fWidth,fHeight);
-            if(frame.actors[aKey] === 'left') {
-                frame.actorImage.ctx.translate(fWidth,0);
+            frame.actorImage.ctx.drawImage(frameImage.img,0,0,FRAME_WIDTH,FRAME_HEIGHT,xOffset*-1,0,FRAME_WIDTH,FRAME_HEIGHT);
+            if(frame.actors[aKey] === LEFT) {
+                frame.actorImage.ctx.translate(FRAME_WIDTH,0);
                 frame.actorImage.ctx.scale(-1,1);
             }
         }
     }
-    return frames;
 }
 
 function drawText(frames) {
-    for(var f = frames.length-1; f >= 0; f--) {
-        var frame = frames[f];
+    for(let frame of frames) {
+        let { text, actors, collisionMaps } = frame;
         if(!frame.text) continue;
-        let { lines, fontSize, align } = planText(frame.text, frame.actors[frame.speaker], frame.collisionMaps,defaultFontSize);
-        frame.textImage = createCanvas(fWidth,fHeight);
+        let { lines, fontSize, align } = planText(text, actors[frame.speaker], collisionMaps, DEFAULT_FONT_SIZE);
+        frame.textImage = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
         for(let { text, x, y } of lines) {
-            fillText(frame.textImage.ctx, text, x, y, fontSize, align, 10, 4);
+            fillText(frame.textImage.ctx, text, x, y, fontSize, align, SCALE);
         }
     }
-    frames = frames.slice(-4); // Limit to 4 frames TODO: Why is this here?
-    return frames;
 }
 
-function drawFrameToComic(frame) {
+function drawFrameToComic(ctx, canvas, frame) {
     // console.log('drawFrameToComic');
     // console.log('drawing:',frame.number,frame.speaker,frame.actors);
     // console.log('text plan:',JSON.stringify(frame.textPlan, null, '\t'));
-    var frameX = (frame.number-1) % 2 * fWidth,
-        frameY = Math.floor((frame.number-1) / 2) * fHeight;
+    let frameX = (frame.number - 1) % FRAME_COLUMNS * FRAME_WIDTH,
+        frameY = Math.floor((frame.number - 1) / FRAME_COLUMNS) * FRAME_HEIGHT;
     //ctx.fillStyle = '#eeeeee'; // Draw frame BG color
-    //ctx.fillRect((frame.number-1) % 2 * fWidth, Math.floor((frame.number-1) / 2) * fHeight, fWidth, fHeight);
+    //ctx.fillRect((frame.number-1) % 2 * F_WIDTH, Math.floor((frame.number-1) / 2) * F_HEIGHT, F_WIDTH, F_HEIGHT);
     ctx.drawImage(frame.bgImage.canvas, frameX, frameY);
     if(frame.textImage) ctx.drawImage(frame.textImage.canvas, frameX, frameY);
     ctx.drawImage(frame.actorImage.canvas, frameX, frameY);
-    if(frame.number === 4) {  // After last frame is drawn
+    if(frame.number === DEFAULT_FRAME_COUNT) {  // After last frame is drawn
         // Draw frame borders
-        ctx.clearRect(fWidth-4,0,8,cHeight);
-        ctx.clearRect(0,fHeight-4,cWidth,8);
+        ctx.clearRect(FRAME_WIDTH - 4, 0, 8, canvas.height);
+        ctx.clearRect(0, FRAME_HEIGHT - 4, canvas.width, 8);
     }
 }
 
-function fillText(context, text, x, y, size, align, shadowBlur, shadowSpread) {
+function fillText(context, text, x, y, size, align, shadowSpread) {
     context.font = size + 'px "SF Action Man"';
     context.textAlign = align;
-    context.fillStyle = '#fff';
-    context.shadowColor = '#fff';
-    context.shadowBlur = shadowBlur;
+    context.fillStyle = FONT_SHADOW_COLOR;
+    context.shadowColor = FONT_SHADOW_COLOR;
+    context.shadowBlur = size / 10 * shadowSpread;
     context.shadowOffsetX = 0;
     context.shadowOffsetY = 0;
-    for(var t = 0; t < 5; t++) {
-        var ox = 0, oy = 0;
-        switch(t) {
+    for(let s = 0; s < 4; s++) { // Draw shadows
+        let ox = shadowSpread, oy = shadowSpread;
+        switch(s) {
             case 0: ox = -shadowSpread; oy = -shadowSpread; break;
             case 1: ox = shadowSpread; oy = -shadowSpread; break;
             case 2: ox = -shadowSpread; oy = shadowSpread; break;
-            case 3: ox = shadowSpread; oy = shadowSpread; break;
-            case 4: context.fillStyle = '#222222';
         }
         context.fillText(text, x + ox, y + oy);
     }
+    context.fillStyle = FONT_COLOR; // Draw primary color
+    context.fillText(text, x, y);
 }
 
 function planText(text, align, collisionMaps, maxShrink) {
     //console.log('planning text, objects:',JSON.stringify(objects, null, '\t'));
-    for(var s = 0; s <= maxShrink; s++) {
-        var plan = { fontSize: defaultFontSize - s, align: align, lines: [] };
+    for(let s = 0; s <= maxShrink; s++) {
+        let plan = { fontSize: DEFAULT_FONT_SIZE - s, align: align, lines: [] };
         plan.lineHeight = Math.round(plan.fontSize * 0.85);
-        var horizontalPadding = Math.round(plan.fontSize * 0.35);
-        var ctx = createCanvas(fWidth, fHeight).ctx;
+        let horizontalPadding = Math.round(plan.fontSize * 0.35);
+        let ctx = createCanvas(FRAME_WIDTH, FRAME_HEIGHT).ctx;
         ctx.font = plan.fontSize + 'px "SF Action Man"';
         ctx.textAlign = align;
-        var words = text.split(' ');
-        var line = '';
-        var y = Math.round(plan.fontSize),
+        let words = text.split(' ');
+        let line = '';
+        let y = Math.round(plan.fontSize),
             textHeight = Math.round(plan.fontSize * 0.7);
-        var space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
-        var x = align === 'left' ? space.left + horizontalPadding : space.right - horizontalPadding,
+        let space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
+        let x = align === LEFT ? space.left + horizontalPadding : space.right - horizontalPadding,
             maxWidth = space.right - space.left - horizontalPadding * 2;
-        for(var n = 0; n < words.length; n++) {
-            var urlDomain = util.getDomain(words[n]);
-            var currentWord = urlDomain ? '<' + urlDomain + '>' : words[n];
+        for(let n = 0; n < words.length; n++) {
+            let urlDomain = util.getDomain(words[n]);
+            let currentWord = urlDomain ? '<' + urlDomain + '>' : words[n];
             if(currentWord === '') continue;
             if(currentWord === '\n') {
                 if(line !== '') plan.lines.push({ x: x, y: y, text: line });
                 line = '';
                 y += plan.lineHeight;
                 space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
-                x = align === 'left' ? space.left + horizontalPadding : space.right - horizontalPadding;
+                x = align === LEFT ? space.left + horizontalPadding : space.right - horizontalPadding;
                 maxWidth = space.right - space.left - horizontalPadding * 2;
                 continue;
             }
-            var testLine = line + (line === '' ? '' : ' ') + currentWord;
-            var testWidth = ctx.measureText(testLine).width;
+            let testLine = line + (line === '' ? '' : ' ') + currentWord;
+            let testWidth = ctx.measureText(testLine).width;
             if ((!maxWidth || testWidth > maxWidth) && n > 0) {
                 plan.lines.push({ x: x, y: y, text: line });
                 line = currentWord;
                 y += plan.lineHeight;
                 space = images.getEmptySpace(y-textHeight, textHeight, collisionMaps);
-                x = align === 'left' ? space.left + horizontalPadding : space.right - horizontalPadding;
+                x = align === LEFT ? space.left + horizontalPadding : space.right - horizontalPadding;
                 maxWidth = space.right - space.left - horizontalPadding * 2;
             } else {
                 line = testLine;
@@ -345,7 +348,7 @@ function planText(text, align, collisionMaps, maxShrink) {
         }
         plan.height = y;
         plan.lines.push({ x: x, y: y, text: line });
-        if(plan.height <= fHeight/1.5) {
+        if(plan.height <= FRAME_HEIGHT/1.5) {
             return plan;
         }
     }

@@ -71,7 +71,10 @@ module.exports = {
                 filename: dir + '/' + name + '.db',
                 autoload: true
             });
-            if(index) await db.ensureIndex(index);
+            if(index) {
+                index = Array.isArray(index) ? index : [index];
+                await index.forEach(i => db.ensureIndex(i));
+            }
             return db;
         } catch(e) {
             console.log(`Error creating "${name}" nedb`, e);

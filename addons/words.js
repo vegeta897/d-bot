@@ -116,7 +116,7 @@ _commands.graph = async function(data) {
         let wordWidth = GRAPH_W / wordCount;
         imgCtx.fillStyle = colors[i % colors.length];
         imgCtx.fillText(
-            discord.bot.fixMessage(util.emojiToText(words[i]).replace(/<(:\w+:)\d+>/gi,'$1')),
+            discord.bot.fixMessage(util.emojiToText(words[i]).replace(/<(:\w+:)\d+>/gi,'$1'), data.server),
             LEFT + wordWidth * (i % wordCount) + wordWidth / 2, line * wordLabelSize
         );
     }

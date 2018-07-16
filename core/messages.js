@@ -5,7 +5,7 @@ var storage = require('./storage.js');
 var config = require('./config.js');
 
 let db;
-storage.nedb('messages', { fieldName: 'id', unique: true }).then(d => {
+storage.nedb('messages', [{ fieldName: 'id', unique: true }, { fieldName: 'time' }]).then(d => {
     db = d;
     module.exports.db = db;
 });
