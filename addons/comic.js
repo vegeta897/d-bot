@@ -146,7 +146,7 @@ function buildDialogue(messages) {
             break; // Only one pause per comic
         }
     }
-    console.log(dialogue);
+    // console.log(dialogue);
     return dialogue;
 }
 
@@ -206,8 +206,24 @@ async function drawActors(frames) {
         // console.log('drawing frame',da-frames.length+5);
         let frame = frames[i];
         let bgCanvas = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
+        bgCanvas.ctx.rect(0,0,FRAME_WIDTH,FRAME_HEIGHT);
+        let bgGradient = bgCanvas.ctx.createRadialGradient(
+            FRAME_WIDTH/2, 0, FRAME_HEIGHT/2,
+            FRAME_WIDTH/2, FRAME_HEIGHT/2, FRAME_HEIGHT
+        );
+        let hueOffset = 0;
+        if(i === frames.length - 1 && !frames[i - 1].speaker) hueOffset = Math.random() * 0.3;
+        let dark = util.hsvToRGB(bgColor.h + hueOffset, bgColor.s, bgColor.v),
+            light = util.hsvToRGB(
+                bgColor.h + hueOffset + Math.random() * 0.12,
+                bgColor.s - Math.random() * 0.07,
+                bgColor.v + Math.random() * 0.07
+            );
+        bgGradient.addColorStop(0, 'rgba(' + light.r + ',' + light.g + ',' + light.b + ',1)');
+        bgGradient.addColorStop(1, 'rgba(' + dark.r + ',' + dark.g + ',' + dark.b + ',1)');
+        bgCanvas.ctx.fillStyle = bgGradient;
+        bgCanvas.ctx.fill();
         let image = frame.text && frame.text.match(/(^|\s)((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*\.(png)))/gi);
-        let imageDownloaded = false;
         if(image && image[0]) {
             get_image: try {
                 let imgData = await download(image[0]);
@@ -220,27 +236,7 @@ async function drawActors(frames) {
                 let ox = (FRAME_WIDTH - newWidth) / 2,
                     oy = (FRAME_HEIGHT - newHeight) / 2;
                 bgCanvas.ctx.drawImage(bgImage, 0, 0, bgImage.width, bgImage.height, ox, oy, newWidth, newHeight);
-                imageDownloaded = true;
             } catch(e) { console.log(e); }
-        }
-        if(!imageDownloaded) {
-            bgCanvas.ctx.rect(0,0,FRAME_WIDTH,FRAME_HEIGHT);
-            let bgGradient = bgCanvas.ctx.createRadialGradient(
-                FRAME_WIDTH/2, 0, FRAME_HEIGHT/2,
-                FRAME_WIDTH/2, FRAME_HEIGHT/2, FRAME_HEIGHT
-            );
-            let hueOffset = 0;
-            if(i === frames.length - 1 && !frames[i - 1].speaker) hueOffset = Math.random() * 0.3;
-            let dark = util.hsvToRGB(bgColor.h + hueOffset, bgColor.s, bgColor.v),
-                light = util.hsvToRGB(
-                    bgColor.h + hueOffset + Math.random() * 0.12,
-                    bgColor.s - Math.random() * 0.07,
-                    bgColor.v + Math.random() * 0.07
-                );
-            bgGradient.addColorStop(0, 'rgba(' + light.r + ',' + light.g + ',' + light.b + ',1)');
-            bgGradient.addColorStop(1, 'rgba(' + dark.r + ',' + dark.g + ',' + dark.b + ',1)');
-            bgCanvas.ctx.fillStyle = bgGradient;
-            bgCanvas.ctx.fill();
         }
         frame.bgImage = bgCanvas.canvas;
         frame.collisionMaps = [];
@@ -380,7 +376,7 @@ function planText(text, align, collisionMaps, maxShrink) {
 
 module.exports = {
     commands: _commands,
-    dev: true,
+    // dev: true,
     help: {
         comic: ['Generate a comic', '', 'that']
     }

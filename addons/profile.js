@@ -155,6 +155,6 @@ _commands.profile = function(data) {
 module.exports = {
     commands: _commands,
     help: {
-        profile: ['Generate a basic profile generated from a simple analysis of chat history', 'vegeta897']
+        profile: ['Generate a basic profile generated from a simple analysis of chat history', '$user']
     }
 };

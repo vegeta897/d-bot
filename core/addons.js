@@ -118,7 +118,7 @@ module.exports = {
             // TODO: Better module reloading?
             // delete require.cache[require.resolve(`./${msgData.paramStr}.js`)];
             if(command === 'help' || command === 'commands') {
-                discord.sendMessages(userID, generateHelpMessage());
+                discord.sendMessages(userID, generateHelpMessage().replace(/\$user/g, user));
                 if(!isPM) discord.sendMessage(channelID, 'Command list sent, check your PMs!');
             }
             let addon = addons.get(commands.get(command));

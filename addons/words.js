@@ -253,8 +253,8 @@ module.exports = {
     commands: _commands,
     help: {
         words: ['Get the most used (excluding common) words, either for everyone or a specific user',
-            '15', '10 vegeta897'],
+            '15', '10 $user'],
         unique: ['Get the most used words said by a user that nobody else has used',
-            '10 vegeta897']
+            '10 $user']
     }
 };

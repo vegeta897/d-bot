@@ -67,7 +67,7 @@ module.exports = {
     help: {
         find: ['Find the last message containing a string (include a number to find the Nth last message)',
             'chocolate','6 pretzels'],
-        last: ['Find the last message sent by a user (username, not nickname)', 'vegeta897', '3 vegeta897'],
+        last: ['Find the last message sent by a user (username, not nickname)', '$user', '3 $user'],
         skip: ['Change the last used `find` or `last` command to skip the desired number of messages (relative)']
     }
 };

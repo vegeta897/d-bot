@@ -48,6 +48,6 @@ module.exports = {
         if(!data.command) listen(data);
     },
     help: {
-        virtual: ['Boot up a virtual version of someone to chat with for a minute', 'vegeta897']
+        virtual: ['Boot up a virtual version of someone to chat with for a minute', '$user']
     }
 };
