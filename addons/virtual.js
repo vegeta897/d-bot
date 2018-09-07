@@ -43,7 +43,7 @@ function listen(data) {
 
 module.exports = {
     commands: _commands,
-    listen: function(data) {
+    listen: async function(data) {
         if(data.isPM && data.message) VirtualCustom.maintain(data);
         if(!data.command) listen(data);
     },

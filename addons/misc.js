@@ -7,29 +7,31 @@ var discord = require(__base+'core/discord.js');
 var DateFormat = require('dateformat');
 var moment = require('moment-timezone');
 const convert = require('convert-units');
+const timestring = require('timestring');
 
 const timeData = storage.json('time', { zoneUsers: {} }, '\t');
+const reminderData = storage.json('reminders', { reminders: [] }, '\t');
 
 var _commands = {};
 
-_commands.me = function(data) {
+_commands.me = data => {
     discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id });
     data.reply(`_${data.user} ${data.paramStr}_`);
 };
 
-_commands.earliest = async function(data) {
+_commands.earliest = async data => {
     let firstMessage = await messages.cursor(db => db.cfind().sort({ time: 1 }).limit(1));
     data.reply(`Earliest message logged was on ` +
         DateFormat(new Date(firstMessage[0].time), 'mmmm dS, yyyy at h:MM:ss TT') + ' EST');
 };
 
-_commands.youtube = async function(data) {
+_commands.youtube = async data => {
     let ytrx = /(http[s]?:\/\/\S*youtu\S*\.\S*)(?= |$)/gi; // I made this myself!
     let ytMessages = await messages.cursor(db => db.cfind({ content: ytrx }));
     data.reply(util.pickInArray(util.getRegExpMatches(util.pickInArray(ytMessages).content, ytrx)));
 };
 
-_commands.time = async function(data) {
+_commands.time = async data => {
     let { timezones } = config;
     if(!timezones || Object.keys(timezones).length === 0) return data.reply(`No timezones are configured.\nD-Bot's local time is **${DateFormat(new Date(), 'dddd, h:mm a')}**`);
     if(data.params.length > 0) {
@@ -72,7 +74,7 @@ _commands.time = async function(data) {
     data.reply(message);
 };
 
-_commands.convert = async function(data) {
+_commands.convert = async data => {
     let v, f, t;
     try {
         [,v, f, t] = data.paramStr.match(/^([0-9.]+)\s?([a-z]+)\sto\s([a-z]+)$/i);
@@ -96,6 +98,25 @@ _commands.convert = async function(data) {
             }
         }
     }
+};
+
+_commands.remind = async data => {
+    if(data.params.length < 2) return data.reply('Please input: `<time>` `<reminder>`');
+    let time, text;
+    for(let i = 1; i <= data.params.length; i++) {
+        try {
+            time = timestring(data.params.slice(0, i).join(' '));
+        } catch(e) {
+            text = data.params.slice(i - 1).join(' ');
+            break;
+        }
+    }
+    if(!time || time <= 0 || !text) return data.reply('Please input: `<time>` `<reminder>`');
+    reminderData.trans('reminders', reminders => {
+        reminders.push({ time: Date.now() + time * 1000, text, creator: data.userID, channel: data.channel });
+        return reminders;
+    });
+    data.reply('Reminder set!');
 };
 
 const unitAliases = {
@@ -138,8 +159,38 @@ const unitAliases = {
     'kmh': 'km/h'
 };
 
+let lastTonightQuestion = 0;
+
 module.exports = {
     commands: _commands,
+    /*listen: async function(data) {
+        if(Date.now() - lastTonightQuestion < 1000 * 60 * 20) return; // 20 minute refresh
+        if(!['86915384589967360','279534591075680257','345320472055119883','209177876975583232']
+            .includes(data.channel)) return;
+        if(!/(to|2)ni(gh)?te?/gi.test(data.message)) return;
+        if(/((to|2)ni(gh)?te?),? (at|in)/gi.test(data.message)) return;
+        if(/1?\d:\d\d/gi.test(data.message)) return;
+        if(/(one|two|three|four|five|six|seven|eight|nine|\d+) (hour|minute)/gi.test(data.message)) return;
+        if(/(when|what time)( i|'|’)s ((to|2)ni(gh)?te?)/.test(data.message)) return;
+        discord.bot.simulateTyping(data.channel);
+        await util.wait(1500);
+        data.reply('When is **tonight**?');
+        lastTonightQuestion = Date.now();
+    },*/
+    tick: async () => {
+        let now = Date.now();
+        let reminders = reminderData.get('reminders').slice(0);
+        for(let i = 0; i < reminders.length; i++) {
+            let { time, channel, creator, text } = reminders[i];
+            if(time <= now) {
+                reminderData.trans('reminders', r => {
+                    r.splice(i, 1);
+                    return r;
+                });
+                discord.sendMessage(channel, `<@!${creator}> ${text}`);
+            }
+        }
+    },
     help: {
         earliest: ['Get the time and date of the earliest recorded message'],
         me: ['Make D-Bot narrate your life', 'is eating cotton candy'],

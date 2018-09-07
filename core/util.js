@@ -190,6 +190,7 @@ var util = {
             a => `:${alphabet[emojiAlphabet.indexOf(a)]}:`);
     },
     arrayToList: (arr, quote, delimiter) => arr.map(e => `${quote}${e}${quote}`).join(delimiter),
+    wait: ms => new Promise(res => setTimeout(res, ms)),
     timer: {
         times: {},
         timing: {},
