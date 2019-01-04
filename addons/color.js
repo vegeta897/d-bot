@@ -1,42 +1,24 @@
 // Let users color their names
 // NOTE: Another role's color may override the one added if it is higher on the list, I will fix this "eventually"
-var discord = require(__base+'core/discord.js');
-var config = require(__base+'core/config.js');
+const discord = require(__base+'core/discord.js');
+const config = require(__base+'core/config.js');
 
-var _commands = {};
+const _commands = {};
 
 _commands.color = function(data) {
     if(!config.allowCustomColors) return;
-    var hexColorRX = /^#(?:[0-9a-f]{6})$/i;
+    let hexColorRX = /^#(?:[0-9a-f]{6})$/i;
     if(!data.params[0] || !hexColorRX.test(data.params[0])) {
         return data.reply('You must specify a hex color, e.g. #897897');
     }
-    var userRole = false;
-    var roles = discord.bot.servers[data.server].roles;
-    for(var rKey in roles) {
-        if(!roles.hasOwnProperty(rKey)) continue;
-        if(roles[rKey].name === 'user' + data.userID) {
-            userRole = rKey;
-            break;
-        }
-    }
-    if(!userRole) { // Role not found, need to create it
-        discord.bot.createRole(data.server, function(err, res) {
-            if(err) return console.error(err);
-            userRole = res.id; // New role ID
-            discord.bot.addToRole({ serverID: data.server, roleID: userRole, userID: data.userID }); // Assign new role
-            editRole()
-        });
-    } else editRole(); // Role found, edit it
-    
-    function editRole() {
-        discord.bot.editRole({
-            serverID: data.server, roleID: userRole, name: 'user' + data.userID,
-            color: data.params[0].toUpperCase() // TODO: Assign role position to top
-        },function() {
-            data.reply('Color changed!');
-        });
-    }
+    let color = parseInt(data.params[0].toUpperCase().replace('#',''), 16);
+    let { guild } = data.messageObject.channel;
+    let userRole = guild.roles.find(role => role.name === 'user' + data.userID);
+    if(userRole) return userRole.edit({ color }, `${data.user} used /color command`)
+        .then(() => data.reply('Color changed!')); // Role found, edit it
+    // Role not found, create and assign it to user
+    guild.createRole({ name: 'user' + data.userID, color }, `${data.user} used /color command`)
+        .then(role => guild.addMemberRole(data.userID, role.id));
 };
 
 module.exports = {

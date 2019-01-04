@@ -25,7 +25,7 @@ _commands.virtual = function(data) {
 
 function listen(data) {
     if(!virtual || !virtual.ready || virtual.done || data.channel !== virtual.channel || data.message.length < 5) return;
-    discord.bot.simulateTyping(data.channel);
+    data.messageObject.channel.sendTyping();
     virtual.responses++;
     var response = virtual.getResponse(data);
     if(response) setTimeout(function(){

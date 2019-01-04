@@ -55,7 +55,7 @@ _commands.comic = async function(data) {
     // util.timer.start('get messages');
     let msgPool = await messages.cursor(db => db.cfind(query).sort({time:-1}).skip(skip).limit(MSG_POOL_SIZE));
     msgPool = msgPool.map(({ content, user, time }) => ({
-        text: discord.bot.fixMessage(util.emojiToText(content).replace(/<(:\w+:)\d+>/gi,'$1'), data.server),
+        text: discord.fixMessage(util.emojiToText(content).replace(/<(:\w+:)\d+>/gi,'$1'), data.server),
         time, user: config.comic.users[user] || user
     }));
     // util.timer.stop('get messages');
@@ -75,7 +75,7 @@ _commands.comic = async function(data) {
     // util.timer.start('upload');
     let filename = `comic-${Date.now()}.png`;
     require('fs').writeFile(storage.getStoragePath(filename), mainCanvas.toBuffer(), () => {});
-    discord.bot.uploadFile({
+    discord.uploadFile({
         to: data.channel, filename, file: mainCanvas.toBuffer()
     }/*, () => util.timer.stop('upload').results().reset()*/);
 };

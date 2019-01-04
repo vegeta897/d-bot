@@ -136,7 +136,7 @@ _commands.mapkov = function(data) {
         }
     }
     lastMarkov = false;
-    discord.bot.uploadFile({ to: data.channel, filename: 'mapkov.png', file: canvas.toBuffer() });
+    discord.uploadFile({ to: data.channel, filename: 'mapkov.png', file: canvas.toBuffer() });
 };
 
 function pickWord(beginning) {

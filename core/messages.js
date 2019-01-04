@@ -16,27 +16,28 @@ async function cursor(command) {
         let results = await command(db).exec();
         if(!results || results.length === 0) return false;
         return results;
-    } catch(e) {
-        console.log(e);
-        discord.pmOwner(`A message database error occurred while executing a command\n\`${e.message}\``);
+    } catch(err) {
+        console.log(err);
+        discord.pmOwner(`A message database error occurred while executing a command\n\`${err.message}\``);
     }
 }
 
 module.exports = {
     cursor,
-    logMessage: async function(data) {
-        if(!data.message && !data.attachments) return; // Don't log empty messages
-        if(config.noLogServers.includes(data.server)) return; // Don't log this server
-        if(config.noLogChannels.includes(data.channel)) return; // Don't log this channel
-        if(data.command) return; // Don't log commands
+    logMessage: async message => {
+        if(message.content === '' && message.attachments.length === 0) return; // Don't log empty messages
+        if(config.noLogServers.includes(message.channel.guild.id)) return; // Don't log this server
+        if(config.noLogChannels.includes(message.channel.id)) return; // Don't log this channel
         try {
             db.insert({
-                id: data.rawEvent.d.id, user: data.userID, channel: data.channel,
-                content: data.message, time: new Date(data.rawEvent.d.timestamp).getTime(),
-                attachments: data.attachments || undefined
+                id: message.id, user: message.author.id, channel: message.channel.id,
+                content: message.content, time: message.timestamp,
+                attachments: message.attachments.length > 0 ? message.attachments.map(a => ({
+                    url: a.url, filename: a.filename
+                })) : undefined
             });
-        } catch(e) {
-            console.log('Error logging message:', e);
+        } catch(err) {
+            console.log('Error logging message:', err);
         }
     },
     getRandomWord: async function() {

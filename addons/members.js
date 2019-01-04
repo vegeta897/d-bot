@@ -9,12 +9,10 @@ _commands.members = async function(data) {
     let message;
     if(data.params[0] === 'joined') {
         message = '**Members sorted by join date**';
-        let members = discord.bot.servers[data.server].members;
-        Object.keys(members)
-            .sort((a, b) => members[a].joined_at - members[b].joined_at)
+        let members = Array.from(data.messageObject.channel.guild.members.values());
+        members.sort((a, b) => a.joinedAt - b.joinedAt)
             .forEach(member => {
-                member = members[member];
-                let timestamp = DateFormat(new Date(member.joined_at), 'mmm dS, yyyy - h:MM:ss TT') + ' EST';
+                let timestamp = DateFormat(new Date(member.joinedAt), 'mmm dS, yyyy - h:MM:ss TT') + ' EST';
                 message += `\n${timestamp} - **${member.nick || member.username}**`;
         });
         return data.reply(message);

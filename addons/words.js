@@ -39,7 +39,8 @@ _commands.graph = async function(data) {
             dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
         } else if(graphChannels) {
             if(channelID === '86915384589967360') continue;
-            let channel = discord.bot.channels[channelID] && discord.bot.channels[channelID].name;
+            let guildID = discord.bot.channelGuildMap[channelID];
+            let channel = guildID && discord.bot.guilds.get(guildID).channels.get(channelID).name;
             if(!channel) continue;
             if(!words.includes(channel)) words.push(channel);
             if(!dailyUsage[channel]) dailyUsage[channel] = [];
@@ -116,7 +117,7 @@ _commands.graph = async function(data) {
         let wordWidth = GRAPH_W / wordCount;
         imgCtx.fillStyle = colors[i % colors.length];
         imgCtx.fillText(
-            discord.bot.fixMessage(util.emojiToText(words[i]).replace(/<(:\w+:)\d+>/gi,'$1'), data.server),
+            discord.fixMessage(util.emojiToText(words[i]).replace(/<(:\w+:)\d+>/gi,'$1'), data.server),
             LEFT + wordWidth * (i % wordCount) + wordWidth / 2, line * wordLabelSize
         );
     }
@@ -167,7 +168,7 @@ _commands.graph = async function(data) {
         if(d === 0 || year !== prevYear) imgCtx.fillText(year.toString(), x, TOP + GRAPH_H + 16 + 30);
     }
     imgCtx.drawImage(graphCanvas, LEFT, TOP);
-    discord.bot.uploadFile({
+    discord.uploadFile({
         to: data.channel, filename: 'word-graph.png', file: imgCanvas.toBuffer()
     });
 };

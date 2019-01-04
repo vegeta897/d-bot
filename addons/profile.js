@@ -148,7 +148,7 @@ Profile.prototype.search = async function(info) {
 var _commands = {};
 _commands.profile = function(data) {
     var profileUserID = data.params.length > 0 ? discord.getIDFromUsername(data.paramStr) : false;
-    discord.bot.simulateTyping(data.channel);
+    data.messageObject.channel.sendTyping();
     new Profile(data.channel, profileUserID || data.userID);
 };
 

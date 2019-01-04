@@ -12,6 +12,7 @@ var _commands = {};
 // TODO: Use promises or observables
 
 _commands.mumble = function(data) {
+    // TODO: CommandChannel is rip
     if(!config.mumble || !config.mumble.email || !config.mumble.apiKey) return;
     var url = 'http://api.commandchannel.com/cvp.json?email=' + config.mumble.email + '&apiKey=' + config.mumble.apiKey;
     request(url, function(err, response, body) {
@@ -51,57 +52,57 @@ _commands.mumble = function(data) {
                 embed.fields.push(field);
             });
         }
-        discord.bot.sendMessage({
-            to: data.channel, message: '**Mumble Status**', embed
-        });
+        discord.bot.createMessage(
+            data.channel, { content: '**Mumble Status**', embed }
+        );
     });
 };
 
 _commands.minecraft = function(data) {
-    discord.bot.simulateTyping(data.channel);
-    nodecraft.services.stats('967ae4ea-a1a0-4026-8dd7-618b8581b2b3', (err, server) => {
-        if(err) {
-            console.log(err);
-            return data.reply('Error getting Minecraft server status...');
-        }
-        if(server.stats.status === 'online') {
-            var msg = `Minecraft server is **online!** Uptime: ${server.stats.time}`;
-            for(var i = 0; i < server.stats.players.length; i++) {
-                if(i === 0) msg += `\nPlayers online: **${server.stats.players[i].username}**`;
-                else msg += `, **${server.stats.players[i].username}**`
-            }
-            data.reply(msg);
-        } else {
-            data.reply('Minecraft server is currently offline... @vegeta897');
-        }
-    });
-    // if(!config.minecraft || !config.minecraft.ip || !config.minecraft.port) return;
-    // discord.bot.simulateTyping(data.channel);
-    // var url = 'http://mcapi.us/server/status?ip=' + config.minecraft.ip + '&port=' + config.minecraft.port;
-    // request(url, function(err, response, body) {
+    // data.messageObject.channel.sendTyping();
+    // nodecraft.services.stats('967ae4ea-a1a0-4026-8dd7-618b8581b2b3', (err, server) => {
     //     if(err) {
     //         console.log(err);
     //         return data.reply('Error getting Minecraft server status...');
     //     }
-    //     body = JSON.parse(body);
-    //     var status = '*Minecraft server is currently offline*';
-    //     if(body.online) {
-    //         status = '**Minecraft** server is **online**  -  ';
-    //         if(body.players.now) {
-    //             status += `**${body.players.now}** people are playing!`;
-    //         } else {
-    //             status += '*Nobody is playing!*';
+    //     if(server.stats.status === 'online') {
+    //         var msg = `Minecraft server is **online!** Uptime: ${server.stats.time}`;
+    //         for(var i = 0; i < server.stats.players.length; i++) {
+    //             if(i === 0) msg += `\nPlayers online: **${server.stats.players[i].username}**`;
+    //             else msg += `, **${server.stats.players[i].username}**`
     //         }
+    //         data.reply(msg);
+    //     } else {
+    //         data.reply('Minecraft server is currently offline... @vegeta897');
     //     }
-    //     data.reply(status);
     // });
+    if(!config.minecraft || !config.minecraft.ip || !config.minecraft.port) return;
+    data.messageObject.channel.sendTyping();
+    var url = 'http://mcapi.us/server/status?ip=' + config.minecraft.ip + '&port=' + config.minecraft.port;
+    request(url, function(err, response, body) {
+        if(err) {
+            console.log(err);
+            return data.reply('Error getting Minecraft server status...');
+        }
+        body = JSON.parse(body);
+        var status = '*Minecraft server is currently offline*';
+        if(body.online) {
+            status = '**Minecraft** server is **online**  -  ';
+            if(body.players.now) {
+                status += `**${body.players.now}** people are playing!`;
+            } else {
+                status += '*Nobody is playing!*';
+            }
+        }
+        data.reply(status);
+    });
 };
 
 _commands.starbound = function(data) {
     if(!config.starbound || !config.starbound.statusImage) return;
-    discord.bot.simulateTyping(data.channel);
+    data.messageObject.channel.sendTyping();
     download(config.starbound.statusImage).then(img => {
-        discord.bot.uploadFile({
+        discord.uploadFile({
             to: data.channel, file: img, filename: 'sb.png', message: '**Starbound Server Status**'
         });
     });
@@ -109,7 +110,7 @@ _commands.starbound = function(data) {
 
 _commands['7d'] = function(data) {
     if(!config['7d'] || !config['7d'].ip || !config['7d'].telnetPort || !config['7d'].telnetPass) return;
-    discord.bot.simulateTyping(data.channel);
+    data.messageObject.channel.sendTyping();
     telnet(config['7d'].ip + ':' + config['7d'].telnetPort, [
         {expect: 'Please enter password:', send: config['7d'].telnetPass + '\r' },
         {expect: '\u0000\u0000',  send: "gt\r" },
@@ -128,7 +129,7 @@ module.exports = {
     commands: _commands,
     help: {
         minecraft: ['Get the Minecraft server status (if configured)'],
-        mumble: ['Get the Numble server status (if configured)'],
+        mumble: ['Get the Mumble server status (if configured)'],
         starbound: ['Get the Starbound server status (if configured)'],
         '7d': ['Get the 7 Days to Die server status (if configured)']
     }

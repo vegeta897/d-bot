@@ -4,8 +4,7 @@ var fse = require('fs-extra');
 var Nedb = require('nedb-promise');
 var callsite = require('callsite'); // For getting filename of calling module
 
-const DEBUG = process.argv[2] === 'debug';
-const PATH = DEBUG ? 'debug/' : 'storage/';
+const PATH = 'storage/';
 
 function JSONFile(filename, initData, space) {
     this.filename = filename;

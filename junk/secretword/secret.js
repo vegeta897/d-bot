@@ -24,8 +24,8 @@ function decrypt(text){
 
 var sendMsg, bot, messages, getIDFromUsername, members;
 var data, statusChannel = '86915384589967360', messageChannel = '104105342614376448';
-var scribeTimer, 
-    optOut = ['86921983375204352','87403321215705088','103730024510685184','114588180144979972',
+var scribeTimer,
+    optOut = ['474115334081740800','87403321215705088','103730024510685184','114588180144979972',
         '87684126378844160','157411056346595328','112459599642177536','93514934649901056',
         '91362370168823808','137362316088836096','87317932991844352','137327607464198144',
         '86924106120830976'];
@@ -76,7 +76,7 @@ var blankWord = function(length) {
 };
 
 var getUserData = function(userID) {
-    data.users[userID] = data.users[userID] ? 
+    data.users[userID] = data.users[userID] ?
         data.users[userID] : { occurrences: 0, points: 0, guesses: 0, lastScribed: 0 };
     return data.users[userID];
 };
@@ -172,7 +172,7 @@ module.exports = {
             if(data.word) data.word = decrypt(data.word);
             updateStatus();
             pickNewScribe(data.scribe);
-            
+
 
 // Tick every 30 seconds
 setInterval(function() {
@@ -227,7 +227,7 @@ setInterval(function() {
         save();
     }
     if(elapsed % 5 == 0) updateStatus(); // Update status every 5 minutes
-    
+
 },30000);
         });
     },
@@ -315,7 +315,7 @@ setInterval(function() {
                 'The wrong guess pool was worth ' + data.guessPool + ' points!\n' +
                 'The scribe accumulated **' + (occurPoints + data.guessPool) + '** points all together, ' +
                 'and they now have a total of ' + userData.points + '\n' +
-                'If you think the scribe gave a good clue, type `/tip ' + members[data.scribe].user.username + 
+                'If you think the scribe gave a good clue, type `/tip ' + members[data.scribe].user.username +
                 ' 5` to tip them!']);
             } else {
                 userData.points += data.wordValue;
@@ -328,7 +328,7 @@ setInterval(function() {
                 'You gained **' + data.wordValue + '** points for guessing correctly!\n' +
                 'You also collected the wrong guesses pool, worth **' + data.guessPool + '** points!\n' +
                 'Your total points: ' + userData.points + '\n' +
-                'If you think the scribe gave a good clue, type `/tip ' + members[data.scribe].user.username + 
+                'If you think the scribe gave a good clue, type `/tip ' + members[data.scribe].user.username +
                 ' 5` to tip them!']);
                 if (members[data.scribe].status != 'online') {
                     sendMsg(data.scribe, ['Hey, ' + user + ' guessed your word! ' +
@@ -344,7 +344,7 @@ setInterval(function() {
             if(fuzzyGuess > 0.3) {
                 sendMsg(messageChannel,['`' + guessed + '` is close!']);
             }
-            var guessMsg = userData.guesses == 1 ? 'There goes your free guess for this hint interval.\n' 
+            var guessMsg = userData.guesses == 1 ? 'There goes your free guess for this hint interval.\n'
                 : 'That guess cost you ' + guessCost + ' points.\n';
             guessCost = userData.guesses * 5;
             sendMsg(messageChannel,['Sorry '+user+', `'+guessed+'` is wrong! ' + guessMsg +
@@ -432,7 +432,7 @@ setInterval(function() {
         var targetUserData = getUserData(targetUserID);
         targetUserData.points += tipAmount;
         userData.points -= tipAmount;
-        sendMsg(messageChannel,[user+' has tipped ' + tipAmount + ' points to ' 
+        sendMsg(messageChannel,[user+' has tipped ' + tipAmount + ' points to '
             + members[targetUserID].user.username + '!']);
         save();
     }

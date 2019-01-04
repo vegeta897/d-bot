@@ -1,71 +1,33 @@
 // Discord.io!
 var util = require(__base+'core/util.js');
 var config = require('./config.js');
-var Discord = require('discord.io');
+const Eris = require('eris');
 
-const MSG_LIMIT = 5; // Can send 5 messages
-const MSG_PERIOD = 5000; // In 5 seconds
-const SAFETY = 15; // Bit of extra ms
-const MSG_WAIT = 250; // Minimum wait between messages
-
-const DEBUG = process.argv[2] === 'debug';
-
-let bot;
-if(DEBUG) {
-    bot = new (require('events').EventEmitter)();
-    Object.assign(bot, JSON.parse(require('fs').readFileSync('./debug/bot.json')));
-    bot.sendMessage = ({ to, message }, cb) => {
-        console.log('D-Bug:', message);
-        cb();
-    };
-    setTimeout(() => bot.emit('ready'), 100);
-} else {
-    bot = new Discord.Client({
-        token: config.token,
-        autorun: true
-    });
-}
-
-bot.on('err', function(error) {
-    _sendMessages(config.owner, `An error has occurred: ${error}`);
-    console.log(new Date(), error);
-});
+let bot = new Eris(config.token);
 
 // TODO: Crawl back through message history, 100 messages every 20 seconds, to the beginning of time
-
-var msgQueue = {}, // Message buffer
-    sentMessages = {}; // Recently sent messages
-    waitUntil = 0; // Handle rate-limited response
-
-// TODO: Add custom "onMessage" function that wraps event to include things like isPM etc.
+// Track when the bot is online/offline to know when to look for gaps to fill in
 
 module.exports = {
-    bot: bot,
-    pmOwner: function(message) { _sendMessages(config.owner, message); },
+    bot,
+    pmOwner: message => _sendMessages(config.owner, message),
     sendMessage: _sendMessages,
     sendMessages: _sendMessages,
     editMessage: _editMessage,
+    uploadFile: _uploadFile,
+    fixMessage: _fixMessage,
     getUsernameFromID: _getUsernameFromID,
-    getIDFromUsername: function(username) {
-        // TODO: Use fuzzy matching to get closest match above 50% similarity
+    getIDFromUsername: username => {
+        // TODO: Use fuzzy matching to get closest match (minimum 50% similarity)
         username = username.toLowerCase();
         if(!username || username.trim() === '') return false;
-        for(let sKey in bot.servers) { if(!bot.servers.hasOwnProperty(sKey)) continue;
-            let members = bot.servers[sKey].members;
-            for(let mKey in members) { if(!members.hasOwnProperty(mKey)) continue;
-                if((members[mKey].nick || '').toLowerCase() === username) return mKey;
-                if(members[mKey].username.toLowerCase() === username) return mKey;
+        for(let [guildID, guild] of bot.guilds) {
+            for(let [memberID, member] of guild) {
+                if((member.nick || member.username).toLowerCase() === username) return memberID;
             }
         }
-        for(let uKey in config.userAliases) { if(!config.userAliases.hasOwnProperty(uKey)) continue;
-            if(config.userAliases[uKey].includes(username)) return uKey;
-        }
-        return false;
-    },
-    userHasRole: function(userID, roleID) {
-        for(let sKey in bot.servers) { if(!bot.servers.hasOwnProperty(sKey)) continue;
-            let members = bot.servers[sKey].members;
-            if(members[userID].roles.includes(roleID)) return true;
+        for(let aliasID of Object.keys(config.userAliases)) {
+            if(config.userAliases[aliasID].includes(username)) return aliasID;
         }
         return false;
     },
@@ -74,65 +36,49 @@ module.exports = {
 
 function _sendMessages(ID, messageArr, polite, callback) {
     messageArr = Array.isArray(messageArr) ? messageArr : [messageArr];
-    let server = bot.channels[ID] ? bot.channels[ID].guild_id : 'dm';
     let noMentions = polite === true || (polite && polite.noMentions);
     let noEmbeds = polite === true || (polite && polite.noEmbeds);
-    let sent = sentMessages[server] || [];
-    sentMessages[server] = sent;
-    let queue = msgQueue[server] || [];
-    msgQueue[server] = queue;
-    let emptyQueue = queue.length === 0;
-    for(let i = 0; i < messageArr.length; i++) { // Add messages to buffer
-        if(noMentions) messageArr[i] = suppressMentions(messageArr[i]);
-        if(noEmbeds) messageArr[i] = suppressLinks(messageArr[i]);
-        if(messageArr[i].length === 0) messageArr[i] = '`empty message`';
-        if(messageArr[i].length > 2000) {
-            // TODO: Auto-split messages over 2000 chars
+    Promise.all(messageArr.map(msg => {
+        if(noMentions) msg = suppressMentions(msg);
+        if(noEmbeds) msg = suppressLinks(msg);
+        if(msg.length > 2000) {
             console.log((new Date()).toString().substr(0,24), 'Trimming message over 2000 chars');
-            messageArr[i] = messageArr[i].substr(0, 2000);
+            msg = msg.substr(0, 2000);
         }
-        queue.push({
-            ID: ID, msg: messageArr[i],
-            callback: i === messageArr.length - 1 ? callback : false // Only add callback to last message
-        })
-    }
-    function _sendMessage() {
-        if(waitUntil) console.log('sending msg at', new Date(),'after waiting for ', new Date(waitUntil));
-        waitUntil = 0;
-        sent.unshift(Date.now());
-        sent = sent.slice(0, MSG_LIMIT);
-        let msg = queue.shift(); // Remove message from buffer
-        bot.sendMessage({ to: msg.ID, message: msg.msg },
-            function(err, res) {
-            if(err) {
-                console.log(new Date().toLocaleString(), 'Error sending message:', err);
-                if(err.statusMessage === 'TOO MANY REQUESTS') {
-                    console.log('rate limit received at', new Date());
-                    waitUntil = Date.now() + err.response.retry_after + SAFETY;
-                }
-            }
-            if(msg.callback) msg.callback(err, res); // Activate callback if exists
-        });
-        if(queue.length) setTimeout(handleQueue, MSG_WAIT);
-    }
-    function handleQueue() {
-        let wait = (sent[MSG_LIMIT - 1] || 0) - (Date.now() - MSG_PERIOD) + SAFETY;
-        if(wait < 0 && waitUntil < Date.now()) _sendMessage(); // Can send now
-        else setTimeout(_sendMessage, Math.max(wait, waitUntil - Date.now())); // Have to wait
-    }
-    if(emptyQueue) handleQueue();
+        return bot.createMessage(ID, msg);
+    })).then(callback).catch(err => console.log(new Date(), 'Error sending message(s)', err));
 }
 
-function _editMessage(channel, id, message, polite, callback) {
-    let noMentions = polite === true || (polite && polite.noMentions);
-    let noEmbeds = polite === true || (polite && polite.noEmbeds);
-    message = noMentions ? suppressMentions(message) : message;
-    message = noEmbeds ? suppressLinks(message) : message;
-    bot.editMessage({ channelID: channel, messageID: id, message }, callback);
+function _editMessage(channelID, messageID, content, polite, callback) {
+    if(polite === true || (polite && polite.noMentions)) content = suppressMentions(content);
+    if(polite === true || (polite && polite.noEmbeds)) content = suppressLinks(content);
+    bot.editMessage(channelID, messageID, content).then(callback);
+}
+
+function _uploadFile({ to, filename, file, message }, callback) {
+    bot.createMessage(to, message, { file, name: filename }).then(callback)
+        .catch(err => console.log(new Date(), 'Error uploading file', err));
+}
+
+function _fixMessage(message, serverID) { // Credit to discord.io
+    return message.replace(/<@&(\d*)>|<@!(\d*)>|<@(\d*)>|<#(\d*)>/g, function(match, RID, NID, UID, CID) {
+        var k, i;
+        if(UID || CID) {
+            if(bot.users.has(UID)) return '@' + bot.users.get(UID).username;
+            if(bot.channelGuildMap[CID]) return '#' + bot.guilds.get(bot.channelGuildMap[CID]).channels.get(CID).name;
+        }
+        if(RID || NID) {
+            if(NID && bot.guilds.has(serverID)) return '@' + bot.guilds.get(serverID).members.get(NID).nick;
+            for(let [guildID, guild] of bot.guilds) {
+                if(guild.roles.has(RID)) return '@' + guild.roles.get(RID).name;
+                if(guild.members.has(NID) && guild.members.get(NID).nick) return '@' + guild.members.get(NID).nick;
+            }
+        }
+    });
 }
 
 function _getUsernameFromID(id) {
-    return bot.users[id] ? bot.users[id].username :
+    return bot.users.has(id) ? bot.users.get(id).username :
         config.userAliases[id] ? config.userAliases[id][0] : false;
 }
 
@@ -151,17 +97,11 @@ function suppressLinks(message) {
     return message.replace(util.urlRX, match => (match[0] === ' ' ? ' ' : '') + '<' + match.trim() + '>');
 }
 
-bot.on('presence', function(user, userID, status, game, rawEvent) {
-    /*console.log(user + " is now: " + status);*/
+bot.on('error', error => {
+    _sendMessages(config.owner, `An error has occurred: \`\`\`${error}\`\`\``);
+    console.log(new Date(), error);
 });
 
-bot.on('any', function(rawEvent) {
-    //console.log(rawEvent) //Logs every event
-});
-
-bot.on('disconnect', function(errMsg, code) {
-    console.log(new Date(), 'Bot disconnected', errMsg, code);
-    setTimeout(function(){
-        bot.connect(); //Auto reconnect after 5 seconds
-    },5000);
+bot.on('debug', debug => {
+    //console.log(debug) //Logs every event
 });

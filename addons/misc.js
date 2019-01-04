@@ -15,7 +15,7 @@ const reminderData = storage.json('reminders', { reminders: [] }, '\t');
 var _commands = {};
 
 _commands.me = data => {
-    discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id });
+    discord.bot.deleteMessage(data.channel, data.messageID, 'Consumed /me command');
     data.reply(`_${data.user} ${data.paramStr}_`);
 };
 
@@ -172,7 +172,7 @@ module.exports = {
         if(/1?\d:\d\d/gi.test(data.message)) return;
         if(/(one|two|three|four|five|six|seven|eight|nine|\d+) (hour|minute)/gi.test(data.message)) return;
         if(/(when|what time)( i|'|’)s ((to|2)ni(gh)?te?)/.test(data.message)) return;
-        discord.bot.simulateTyping(data.channel);
+        data.messageObject.channel.sendTyping();
         await util.wait(1500);
         data.reply('When is **tonight**?');
         lastTonightQuestion = Date.now();

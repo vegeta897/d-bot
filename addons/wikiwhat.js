@@ -72,11 +72,11 @@ function endRound() {
     } else if(wwData.get('round') === rounds) {
         endGame();
     } else {
-        discord.bot.simulateTyping(wwData.get('channel'));
+        discord.bot.sendChannelTyping(wwData.get('channel'));
         wwData.set('round', wwData.get('round') + 1);
         wwData.set('state', 'playing');
         wwData.set('stateBegan', new Date().getTime());
-        discord.bot.uploadFile({
+        discord.uploadFile({
             to: wwData.get('channel'),
             file: imgData, filename: 'wikihow.jpg',
             message: `**Round ${wwData.get('round')} begins!** Submit your guesses!`
@@ -232,17 +232,17 @@ module.exports = {
         if(new Date().getTime() >= wwData.get('stateBegan') + stateDurations[wwData.get('state')]*1000) {
             switch(wwData.get('state')) {
                 case 'starting':
-                    discord.bot.simulateTyping(wwData.get('channel'));
+                    discord.bot.sendChannelTyping(wwData.get('channel'));
                     wwData.set('state', 'playing');
                     wwData.set('stateBegan', new Date().getTime());
                     wwData.set('round', 1);
-                    discord.bot.uploadFile({
+                    discord.uploadFile({
                         to: wwData.get('channel'),
                         file: imgData, filename: 'wikihow.jpg',
                         message: '**Guess the title of the WikiHow article containing this image**\n'
                         + 'Type `/guess` or `/g` to guess\n'
                         + '*You only get one guess,* but you can change it during the round\n'
-                    },function(){
+                    },function() {
                         wwData.set('stateBegan', new Date().getTime());
                     });
                     break;

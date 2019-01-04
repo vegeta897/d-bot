@@ -1,13 +1,13 @@
 // I just don't trust anyone
-var util = require(__base+'core/util.js');
-var messages = require(__base+'core/messages.js');
-var discord = require(__base+'core/discord.js');
-var config = require(__base+'core/config.js');
+const util = require(__base+'core/util.js');
+const messages = require(__base+'core/messages.js');
+const discord = require(__base+'core/discord.js');
+const config = require(__base+'core/config.js');
 
-var _commands = {};
+const _commands = {};
 
 _commands.topic = function(data) {
-    if(!discord.userHasRole(data.userID, config.adminRole)) {
+    if(!data.member.roles.includes(config.adminRole)) {
         return data.reply('You do not have admin permissions!');
     }
     if(data.paramStr === '') {
@@ -16,10 +16,9 @@ _commands.topic = function(data) {
     if(data.paramStr.length > 1024) {
         return data.reply(`Sorry, that topic is \`${1024 - data.paramStr.length}\` characters too long!`);
     }
-    discord.bot.editChannelInfo({ channelID: data.channel, topic: data.paramStr }, function(err, res) {
-        if(err) return data.reply('Error setting topic! ' + err);
-        data.reply(`Topic set!`);
-    });
+    discord.bot.editChannel(data.channel, { topic: data.paramStr }, `${data.user} commanded it`)
+        .then(() => data.reply('Topic set!'))
+        .catch(err => data.reply('Error setting topic! ' + err));
 };
 
 module.exports = {

@@ -95,34 +95,36 @@ function generateHelpMessage() {
 
 module.exports = {
     scanAddons,
-    readMessage(user, userID, channelID, message, rawEvent) {
-        let isWebhook = !!rawEvent.d.webhook_id;
-        let isPM = !discord.bot.channels[channelID];
-        let server = isPM ? false : discord.bot.channels[channelID].guild_id;
+    readMessage(message) {
+        let { author, channel, content, id, attachments, member } = message;
+        let isWebhook = author.discriminator === '0000';
+        let isPM = !channel.guild;
+        let server = isPM ? false : channel.guild;
         let msgData = {
-            channel: channelID, server, user, userID, isWebhook, isPM, message,
-            rawEvent, attachments: rawEvent.d.attachments.length > 0 ? rawEvent.d.attachments.map(a => a.url) : null,
-            nick: server && !isWebhook ? (discord.bot.servers[server].members[userID].nick || user) : user,
-            mention: '<@!' + userID + '>', words: message.toLowerCase().split(' '),
-            reply: (msg, polite, cb) => discord.sendMessage(isPM ? userID : channelID, msg, polite, cb)
+            channel: channel.id, server, user: author.username, userID: author.id, isWebhook, isPM,
+            message: content, messageID: id, messageObject: message,
+            attachments: attachments.length > 0 ? attachments.map(a => a.url) : null,
+            nick: member && member.nick || author.username,
+            mention: '<@!' + author.id + '>', words: content.toLowerCase().split(' '),
+            reply: (msg, polite, cb) => discord.sendMessage(isPM ? author.id : channel.id, msg, polite, cb)
         };
-        if(prefixes.indexOf(message[0]) >= 0 && message[1] !== ' ') { // Command
-            let command = message.substring(1, message.length).split(' ')[0].toLowerCase();
-            msgData.paramStr = message.substring(command.length + 2, message.length);
+        if(prefixes.includes(content[0]) && content[1] !== ' ') { // Command
+            let command = content.substring(1, content.length).split(' ')[0].toLowerCase();
+            msgData.paramStr = content.substring(command.length + 2, content.length);
             msgData.command = command;
-            let params = util.getRegExpMatches(message.trim(), /"(.*?)"|(\S+)/gi);
+            let params = util.getRegExpMatches(content.trim(), /"(.*?)"|(\S+)/gi);
             params.shift();
             msgData.params = params;
             // TODO: Implement config reloading
-            if(command === 'reload' && userID === config.owner) reload(msgData.paramStr, msgData.reply); // Reload addon
+            if(command === 'reload' && author.id === config.owner) reload(msgData.paramStr, msgData.reply); // Reload addon
             // TODO: Better module reloading?
             // delete require.cache[require.resolve(`./${msgData.paramStr}.js`)];
             if(command === 'help' || command === 'commands') {
-                discord.sendMessages(userID, generateHelpMessage().replace(/\$user/g, user));
-                if(!isPM) discord.sendMessage(channelID, 'Command list sent, check your PMs!');
+                discord.sendMessages(author.id, generateHelpMessage().replace(/\$user/g, author.username));
+                if(!isPM) discord.sendMessage(channel.id, 'Command list sent, check your PMs!');
             }
             let addon = addons.get(commands.get(command));
-            if(addon && (!addon.dev || userID === config.owner)) {
+            if(addon && (!addon.dev || author.id === config.owner)) {
                 let commanded = addon.commands[command](Object.assign({}, msgData));
                 if(commanded && commanded.catch) commanded.catch(err => console.error(`Error: ${command} command`, err));
             }
@@ -136,11 +138,11 @@ module.exports = {
             // }
         }
         for(let listener of msgListeners) {
-            if(!addons.get(listener).dev || userID === config.owner) {
+            if(!addons.get(listener).dev || author.id === config.owner) {
                 let listened = addons.get(listener).listen(Object.assign({}, msgData));
                 if(listened && listened.catch) listened.catch(err => console.error(`Error: ${listener} listener`, err));
             }
         }
-        return msgData;
+        return !!msgData.command;
     }
 };

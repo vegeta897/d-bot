@@ -20,8 +20,8 @@ _commands.find = async function(data) {
     var msgNum = Math.min(findResults.length, params.limit);
     command.limit = Math.min(msgNum, params.limit);
     var message = findHelper.formatMessage(findResults[msgNum - 1], [msgNum, findResults.length]);
-    data.reply(message, true, function(err, res) {
-        command.responseID = res.id;
+    data.reply(message, true, function(message) {
+        command.responseID = message[0].id;
         lastCommands[data.channel] = command;
     });
 };
@@ -38,8 +38,8 @@ _commands.last = async function(data) {
     var msgNum = Math.min(userMessages.length, params.limit);
     command.limit = Math.min(msgNum, params.limit);
     var message = findHelper.formatMessage(userMessages[msgNum - 1], [msgNum, userMessages.length]);
-    data.reply(message, true, function(err, res) {
-        command.responseID = res.id;
+    data.reply(message, true, function(message) {
+        command.responseID = message[0].id;
         lastCommands[data.channel] = command;
     });
 };
@@ -57,7 +57,16 @@ _commands.skip = async function(data) {
     var message = findHelper.formatMessage(findResults[msgNum - 1], [msgNum, findResults.length]);
     discord.editMessage(data.channel, lastCommand.responseID, message, true,
         // Delete skip command after edit complete
-        () => discord.bot.deleteMessage({ channelID: data.channel, messageID: data.rawEvent.d.id }));
+        () => discord.bot.deleteMessage(data.channel, data.messageID, 'Consumed /skip command'));
+};
+
+_commands.mentioned = async function(data) {
+    if(data.params.length < 2) return data.reply('Specify the `from` and `mentioned` user IDs');
+    let from = data.params[0];
+    let mentioned = data.params[1];
+    let mentions = await messages.cursor(db => db.cfind({user: from, content: new RegExp(mentioned, 'g') }).sort({time:-1}));
+    if(!mentions) return data.reply(`No messages found from **${from}** that mention **${mentioned}**`, true);
+    data.reply(mentions.length);
 };
 
 var lastCommands = {}; // Store last command per channel, so skip command can be used

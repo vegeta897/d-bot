@@ -27,7 +27,6 @@ _commands.mentions = async function(data) {
         data.reply('Please provide the number of mentions to retrieve, eg. `/mentions 3`');
         return;
     }
-    discord.bot.simulateTyping(data.channel);
     var rx = new RegExp('<@!?' + data.userID + '>','g');
     var query = {content: rx};
     findHelper.addChannelQuery(query, data.channel);
@@ -63,8 +62,8 @@ function removeSub(id, channel) {
         return `You aren't subscribed to this channel!`;
     }
     if(subs.get(id) === 'all') {
-        var server = discord.bot.channels[channel].guild_id;
-        subs.set(id, Object.keys(discord.bot.servers[server].channels)); // Add all channels
+        var server = discord.bot.channelGuildMap[channel];
+        subs.set(id, Array.from(discord.bot.guilds.get(server).channels.keys())); // Add all channels
         config.privateChannels.forEach(function(elem) {
             util.findAndRemove(elem, subs.get(id)); // Remove private channels
         });
@@ -77,15 +76,14 @@ function removeSub(id, channel) {
 module.exports = {
     commands: _commands,
     listen: function(data) {
-        if(!data.rawEvent.d.mentions.length) return;
-        data.rawEvent.d.mentions.forEach(function(mention) {
+        data.messageObject.mentions.forEach(function(mention) {
             if(config.privateChannels.includes(data.channel)) return;
             if(!subs.get(mention.id)) return;
             if(subs.get(mention.id) !== 'all' && !subs.get(mention.id).includes(data.channel)) return;
-            var userStatus = discord.bot.servers[data.server].members[mention.id].status;
+            var userStatus = data.messageObject.guild.members.get(mention.id).status;
             if(userStatus && userStatus !== 'offline') return;
             var pm = `**${data.user}** mentioned you!\n` + findHelper.formatMessage({
-                    user: data.userID, time: new Date(data.rawEvent.d.timestamp).getTime(), content: data.message
+                    user: data.userID, time: data.messageObject.timestamp, content: data.message
                 }, 0, true);
             discord.sendMessage(mention.id, pm, true);
         });

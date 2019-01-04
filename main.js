@@ -4,47 +4,27 @@ var config = require('./core/config.js');
 var { bot } = require('./core/discord.js');
 var messages = require('./core/messages.js');
 var addons = require('./core/addons.js');
-const DEBUG = process.argv[2] === 'debug';
 
-bot.on('ready', function(event) {
+bot.on('ready', () => {
     console.log((new Date()).toString().substr(0,24),
-        `Logged in as: ${bot.username} - (${bot.id})`);
-    if(DEBUG) return setTimeout(setupConsoleInput, 500);
-    require('fs').writeFile('./debug/bot.json', JSON.stringify(bot, null, '\t'), () => {});
+        `Logged in as: ${bot.user.username} - (${bot.user.id})`);
+    // TODO: Write custom bot.json output
     addons.scanAddons();
 });
 
-bot.on('message', function(user, userID, channelID, message, rawEvent) {
-    if(userID === bot.id) return; // Don't listen to yourself, bot
-    var data = addons.readMessage(user, userID, channelID, message, rawEvent);
-    require('fs').writeFile('./debug/lastMessage.json', JSON.stringify(rawEvent, null, '\t'), () => {});
-    if(data.isPM || data.isWebhook) {
-        // This is a PM or webhook
+bot.on('messageCreate', message => {
+    let { channel, author } = message;
+    if(author.id === bot.user.id) return; // Don't listen to yourself, bot
+    let command = addons.readMessage(message);
+    // TODO: Write custom lastMessage.json output
+    if(command || !channel.guild || author.discriminator === '0000') {
+        // This is a command, PM, or webhook
     } else {
-        // Not a PM
-        messages.logMessage(data); // Log message in DB
+        // Not a command, PM, or webhook
+        messages.logMessage(message); // Log message in DB
     }
 } );
 
-function setupConsoleInput() {
-    const userID = config.owner;
-    const username = bot.users[config.owner].username;
-    const rl = require('readline').createInterface(process.stdin, process.stdout);
-    const prefix = 'Send Message: ';
-    rl.setPrompt(prefix, prefix.length);
-    rl.prompt();
-    rl.on('line', function(cmd) {
-        rl.pause();
-        bot.emit('message', username, userID, config.debugChannel, cmd, {
-            d: { timestamp: Date.now(), id: Date.now(), mentions: [] }
-        });
-        rl.resume();
-        rl.setPrompt(prefix, prefix.length);
-        rl.prompt();
-    }).on('close', function() {
-        console.log('Exiting...');
-        process.exit(0);
-    })
-}
+bot.connect();
 
 // TODO: Delete original command and error message when a command is retried successfully immediately after

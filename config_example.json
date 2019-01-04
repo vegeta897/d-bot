@@ -26,7 +26,6 @@
     "telnetPort": 25436,
     "telnetPass": "rosebud"
   },
-  "debugChannel": "some_channel_id",
   "userAliases": {
     "some_user_id": ["joe", "joey"]
   },

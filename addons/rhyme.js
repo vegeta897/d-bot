@@ -22,7 +22,7 @@ async function doRhyme(word, data) {
     word = word ? encodeURIComponent(/\w+.?\w+/g.exec(word)[0]) : false;
     if(!word) return data.reply(`I can't rhyme that, man!`);
     let punctuation = word.slice(-1) === '?' ? '?' : '!';
-    discord.bot.simulateTyping(data.channel);
+    data.messageObject.channel.sendTyping();
     try {
         let rhymes = await rhyme.getRhyme(word);
         if(rhymes.length === 1 && rhymes[0].spellcor[0]) { // If there is a spelling suggestion
