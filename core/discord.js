@@ -22,7 +22,7 @@ module.exports = {
         username = username.toLowerCase();
         if(!username || username.trim() === '') return false;
         for(let [guildID, guild] of bot.guilds) {
-            for(let [memberID, member] of guild) {
+            for(let [memberID, member] of guild.members) {
                 if((member.nick || member.username).toLowerCase() === username) return memberID;
             }
         }
