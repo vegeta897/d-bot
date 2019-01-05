@@ -7,7 +7,7 @@ const config = require(__base+'core/config.js');
 const _commands = {};
 
 _commands.topic = function(data) {
-    if(!data.member.roles.includes(config.adminRole)) {
+    if(!data.messageObject.member.roles.includes(config.adminRole)) {
         return data.reply('You do not have admin permissions!');
     }
     if(data.paramStr === '') {
