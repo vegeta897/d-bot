@@ -39,7 +39,7 @@ org.eclipse.*
 *.exe
 
 # Custom
-debug/*
+debug/*.json
 storage/*
 config.json
 addons/helpers/comic/dev-log

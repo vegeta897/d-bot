@@ -35,6 +35,8 @@ module.exports = {
 };
 
 function _sendMessages(ID, messageArr, polite, callback) {
+    if(!bot.channelGuildMap[ID]) ID = bot.getDMChannel(ID); // Get DM channel if user ID
+    if(!ID) return console.log(new Date(), 'Invalid channel ID in sendMessage');
     messageArr = Array.isArray(messageArr) ? messageArr : [messageArr];
     let noMentions = polite === true || (polite && polite.noMentions);
     let noEmbeds = polite === true || (polite && polite.noEmbeds);

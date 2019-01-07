@@ -1,18 +1,19 @@
 // Storage interface to keep files organized
-var path = require('path');
-var fse = require('fs-extra');
-var Nedb = require('nedb-promise');
-var callsite = require('callsite'); // For getting filename of calling module
+const path = require('path');
+const fse = require('fs-extra');
+const Nedb = require('nedb-promise');
+const callsite = require('callsite'); // For getting filename of calling module
+const util = require('./util.js');
 
 const PATH = 'storage/';
 
 function JSONFile(filename, initData, space) {
     this.filename = filename;
     this.space = space;
-    initData = objToMap(initData || {});
+    initData = util.objToMap(initData || {});
     try {
         let data = fse.readJsonSync(filename);
-        this.data = new Map([...initData, ...objToMap(data)]);
+        this.data = new Map([...initData, ...util.objToMap(data)]);
     } catch(err) {
         this.data = initData;
     } finally {
@@ -36,7 +37,7 @@ JSONFile.prototype.save = function() {
     if(this.saving) return;
     this.saving = true;
     setTimeout(() => { // Multiple saves called at once will collapse into a single save
-        fse.writeJson(this.filename + '.tmp', mapToObj(this.data), { spaces: this.space })
+        fse.writeJson(this.filename + '.tmp', util.mapToObj(this.data), { spaces: this.space })
             .then(() => {
                 fse.move(this.filename + '.tmp', this.filename, { overwrite: true })
                     .then(() => this.saving = false)
@@ -53,7 +54,7 @@ JSONFile.prototype.delete = function(key) {
     this.save();
 };
 JSONFile.prototype.setData = function(data) {
-    this.data = objToMap(data);
+    this.data = util.objToMap(data);
     this.save();
     return this.data;
 };
@@ -94,14 +95,3 @@ function getDirectory(dir) {
     return dir;
 }
 
-function objToMap(obj) { // https://stackoverflow.com/a/36644532/2612679
-    let map = new Map();
-    Object.keys(obj).forEach(key => map.set(key, obj[key]));
-    return map;
-}
-
-function mapToObj(map) {
-    let obj = Object.create(null);
-    for (let [k,v] of map) obj[k] = v;
-    return obj;
-}

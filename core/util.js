@@ -109,6 +109,16 @@ var util = {
         var fraction = index - Math.floor(index);
         return (lower + ((upper - lower) * fraction));
     },
+    objToMap: obj => { // https://stackoverflow.com/a/36644532/2612679
+        let map = new Map();
+        Object.keys(obj).forEach(key => map.set(key, obj[key]));
+        return map;
+    },
+    mapToObj: map => {
+        let obj = Object.create(null);
+        for (let [k,v] of map) obj[k] = v;
+        return obj;
+    },
     getURLParameter: function(name) {
         return decodeURIComponent(
                 (new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)')

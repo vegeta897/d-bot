@@ -1,8 +1,8 @@
 // Message database
-var util = require(__base+'core/util.js');
-var discord = require('./discord.js');
-var storage = require('./storage.js');
-var config = require('./config.js');
+const util = require(__base+'core/util.js');
+const discord = require('./discord.js');
+const storage = require('./storage.js');
+const config = require('./config.js');
 
 let db;
 storage.nedb('messages', [{ fieldName: 'id', unique: true }, { fieldName: 'time' }]).then(d => {
@@ -44,11 +44,11 @@ module.exports = {
         let allMessages = await cursor(db => db.cfind({ content: util.matchWordsRX }));
         if(!allMessages) return '';
         allMessages = allMessages.map(msg => msg.content);
-        var attempts = 0;
+        let attempts = 0;
         do {
             attempts++;
-            var randomMessage = util.pickInArray(allMessages);
-            var randomWord = util.pickInArray(util.getRegExpMatches(randomMessage, util.matchWordsRX));
+            let randomMessage = util.pickInArray(allMessages);
+            let randomWord = util.pickInArray(util.getRegExpMatches(randomMessage, util.matchWordsRX));
         } while(!util.matchWordsRX.test(randomWord) && attempts < 1000);
         return randomWord;
     }
