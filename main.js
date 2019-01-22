@@ -4,19 +4,19 @@ const config = require('./core/config.js');
 const { bot } = require('./core/discord.js');
 const messages = require('./core/messages.js');
 const addons = require('./core/addons.js');
-const debug = require('./debug/debug.js');
+const ErisJSON = require('eris-json');
 
 bot.on('ready', () => {
     console.log((new Date()).toString().substr(0,24),
         `Logged in as: ${bot.user.username} - (${bot.user.id})`);
-    debug.botToJSON(bot);
+    ErisJSON.botToJSON(bot, 'debug/bot.json');
     addons.scanAddons();
 });
 
 bot.on('messageCreate', message => {
     let { channel, author } = message;
     if(author.id === bot.user.id) return; // Don't listen to yourself, bot
-    debug.messageToJSON(message);
+    ErisJSON.messageToJSON(message, 'debug/lastMessage.json');
     let command = addons.readMessage(message);
     if(command || !channel.guild || author.discriminator === '0000') {
         // This is a command, PM, or webhook

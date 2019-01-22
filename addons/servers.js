@@ -5,7 +5,6 @@ var config = require(__base+'core/config.js');
 var request = require('request');
 var download = require('download');
 var telnet = require('expect-telnet');
-var nodecraft = require('nodecraft-api')('vegeta897', 'AF0Mi-MWVFr-EuJML-u7KHq');
 
 var _commands = {};
 
@@ -59,23 +58,6 @@ _commands.mumble = function(data) {
 };
 
 _commands.minecraft = function(data) {
-    // data.messageObject.channel.sendTyping();
-    // nodecraft.services.stats('967ae4ea-a1a0-4026-8dd7-618b8581b2b3', (err, server) => {
-    //     if(err) {
-    //         console.log(err);
-    //         return data.reply('Error getting Minecraft server status...');
-    //     }
-    //     if(server.stats.status === 'online') {
-    //         var msg = `Minecraft server is **online!** Uptime: ${server.stats.time}`;
-    //         for(var i = 0; i < server.stats.players.length; i++) {
-    //             if(i === 0) msg += `\nPlayers online: **${server.stats.players[i].username}**`;
-    //             else msg += `, **${server.stats.players[i].username}**`
-    //         }
-    //         data.reply(msg);
-    //     } else {
-    //         data.reply('Minecraft server is currently offline... @vegeta897');
-    //     }
-    // });
     if(!config.minecraft || !config.minecraft.ip || !config.minecraft.port) return;
     data.messageObject.channel.sendTyping();
     var url = 'http://mcapi.us/server/status?ip=' + config.minecraft.ip + '&port=' + config.minecraft.port;
