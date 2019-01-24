@@ -12,7 +12,7 @@ function JSONFile(filename, initData, space) {
     this.space = space;
     initData = util.objToMap(initData || {});
     try {
-        let data = fse.readJsonSync(filename);
+        let data = fse.readJsonSync(filename, 'utf8');
         this.data = new Map([...initData, ...util.objToMap(data)]);
     } catch(err) {
         this.data = initData;

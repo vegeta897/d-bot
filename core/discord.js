@@ -64,7 +64,6 @@ function _uploadFile({ to, filename, file, message }, callback) {
 
 function _fixMessage(message, serverID) { // Credit to discord.io
     return message.replace(/<@&(\d*)>|<@!(\d*)>|<@(\d*)>|<#(\d*)>/g, function(match, RID, NID, UID, CID) {
-        var k, i;
         if(UID || CID) {
             if(bot.users.has(UID)) return '@' + bot.users.get(UID).username;
             if(bot.channelGuildMap[CID]) return '#' + bot.guilds.get(bot.channelGuildMap[CID]).channels.get(CID).name;

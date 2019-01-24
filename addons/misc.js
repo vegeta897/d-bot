@@ -1,18 +1,18 @@
 // Small commands not worth having their own file
-var util = require(__base+'core/util.js');
-var messages = require(__base+'core/messages.js');
-var config = require(__base+'core/config.js');
-var storage = require(__base+'core/storage.js');
-var discord = require(__base+'core/discord.js');
-var DateFormat = require('dateformat');
-var moment = require('moment-timezone');
+const util = require(__base+'core/util.js');
+const messages = require(__base+'core/messages.js');
+const config = require(__base+'core/config.js');
+const storage = require(__base+'core/storage.js');
+const discord = require(__base+'core/discord.js');
+const DateFormat = require('dateformat');
+const moment = require('moment-timezone');
 const convert = require('convert-units');
 const timestring = require('timestring');
 
 const timeData = storage.json('time', { zoneUsers: {} }, '\t');
 const reminderData = storage.json('reminders', { reminders: [] }, '\t');
 
-var _commands = {};
+const _commands = {};
 
 _commands.me = data => {
     discord.bot.deleteMessage(data.channel, data.messageID, 'Consumed /me command');
@@ -159,7 +159,7 @@ const unitAliases = {
     'kmh': 'km/h'
 };
 
-let lastTonightQuestion = 0;
+// let lastTonightQuestion = 0;
 
 module.exports = {
     commands: _commands,
