@@ -1,4 +1,5 @@
 // #justemojithings
+const util = require(__base+'core/util.js');
 const storage = require(__base+'core/storage.js');
 const emoji = require('node-emoji');
 
