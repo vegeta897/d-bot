@@ -83,15 +83,27 @@ function _getUsernameFromID(id) {
         config.userAliases[id] ? config.userAliases[id][0] : false;
 }
 
+function _getRoleFromID(id) {
+    for(let [guildID, guild] of bot.guilds) {
+        let role = guild.roles.find(role => role.id === id);
+        if(role) return role;
+    }
+}
+
 function _getTimeFromID(id) { // Converts Discord snowflake ID to timestamp, thanks /u/Natsulus!
     return new Date((id / 4194304) + 1420070400000);
 }
 
 function suppressMentions(message) {
-    return message.split('@everyone').join('(@)everyone').replace(/<@!?[0-9]+>/g, match => {
-        match = match.replace('!', '');
-        return "(@)" + _getUsernameFromID(match.substring(2, match.length - 1))
-    });
+    return message.split('@everyone').join('(@)everyone')
+        .replace(/<@!?[0-9]+>/g, match => {
+            match = match.replace('!', '');
+            return '(@)' + _getUsernameFromID(match.substring(2, match.length - 1))
+        })
+        .replace(/<@&[0-9]+>/g, match => {
+            let role = _getRoleFromID(match.substring(3, match.length - 1));
+            return '(@)' + (role ? role.name : '<unknown role>');
+        });
 }
 
 function suppressLinks(message) {

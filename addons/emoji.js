@@ -15,6 +15,10 @@ const recordEmoji = (list, emoji) => {
 };
 
 _commands.react = async data => {
+
+    // TODO: React to previous message with emojis based on what was said,
+    //  use fuzzyset on 1-2 word groups in message
+
     let unsafeEmoji = emojiData.get('unsafe');
     do {
         var randomEmoji = emoji.random().emoji;
