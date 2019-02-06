@@ -31,7 +31,18 @@ module.exports = {
         }
         return false;
     },
-    getTimeFromID: _getTimeFromID
+    getTimeFromID: _getTimeFromID,
+    getUserColor: (member, guild) => {
+        let color;
+        let rolePosition = -1;
+        for(let roleID of member.roles) {
+            let role = guild.roles.get(roleID);
+            if(!role || !role.color || role.position < rolePosition) continue;
+            color = '#' + ('00000' + role.color.toString(16)).substr(-6);
+            rolePosition = role.position;
+        }
+        return color;
+    }
 };
 
 function _sendMessages(ID, messageArr, polite, callback) {

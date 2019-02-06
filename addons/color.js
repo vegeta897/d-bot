@@ -8,10 +8,18 @@ const _commands = {};
 _commands.color = function(data) {
     if(!config.allowCustomColors) return;
     let hexColorRX = /^#(?:[0-9a-f]{6})$/i;
-    if(!data.params[0] || !hexColorRX.test(data.params[0])) {
+    let currentColor = discord.getUserColor(data.messageObject.member, data.messageObject.channel.guild);
+    if(!data.params[0]) {
+        return data.reply(`Your current color is \`${currentColor.toUpperCase()}\`\n`);
+    }
+    if(!hexColorRX.test(data.params[0])) {
         return data.reply('You must specify a hex color, e.g. #897897');
     }
-    let color = parseInt(data.params[0].toUpperCase().replace('#',''), 16);
+    let input = data.params[0].toLowerCase();
+    if(input === currentColor) {
+        return data.reply('You already have that color!');
+    }
+    let color = parseInt(input.replace('#',''), 16);
     let { guild } = data.messageObject.channel;
     let userRole = guild.roles.find(role => role.name === 'user' + data.userID);
     if(userRole) return userRole.edit({ color }, `${data.user} used /color command`)
