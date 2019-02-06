@@ -39,6 +39,7 @@ const FRAME_DIVIDER = 6;
 const FPS = 30;
 const MAX_SUBFRAMES = 150 * 7.5 * FRAME_DIVIDER; // Avg 150 frames per megabyte, max 7.5mb upload
 
+const DIM_COLOR = '#888888';
 const BORDER_COLOR = '#AAAAAA';
 const PEG_COLOR = '#CCCCCC';
 const DEFAULT_USER_COLOR = '#AAABAD';
@@ -51,22 +52,21 @@ const SLOT_IMAGE = new Canvas(WIDTH * RES, TOP_SPACE * RES);
 
 function drawSlots() {
     let slotCtx = SLOT_IMAGE.getContext('2d');
-    slotCtx.strokeStyle = BORDER_COLOR;
-    slotCtx.lineWidth = RES;
+    slotCtx.strokeStyle = DIM_COLOR;
+    slotCtx.lineWidth = RES * 3;
+    slotCtx.lineCap = 'round';
     slotCtx.fillStyle = PEG_COLOR;
-    slotCtx.font = `${Math.floor(TOP_SPACE / 2.8 * RES)}px Roboto`;
+    slotCtx.font = `${Math.floor(TOP_SPACE * 0.45 * RES)}px Roboto`;
     slotCtx.textBaseline = 'top';
     slotCtx.textAlign = 'center';
     for(let s = 0; s < SLOTS; s++) {
         let x = Math.floor((s + 1) * SLOT_WIDTH * RES);
         slotCtx.beginPath();
-        slotCtx.moveTo(x + 0.5, TOP_SPACE / 2 * RES);
+        slotCtx.moveTo(x + 0.5 - SLOT_WIDTH * 0.2 * RES, TOP_SPACE * 0.61 * RES);
         slotCtx.lineTo(x + 0.5, TOP_SPACE * 0.75 * RES);
-        slotCtx.moveTo(x + 0.5 - SLOT_WIDTH / 10 * RES, TOP_SPACE * 0.7 * RES);
-        slotCtx.lineTo(x + 0.5, TOP_SPACE * 0.75 * RES);
-        slotCtx.lineTo(x + 0.5 + SLOT_WIDTH / 10 * RES, TOP_SPACE * 0.7 * RES);
+        slotCtx.lineTo(x + 0.5 + SLOT_WIDTH * 0.2 * RES, TOP_SPACE * 0.61 * RES);
         slotCtx.stroke();
-        slotCtx.fillText((s + 1).toString(), x + RES - (s + 1 === 1 ? 1 : 0) * RES, 0);
+        slotCtx.fillText((s + 1).toString(), x + RES - (s + 1 === 1 ? 2 : 0) * RES, 0);
     }
 }
 drawSlots();
@@ -164,7 +164,7 @@ function simulate(map, cb) {
         //util.timer.start('drawing frame');
         let subFrame = frame % FRAME_DIVIDER;
         //util.timer.stop('drawing frame');
-        game.players.forEach(({ p, v, status, color, avatarImg }, playerID) => {
+        game.players.forEach(({ p, v, a, status, color, avatarImg }, playerID) => {
             if(!status.falling) return;
             ctx.globalAlpha = subFrame === 0 ? 1 : Math.pow(0.5, FRAME_DIVIDER - subFrame);
             ctx.fillStyle = color;
@@ -181,6 +181,7 @@ function simulate(map, cb) {
                 v.x *= -ELASTICITY;
                 p.x = p.x < BALL_RADIUS ? BALL_RADIUS : WIDTH - BALL_RADIUS;
             }
+            a.v += a.t * 0.5; // Angular velocity affected by torque and inertia
             game.players.forEach(({ p: p2, v: v2, status: status2 }, player2ID) => {
                 if(playerID === player2ID || !status2.falling) return;
                 let playerCollisionDist = Math.pow(BALL_RADIUS * 2, 2);
@@ -188,18 +189,15 @@ function simulate(map, cb) {
                     || Math.pow(p.x - p2.x, 2) + Math.pow(p.y - p2.y, 2) > playerCollisionDist) return;
                 let n = { x: p2.x - p.x, y: p2.y - p.y }; // Collision normal
                 let rv = subtract(v, v2); // Relative velocity
-                let dp = dotProduct(rv, n);
-                if(dp <= 0) return; // Already moving away
-                let u = multiply(n, dp / dotProduct(n, n)); // Perpendicular
-                let u2 = multiply(n, -dp / dotProduct(n, n)); // Perpendicular
+                let vNorm = dotProduct(rv, n); // Velocity along normal
+                if(vNorm <= 0) return; // Already moving away
+                let u = multiply(n, vNorm / dotProduct(n, n)); // Perpendicular
+                let u2 = multiply(n, -vNorm / dotProduct(n, n)); // Perpendicular
                 let w = subtract(v, u); // Parallel
                 let w2 = subtract(v2, u2); // Parallel
-                let nv = subtract(multiply(w, FRICTION / 2), multiply(u, ELASTICITY / 2)); // New velocity
-                let nv2 = subtract(multiply(w2, FRICTION / 2), multiply(u2, ELASTICITY / 2)); // New velocity
-                v.x = nv.x; // Set new velocity
-                v.y = nv.y;
-                v2.x = nv2.x; // Set new velocity
-                v2.y = nv2.y;
+                // Calculate new velocities
+                Object.assign(v, subtract(multiply(w, FRICTION / 2), multiply(u, ELASTICITY / 2)));
+                Object.assign(v2, subtract(multiply(w2, FRICTION / 2), multiply(u2, ELASTICITY / 2)));
             });
             for(let [pegX, pegY, pegRadius] of map.pegs) { // Detect peg collisions
                 let pegCollisionDist = Math.pow(pegRadius + BALL_RADIUS, 2);
@@ -208,17 +206,15 @@ function simulate(map, cb) {
                     || Math.pow(p.x - pegX, 2) + Math.pow(p.y - pegY, 2) > pegCollisionDist) continue;
                 //console.log('old velocity:', v.x, v.y);
                 let n = { x: pegX - p.x, y: pegY - p.y }; // Collision normal
-                let dp = dotProduct(v, n);
-                if(dp <= 0) return; // Already moving away
-                let u = multiply(n, dp / dotProduct(n, n)); // Perpendicular
+                let vNorm = dotProduct(v, n); // Velocity along normal
+                if(vNorm <= 0) return; // Already moving away
+                let u = multiply(n, vNorm / dotProduct(n, n)); // Perpendicular
                 let w = subtract(v, u); // Parallel
-                let nv = subtract(multiply(w, FRICTION), multiply(u, ELASTICITY)); // New velocity
-                v.x = nv.x; // Set new velocity
-                v.y = nv.y;
+                Object.assign(v, subtract(multiply(w, FRICTION), multiply(u, ELASTICITY))); // Calc new velocity
                 //console.log('new velocity:', v.x, v.y);
             }
         });
-        game.players.forEach(({ p, v, status }) => {
+        game.players.forEach(({ p, v, a, status }) => {
             if(!status.falling) return;
             if(Math.abs(v.x) + Math.abs(v.y) <= GRAVITY) status.stillFrames++;
             else status.stillFrames = 0;
@@ -228,6 +224,7 @@ function simulate(map, cb) {
                 playersDone++;
                 status.falling = false;
             }
+            a.o += a.v; // Angular velocity affects orientation
         });
         if(subFrame === 0) {
             encoder.addFrame(ctx);
@@ -256,35 +253,45 @@ _commands.pachinko = function(data) {
     let ctx = canvas.getContext('2d');
     ctx.drawImage(game.map.image, 0, 0);
     ctx.drawImage(SLOT_IMAGE, 0, 0);
-    discord.bot.uploadFile({
+    discord.uploadFile({
         to: data.channel, filename: `pachinko-${Date.now()}.png`, file: canvas.toBuffer(),
         message: `**__Pachinko!__**\nUse \`${config.prefixes[0]}p\` to choose a slot #`
     });
 };
 
+function testRun() {
+    _commands.pachinko({
+        channel: '209177876975583232',
+        reply: (msg, polite, cb) => discord.sendMessage('209177876975583232', msg, polite, cb)
+    });
+}
+// if(!discord.bot.connected) discord.bot.on('ready', testRun);
+// else testRun();
+
 module.exports = {
-    listen(data) {
+    async listen(data) {
         if(!game || game.channel !== data.channel || data.command !== 'p') return;
         let slot = +data.paramStr;
         if(!(slot > 0 && slot <= SLOTS)) return data.reply(`Pick a slot from 1 to ${SLOTS}`);
-        let user = discord.bot.servers[data.server].members[data.userID];
+        let { member: user, channel: { guild } } = data.messageObject;
         let avatarImg = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
         let avatarCtx = avatarImg.getContext('2d');
         game.players.set(data.userID, {
-            slot, color: user.color !== null ? ('#' + user.color.toString(16)) : DEFAULT_USER_COLOR, avatarImg,
-            v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
-            p: { x: slot * SLOT_WIDTH, y: 0 },
+            slot, color: discord.getUserColor(user, guild) || DEFAULT_USER_COLOR, avatarImg,
+            v: { x: util.random(-1, 1) * GRAVITY * 20, y: 0 }, // Velocity
+            p: { x: slot * SLOT_WIDTH, y: 0 }, // Position
+            a: { o: 0, v: 0, t: 0 }, // Angular: orientation, velocity, torque
             status: { stillFrames: 0 }
         });
-        for(let i = 0; i < 12; i++) {
-            game.players.set('test' + i, {
-                slot, color: '#eaa5f3', avatarImg,
-                v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
-                p: { x: ((i % 6) + 1) * SLOT_WIDTH, y: 0 },
-                status: { stillFrames: 0 }
-            });
-            game.slots[i % 6 + 1].push('test' + i);
-        }
+        // for(let i = 0; i < 12; i++) {
+        //     game.players.set('test' + i, {
+        //         slot, color: '#eaa5f3', avatarImg,
+        //         v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
+        //         p: { x: ((i % 6) + 1) * SLOT_WIDTH, y: 0 },
+        //         status: { stillFrames: 0 }
+        //     });
+        //     game.slots[i % 6 + 1].push('test' + i);
+        // }
         game.slots[slot].push(data.userID);
         game.maxSlotStack = Math.max(game.maxSlotStack, game.slots[slot].length);
         avatarCtx.beginPath();
@@ -298,7 +305,7 @@ module.exports = {
             avatarCtx.drawImage(resizedAvatar, 0, 0);
             simulate(game.map, (err, file) => {
                 if(err) return console.log(err);
-                discord.bot.uploadFile({
+                discord.uploadFile({
                     to: data.channel, filename: `pachinko-${Date.now()}.gif`, file
                 });
             });
