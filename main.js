@@ -26,6 +26,8 @@ bot.on('messageCreate', message => {
     }
 } );
 
+bot.on('messageReactionAdd', addons.seeReaction);
+
 bot.connect();
 
 // TODO: Delete original command and error message when a command is retried successfully immediately after

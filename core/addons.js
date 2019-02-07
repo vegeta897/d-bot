@@ -12,6 +12,7 @@ const prefixes = config.prefixes;
 var addons = new Map(); // Addon name -> Addon module
 var commands = new Map(); // Command name -> Addon name
 var msgListeners = []; // Addon names
+var reactListeners = []; // Addon names
 var tickers = []; // Addon names
 var help = {}; // Command reference
 
@@ -54,8 +55,10 @@ function loadAddon(name) {
         }
     }
     util.findAndRemove(name, msgListeners);
+    util.findAndRemove(name, reactListeners);
     util.findAndRemove(name, tickers);
     if(addon.listen) msgListeners.push(name);
+    if(addon.react) reactListeners.push(name);
     if(addon.tick) tickers.push(name);
 }
 
@@ -140,9 +143,21 @@ module.exports = {
         for(let listener of msgListeners) {
             if(!addons.get(listener).dev || author.id === config.owner) {
                 let listened = addons.get(listener).listen(Object.assign({}, msgData));
-                if(listened && listened.catch) listened.catch(err => console.error(`Error: ${listener} listener`, err));
+                if(listened && listened.catch) {
+                    listened.catch(err => console.error(`Error: ${listener} message listener`, err));
+                }
             }
         }
         return !!msgData.command;
+    },
+    seeReaction(message, emoji, userID) {
+        for(let listener of reactListeners) {
+            if(!addons.get(listener).dev || userID === config.owner) {
+                let listened = addons.get(listener).react(message, emoji, userID);
+                if(listened && listened.catch) {
+                    listened.catch(err => console.error(`Error: ${listener} reaction listener`, err));
+                }
+            }
+        }
     }
 };
