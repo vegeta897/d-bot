@@ -56,7 +56,7 @@ function _sendMessages(ID, messageArr, polite, callback) {
         if(noEmbeds) msg = suppressLinks(msg);
         if(msg.length > 2000) {
             console.log((new Date()).toString().substr(0,24), 'Trimming message over 2000 chars');
-            msg = msg.substr(0, 2000);
+            msg = msg.substring(0, 2000);
         }
         return bot.createMessage(ID, msg);
     })).then(callback).catch(err => console.log(new Date(), 'Error sending message(s)', err));

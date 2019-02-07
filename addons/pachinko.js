@@ -6,12 +6,11 @@ const storage = require(__base+'core/storage.js');
 const { Thumbnail } = require('./helpers/canvas.js');
 const Canvas = require('canvas');
 const GIFEncoder = require('gifencoder');
-const fs = require('fs');
+const fse = require('fs-extra');
 const imagemin = require('imagemin');
 const imageminGifsicle = require('imagemin-gifsicle');
 const download = require('download');
-
-const _commands = {};
+const p2 = require('p2');
 
 const IMAGE_PATH = storage.getStoragePath('play.gif');
 
@@ -27,60 +26,134 @@ const GOAL_HEIGHT = 20;
 const PEG_RADIUS = 2.5;
 const BUMPER_RADIUS = 5;
 const BALL_RADIUS = 9;
-const PEG_SPACING = Math.ceil(PEG_RADIUS * 2 + BALL_RADIUS * 2.5);
+const PEG_SPACE_FACTOR = 1.2;
+const PEG_SPACING = Math.ceil(PEG_RADIUS * 2 + BALL_RADIUS * 2 * PEG_SPACE_FACTOR);
 const PEG_AREA_HEIGHT = HEIGHT - TOP_SPACE - BOTTOM_SPACE;
 const PEG_AREA_WIDTH = WIDTH - PEG_SPACING * 2;
 
-const GRAVITY = 0.012;
-const FRICTION = 0.9;
-const ELASTICITY = 0.7;
-
-const FRAME_DIVIDER = 6;
-const FPS = 30;
-const MAX_SUBFRAMES = 150 * 7.5 * FRAME_DIVIDER; // Avg 150 frames per megabyte, max 7.5mb upload
-
-const DIM_COLOR = '#888888';
+const BG_COLOR = '#202225';
 const BORDER_COLOR = '#AAAAAA';
+const DIM_COLOR = '#888888';
 const PEG_COLOR = '#CCCCCC';
 const DEFAULT_USER_COLOR = '#AAABAD';
-const DEFAULT_BALL_COLOR = '#CCCCCC';
-const BG_COLOR = '#202225';
+const DEFAULT_BALL_COLOR = '#7289DA';
 
 const AVATAR_URL = 'https://cdn.discordapp.com/avatars/';
 
-const SLOT_IMAGE = new Canvas(WIDTH * RES, TOP_SPACE * RES);
+const GRAVITY = 1;
+const BALL_MASS = 0.2;
+const BALL_DAMPING = 0.01;
+const BALL_MATERIAL = new p2.Material();
+const PEG_MATERIAL = new p2.Material();
+const FLOOR_MATERIAL = new p2.Material();
 
-function drawSlots() {
-    let slotCtx = SLOT_IMAGE.getContext('2d');
-    slotCtx.strokeStyle = DIM_COLOR;
-    slotCtx.lineWidth = RES * 3;
-    slotCtx.lineCap = 'round';
-    slotCtx.fillStyle = PEG_COLOR;
-    slotCtx.font = `${Math.floor(TOP_SPACE * 0.45 * RES)}px Roboto`;
-    slotCtx.textBaseline = 'top';
-    slotCtx.textAlign = 'center';
-    for(let s = 0; s < SLOTS; s++) {
-        let x = Math.floor((s + 1) * SLOT_WIDTH * RES);
-        slotCtx.beginPath();
-        slotCtx.moveTo(x + 0.5 - SLOT_WIDTH * 0.2 * RES, TOP_SPACE * 0.61 * RES);
-        slotCtx.lineTo(x + 0.5, TOP_SPACE * 0.75 * RES);
-        slotCtx.lineTo(x + 0.5 + SLOT_WIDTH * 0.2 * RES, TOP_SPACE * 0.61 * RES);
-        slotCtx.stroke();
-        slotCtx.fillText((s + 1).toString(), x + RES - (s + 1 === 1 ? 2 : 0) * RES, 0);
-    }
-}
-drawSlots();
+const FPS = 30;
+const SUBFRAMES = 8;
 
 let game = false;
 
-function generateMap() {
-    let pegs = [];
-    let map = { width: WIDTH, height: HEIGHT, pegs };
+const _commands = {};
+
+_commands.pachinko = async function(data) {
+    console.log('starting pachinko');
+    game = false;
+    if(game) return data.reply('There is already a pachinko game in progress!');
+    game = {
+        channel: data.channel, players: new Map(), world: new p2.World({ gravity: [0, GRAVITY] }),
+        slots: [], highestSlotStack: 0
+    };
+    game.world.addContactMaterial(new p2.ContactMaterial(BALL_MATERIAL, PEG_MATERIAL, {
+        restitution: 0.6, stiffness: Number.MAX_VALUE, friction: 5
+    }));
+    console.log('initialized game object');
+    for(let i = 0; i <= SLOTS; i++) game.slots.push([]); // Each slot is an array of player IDs
+    generateMap(game.world); // Add pegs and bumpers to world
+    console.log('generated map');
+    game.mapImage = drawMap(game.world);
+    console.log('drawn map');
+    //data.reply(inspectBodies(game.world.bodies).substring(0, 2000));
+    let canvas = new Canvas(game.mapImage.width, game.mapImage.height);
+    let ctx = canvas.getContext('2d');
+    ctx.drawImage(game.mapImage, 0, 0);
+    //ctx.drawImage(SLOT_IMAGE, 0, 0);
+    console.log('sending map image');
+    // discord.uploadFile({
+    //     to: data.channel, filename: `pachinko-${Date.now()}.png`, file: canvas.toBuffer(),
+    //     message: `**__Pachinko!__**\nUse \`${config.prefixes[0]}p\` to choose a slot #`
+    // });
+    let body = new p2.Body({
+        mass: BALL_MASS, position: [WIDTH / 2, - BALL_RADIUS],
+        damping: BALL_DAMPING, angularDamping: 0
+    });
+    body.addShape(new p2.Circle({ radius: BALL_RADIUS, material: BALL_MATERIAL }));
+    game.world.addBody(body);
+    game.players.set('1', { body });
+    let finalGIF = await simulate(game.world);
+    discord.uploadFile({
+        to: data.channel, filename: `pachinko-${Date.now()}.gif`, file: finalGIF
+    });
+};
+
+module.exports = {
+    async listen(data) {
+        if(!game || game.channel !== data.channel || data.command !== 'p') return;
+        let slot = +data.paramStr;
+        if(!(slot > 0 && slot <= SLOTS)) return data.reply(`Pick a slot from 1 to ${SLOTS}`);
+        let { member: user, channel: { guild } } = data.messageObject;
+        let body = new p2.Body({ mass: BALL_MASS, position: [slot * SLOT_WIDTH, HEIGHT] });
+        body.addShape(new p2.Circle({ radius: BALL_RADIUS }));
+        game.world.addBody(body);
+        game.slots[slot].push(data.userID);
+        game.maxSlotStack = Math.max(game.maxSlotStack, game.slots[slot].length);
+        let avatarImg = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
+        let avatarCtx = avatarImg.getContext('2d');
+        avatarCtx.beginPath();
+        avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
+        try {
+            let avatarImgData = await download(`${AVATAR_URL}${data.userID}/${user.avatar}.png`);
+            let img = new Canvas.Image;
+            img.src = avatarImgData;
+            avatarCtx.clip();
+            let resizedAvatar = new Thumbnail(img, BALL_RADIUS * 2 * RES, 3);
+            avatarCtx.drawImage(resizedAvatar, 0, 0);
+        } catch(e) {
+            console.error(e);
+            avatarCtx.fillStyle = DEFAULT_BALL_COLOR;
+            avatarCtx.fill();
+        }
+        game.players.set(data.userID, {
+            slot, body, color: discord.getUserColor(user, guild) || DEFAULT_USER_COLOR, avatarImg
+        });
+        let finalGIF = await simulate(game.world);
+        console.log(finalGIF);
+        // discord.uploadFile({
+        //     to: data.channel, filename: `pachinko-${Date.now()}.gif`, file: finalGIF
+        // });
+    },
+    dev: true,
+    commands: _commands
+};
+
+function generateMap(world) {
+    let ground = new p2.Body({ position: [0, HEIGHT], angle: Math.PI });
+    ground.addShape(new p2.Plane({ material: PEG_MATERIAL }));
+    world.addBody(ground);
+    let leftWall = new p2.Body({ position: [0, 0], angle: -Math.PI / 2 });
+    leftWall.addShape(new p2.Plane({ material: PEG_MATERIAL }));
+    world.addBody(leftWall);
+    let rightWall = new p2.Body({ position: [WIDTH, 0], angle: Math.PI / 2 });
+    rightWall.addShape(new p2.Plane({ material: PEG_MATERIAL }));
+    world.addBody(rightWall);
     let pegRows = Math.floor(PEG_AREA_HEIGHT / PEG_SPACING) + 1;
     let pegRowHeight = Math.floor(PEG_AREA_HEIGHT / (pegRows - 1));
     let maxXPegs = Math.floor(PEG_AREA_WIDTH / PEG_SPACING) + 1;
     let prevXPegCount = 0;
     let prevBumpers = false;
+    function addStaticCircle(x, y, radius) {
+        let pegBody = new p2.Body({ position: [x, y] });
+        pegBody.addShape(new p2.Circle({ radius, material: PEG_MATERIAL }));
+        world.addBody(pegBody);
+    }
     for(let r = 0; r < pegRows; r++) {
         let pegY = TOP_SPACE + pegRowHeight * r;
         let xPegCount;
@@ -91,26 +164,27 @@ function generateMap() {
         let xPegWidth = util.random(PEG_SPACING, PEG_AREA_WIDTH / (xPegCount - 1));
         let xPegPadding = (WIDTH - (xPegCount - 1) * xPegWidth) / 2;
         if(xPegPadding > BUMPER_RADIUS + PEG_SPACING && !prevBumpers && r + 1 < pegRows) {
-            pegs.push([0, pegY + pegRowHeight / 2, BUMPER_RADIUS]);
-            pegs.push([WIDTH, pegY + pegRowHeight / 2, BUMPER_RADIUS]);
+            addStaticCircle(0, pegY + pegRowHeight / 2, BUMPER_RADIUS);
+            addStaticCircle(WIDTH, pegY + pegRowHeight / 2, BUMPER_RADIUS);
             prevBumpers = true;
         } else prevBumpers = false;
         for(let x = 0; x < xPegCount; x++) {
-            pegs.push([Math.round(xPegPadding + xPegWidth * x), pegY, PEG_RADIUS]);
+            addStaticCircle(Math.round(xPegPadding + xPegWidth * x), pegY, PEG_RADIUS);
         }
     }
-    return map;
 }
 
-function drawMap(map) {
+function drawMap(world) {
     let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
     let ctx = canvas.getContext('2d');
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, WIDTH * RES, HEIGHT * RES);
     ctx.fillStyle = PEG_COLOR;
-    for(let [pegX, pegY, pegRadius] of map.pegs) {
+    for(let body of world.bodies) {
+        let shape = body.shapes[0];
+        if(!shape || shape.type !== p2.Shape.CIRCLE) continue;
         ctx.beginPath();
-        ctx.arc(pegX * RES, pegY * RES, pegRadius * RES, 0, 2 * Math.PI);
+        ctx.arc(body.position[0] * RES, body.position[1] * RES, shape.boundingRadius * RES, 0, 2 * Math.PI);
         ctx.fill();
     }
     ctx.strokeStyle = BORDER_COLOR;
@@ -125,139 +199,98 @@ function drawMap(map) {
     return canvas;
 }
 
-let dotProduct = (a, b) => a.x * b.x + a.y * b.y;
-let subtract = (a, b) => ({ x: a.x - b.x, y: a.y - b.y });
-let multiply = (a, f) => ({ x: a.x * f, y: a.y * f });
+function simulate(world) {
+    return new Promise((resolve, reject) => {
+        let frame = 0;
+        let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
+        let ctx = canvas.getContext('2d');
+        let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
 
-function simulate(map, cb) {
-    let frame = 0;
-    let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
-    let ctx = canvas.getContext('2d');
-    let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
-    encoder.createReadStream().pipe(fs.createWriteStream(IMAGE_PATH));
-    encoder.start();
-    encoder.setRepeat(0);
-    encoder.setDelay(Math.round(1000 / FPS));
-    encoder.setQuality(4);
-    //console.time('simulating result');
-    //util.timer.reset();
-    ctx.drawImage(map.image, 0, 0);
-    ctx.beginPath();
-    ctx.moveTo(RES, RES);
-    ctx.lineTo(WIDTH * RES - RES, RES);
-    ctx.lineTo(WIDTH * RES - RES, HEIGHT * RES - RES);
-    ctx.lineTo(RES, HEIGHT * RES - RES);
-    ctx.closePath();
-    ctx.clip(); // Don't draw over map border
-    let playersDone = 0;
-    let slotRound = 0;
-    let roundFrames = Math.ceil(Math.sqrt(2 * HEIGHT / GRAVITY)); // t = sqrt(2d/a)
-    function nextRound() {
-        if(slotRound + 1 > game.maxSlotStack) return;
-        game.slots.forEach(slot => {
-            if(game.players.has(slot[slotRound])) game.players.get(slot[slotRound]).status.falling = true;
+        let buffers = [];
+        console.log('creating read stream');
+        let encoderStream = encoder.createReadStream();
+        encoderStream.on('data', d => buffers.push(d));
+        encoderStream.on('end', () => {
+            let encodedBuffer = Buffer.concat(buffers);
+            fse.outputFile('play.gif', encodedBuffer).then(() => console.log('wrote file!')).catch(console.log);
+            resolve(encodedBuffer);
+            // TODO: Imagemin output is buggy!
+            // imagemin.buffer(encodedBuffer, { use: [imageminGifsicle({ optimizationLevel: 1 })] })
+            //     .then(resolve);
         });
-        slotRound++;
-    }
-    nextRound();
-    while((playersDone < game.players.size || slotRound < game.maxSlotStack) && frame < MAX_SUBFRAMES) {
-        //util.timer.start('drawing frame');
-        let subFrame = frame % FRAME_DIVIDER;
-        //util.timer.stop('drawing frame');
-        game.players.forEach(({ p, v, a, status, color, avatarImg }, playerID) => {
-            if(!status.falling) return;
-            ctx.globalAlpha = subFrame === 0 ? 1 : Math.pow(0.5, FRAME_DIVIDER - subFrame);
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(p.x * RES, p.y * RES, BALL_RADIUS * RES + RES, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.save();
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 3 * RES;
-            ctx.drawImage(avatarImg, (p.x - BALL_RADIUS) * RES, (p.y - BALL_RADIUS) * RES);
-            ctx.restore();
-            v.y += GRAVITY;
-            if(p.x < BALL_RADIUS || p.x > WIDTH - BALL_RADIUS) {
-                v.x *= -ELASTICITY;
-                p.x = p.x < BALL_RADIUS ? BALL_RADIUS : WIDTH - BALL_RADIUS;
-            }
-            a.v += a.t * 0.5; // Angular velocity affected by torque and inertia
-            game.players.forEach(({ p: p2, v: v2, status: status2 }, player2ID) => {
-                if(playerID === player2ID || !status2.falling) return;
-                let playerCollisionDist = Math.pow(BALL_RADIUS * 2, 2);
-                if(Math.abs(p.x - p2.x) > BALL_RADIUS * 2 || Math.abs(p.y - p2.y) > BALL_RADIUS * 2
-                    || Math.pow(p.x - p2.x, 2) + Math.pow(p.y - p2.y, 2) > playerCollisionDist) return;
-                let n = { x: p2.x - p.x, y: p2.y - p.y }; // Collision normal
-                let rv = subtract(v, v2); // Relative velocity
-                let vNorm = dotProduct(rv, n); // Velocity along normal
-                if(vNorm <= 0) return; // Already moving away
-                let u = multiply(n, vNorm / dotProduct(n, n)); // Perpendicular
-                let u2 = multiply(n, -vNorm / dotProduct(n, n)); // Perpendicular
-                let w = subtract(v, u); // Parallel
-                let w2 = subtract(v2, u2); // Parallel
-                // Calculate new velocities
-                Object.assign(v, subtract(multiply(w, FRICTION / 2), multiply(u, ELASTICITY / 2)));
-                Object.assign(v2, subtract(multiply(w2, FRICTION / 2), multiply(u2, ELASTICITY / 2)));
-            });
-            for(let [pegX, pegY, pegRadius] of map.pegs) { // Detect peg collisions
-                let pegCollisionDist = Math.pow(pegRadius + BALL_RADIUS, 2);
-                if(p.x + BALL_RADIUS <= pegX - pegRadius || p.x - BALL_RADIUS > pegX + pegRadius
-                    || p.y + BALL_RADIUS <= pegY - pegRadius || p.y - BALL_RADIUS > pegY + pegRadius
-                    || Math.pow(p.x - pegX, 2) + Math.pow(p.y - pegY, 2) > pegCollisionDist) continue;
-                //console.log('old velocity:', v.x, v.y);
-                let n = { x: pegX - p.x, y: pegY - p.y }; // Collision normal
-                let vNorm = dotProduct(v, n); // Velocity along normal
-                if(vNorm <= 0) return; // Already moving away
-                let u = multiply(n, vNorm / dotProduct(n, n)); // Perpendicular
-                let w = subtract(v, u); // Parallel
-                Object.assign(v, subtract(multiply(w, FRICTION), multiply(u, ELASTICITY))); // Calc new velocity
-                //console.log('new velocity:', v.x, v.y);
-            }
-        });
-        game.players.forEach(({ p, v, a, status }) => {
-            if(!status.falling) return;
-            if(Math.abs(v.x) + Math.abs(v.y) <= GRAVITY) status.stillFrames++;
-            else status.stillFrames = 0;
-            p.x += v.x;
-            p.y += v.y;
-            if(p.y >= HEIGHT + BALL_RADIUS || status.stillFrames > 30) {
-                playersDone++;
-                status.falling = false;
-            }
-            a.o += a.v; // Angular velocity affects orientation
-        });
-        if(subFrame === 0) {
-            encoder.addFrame(ctx);
-            ctx.drawImage(map.image, 0, 0);
+
+        encoder.start();
+        encoder.setRepeat(0);
+        encoder.setDelay(Math.round(1000 / FPS));
+        encoder.setQuality(4);
+        ctx.drawImage(game.mapImage, 0, 0);
+        ctx.beginPath();
+        ctx.moveTo(RES, RES);
+        ctx.lineTo(WIDTH * RES - RES, RES);
+        ctx.lineTo(WIDTH * RES - RES, HEIGHT * RES - RES);
+        ctx.lineTo(RES, HEIGHT * RES - RES);
+        ctx.closePath();
+        ctx.clip(); // Don't draw over map border
+
+        ctx.strokeStyle = '#FFFFFF';
+
+        // Apply random horizontal starting forces to players
+        let playerBody;
+        for(let [userID, player] of game.players) {
+            // player.body.position[1] = HEIGHT;
+            player.body.force[0] = 2; //util.random(-1, 1) * 10;
+            console.log('player start position', player.body.position, player.body.force);
+            playerBody = player.body;
         }
-        frame++;
-        if(frame % roundFrames === 0) nextRound();
-    }
-    encoder.finish();
-    //util.timer.results();
-    //console.timeEnd('simulating result');
-    //console.time('optimizing gif');
-    imagemin([IMAGE_PATH], { use: [imageminGifsicle({ optimizationLevel: 2 })] }).then(() => {
-        setTimeout(() => fs.readFile(IMAGE_PATH, cb), 300); // Delay file read
-    }).catch(console.log);
+        console.log('simulating');
+        world.on('impact', ({ bodyA, bodyB, shapeA, shapeB }) => {
+            // console.log('impact', bodyA.id, shapeA.boundingRadius, bodyB.id, shapeB.boundingRadius);
+
+            // TODO: Light up pegs when hit
+            // Store hit pegs in an array to be drawn below
+
+        });
+        for(let i = 0; i < 2000; i++) {
+            world.step(0.1);
+            // console.log(i, playerBody.sleepState, playerBody.position, playerBody.velocity);
+            // console.log(playerBody.angle);
+            if(i % SUBFRAMES > 0) continue;
+            for(let [userID, player] of game.players) {
+                let { position: [x, y], angle } = player.body;
+                ctx.fillStyle = DEFAULT_BALL_COLOR;
+                ctx.beginPath();
+                ctx.arc(x * RES, y * RES, BALL_RADIUS * RES + RES, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Draw angle
+                ctx.beginPath();
+                ctx.moveTo(x * RES, y * RES);
+                ctx.lineTo(x * RES + Math.cos(angle) * BALL_RADIUS, y * RES + Math.sin(angle) * BALL_RADIUS);
+                ctx.stroke();
+            }
+            encoder.addFrame(ctx);
+            ctx.drawImage(game.mapImage, 0, 0);
+        }
+        encoder.finish();
+        console.log('simulation complete');
+
+        // return new Promise((resolve, reject) => {
+        //     setTimeout(resolve, 100);
+        // });
+    });
 }
 
-_commands.pachinko = function(data) {
-    game = false;
-    if(game) return data.reply('There is already a pachinko game in progress!');
-    game = { players: new Map(), channel: data.channel, slots: [], maxSlotStack: 0 };
-    for(let i = 0; i <= SLOTS; i++) game.slots.push([]);
-    game.map = generateMap();
-    game.map.image = drawMap(game.map);
-    let canvas = new Canvas(game.map.image.width, game.map.image.height);
-    let ctx = canvas.getContext('2d');
-    ctx.drawImage(game.map.image, 0, 0);
-    ctx.drawImage(SLOT_IMAGE, 0, 0);
-    discord.uploadFile({
-        to: data.channel, filename: `pachinko-${Date.now()}.png`, file: canvas.toBuffer(),
-        message: `**__Pachinko!__**\nUse \`${config.prefixes[0]}p\` to choose a slot #`
-    });
-};
+function inspectBodies(bodies) {
+    return require('util').inspect(bodies.map(({ id, angle, angularForce, angularVelocity, force, inertia, position, velocity, type, shapes }) => {
+        let body = {
+            id, angle, x: position[0], y: position[1], shape: shapes[0].type, radius: shapes[0].boundingRadius
+        };
+        if(type !== p2.Body.STATIC) Object.assign(body, {
+            angForce: angularForce, angVel: angularVelocity, force, inertia, xVel: velocity[0], yVel: velocity[1]
+        });
+        return body;
+    }));
+}
 
 function testRun() {
     _commands.pachinko({
@@ -265,56 +298,4 @@ function testRun() {
         reply: (msg, polite, cb) => discord.sendMessage('209177876975583232', msg, polite, cb)
     });
 }
-// if(!discord.bot.connected) discord.bot.on('ready', testRun);
-// else testRun();
-
-module.exports = {
-    async listen(data) {
-        if(!game || game.channel !== data.channel || data.command !== 'p') return;
-        let slot = +data.paramStr;
-        if(!(slot > 0 && slot <= SLOTS)) return data.reply(`Pick a slot from 1 to ${SLOTS}`);
-        let { member: user, channel: { guild } } = data.messageObject;
-        let avatarImg = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
-        let avatarCtx = avatarImg.getContext('2d');
-        game.players.set(data.userID, {
-            slot, color: discord.getUserColor(user, guild) || DEFAULT_USER_COLOR, avatarImg,
-            v: { x: util.random(-1, 1) * GRAVITY * 20, y: 0 }, // Velocity
-            p: { x: slot * SLOT_WIDTH, y: 0 }, // Position
-            a: { o: 0, v: 0, t: 0 }, // Angular: orientation, velocity, torque
-            status: { stillFrames: 0 }
-        });
-        // for(let i = 0; i < 12; i++) {
-        //     game.players.set('test' + i, {
-        //         slot, color: '#eaa5f3', avatarImg,
-        //         v: { x: util.random(GRAVITY * -20, GRAVITY * 20), y: 0 },
-        //         p: { x: ((i % 6) + 1) * SLOT_WIDTH, y: 0 },
-        //         status: { stillFrames: 0 }
-        //     });
-        //     game.slots[i % 6 + 1].push('test' + i);
-        // }
-        game.slots[slot].push(data.userID);
-        game.maxSlotStack = Math.max(game.maxSlotStack, game.slots[slot].length);
-        avatarCtx.beginPath();
-        avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
-        let avatarURL = `${AVATAR_URL}${data.userID}/${user.avatar}.png`;
-        download(avatarURL).then(imgData => {
-            let img = new Canvas.Image;
-            img.src = imgData;
-            avatarCtx.clip();
-            let resizedAvatar = new Thumbnail(img, BALL_RADIUS * 2 * RES, 3);
-            avatarCtx.drawImage(resizedAvatar, 0, 0);
-            simulate(game.map, (err, file) => {
-                if(err) return console.log(err);
-                discord.uploadFile({
-                    to: data.channel, filename: `pachinko-${Date.now()}.gif`, file
-                });
-            });
-        }).catch(err => {
-            console.log(err);
-            avatarCtx.fillStyle = DEFAULT_BALL_COLOR;
-            avatarCtx.fill();
-        });
-    },
-    dev: true,
-    commands: _commands
-};
+if(discord.bot.uptime > 0) testRun();
