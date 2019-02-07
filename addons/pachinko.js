@@ -15,12 +15,13 @@ const p2 = require('p2');
 const IMAGE_PATH = storage.getStoragePath('play.gif');
 
 const RES = 1; // Output image scale
-const WIDTH = 200;
+const REACT_WIDTH = 43; // 43px at 100% zoom - don't change this
+const REACT_SPACE = 4; // Space between react buttons - don't change this either
+const SLOTS = 4; // Keep it under 10
+const WIDTH = SLOTS * REACT_WIDTH + (SLOTS - 1) * REACT_SPACE;
 const HEIGHT = 300;
 const TOP_SPACE = 40; // Before pegs
 const BOTTOM_SPACE = 50; // After pegs
-const SLOTS = 6; // Deploy positions
-const SLOT_WIDTH = WIDTH / (SLOTS + 1);
 const GOALS = 8;
 const GOAL_HEIGHT = 20;
 const PEG_RADIUS = 2.5;
@@ -39,6 +40,9 @@ const DEFAULT_USER_COLOR = '#AAABAD';
 const DEFAULT_BALL_COLOR = '#7289DA';
 
 const AVATAR_URL = 'https://cdn.discordapp.com/avatars/';
+const SLOT_IMAGE = new Canvas.Image;
+SLOT_IMAGE.src = fse.readFileSync('./addons/assets/pachinko-slots.png');
+const SLOT_EMOJI = ['1\u20e3','2\u20e3','3\u20e3','4\u20e3','5\u20e3','6\u20e3','7\u20e3','8\u20e3','9\u20e3'];
 
 const GRAVITY = 1;
 const BALL_MASS = 0.2;
@@ -60,57 +64,58 @@ _commands.pachinko = async function(data) {
     if(game) return data.reply('There is already a pachinko game in progress!');
     game = {
         channel: data.channel, players: new Map(), world: new p2.World({ gravity: [0, GRAVITY] }),
-        slots: [], highestSlotStack: 0
+        slots: [], highestSlotStack: 0, time: Date.now()
     };
     game.world.addContactMaterial(new p2.ContactMaterial(BALL_MATERIAL, PEG_MATERIAL, {
         restitution: 0.6, stiffness: Number.MAX_VALUE, friction: 5
     }));
     console.log('initialized game object');
-    for(let i = 0; i <= SLOTS; i++) game.slots.push([]); // Each slot is an array of player IDs
+    for(let i = 0; i < SLOTS; i++) game.slots.push([]); // Each slot is an array of player IDs
     generateMap(game.world); // Add pegs and bumpers to world
     console.log('generated map');
     game.mapImage = drawMap(game.world);
     console.log('drawn map');
-    //data.reply(inspectBodies(game.world.bodies).substring(0, 2000));
     let canvas = new Canvas(game.mapImage.width, game.mapImage.height);
     let ctx = canvas.getContext('2d');
     ctx.drawImage(game.mapImage, 0, 0);
-    //ctx.drawImage(SLOT_IMAGE, 0, 0);
+    ctx.drawImage(SLOT_IMAGE, 0, 0);
     console.log('sending map image');
-    // discord.uploadFile({
-    //     to: data.channel, filename: `pachinko-${Date.now()}.png`, file: canvas.toBuffer(),
-    //     message: `**__Pachinko!__**\nUse \`${config.prefixes[0]}p\` to choose a slot #`
-    // });
-    let body = new p2.Body({
-        mass: BALL_MASS, position: [WIDTH / 2, - BALL_RADIUS],
-        damping: BALL_DAMPING, angularDamping: 0
-    });
-    body.addShape(new p2.Circle({ radius: BALL_RADIUS, material: BALL_MATERIAL }));
-    game.world.addBody(body);
-    game.players.set('1', { body });
-    let finalGIF = await simulate(game.world);
+    let startGIF = await animateSlots();
     discord.uploadFile({
-        to: data.channel, filename: `pachinko-${Date.now()}.gif`, file: finalGIF
+        to: data.channel, filename: `pachinko-start-${game.time}.gif`, file: startGIF,
+        message: `**Pachinko!**`
+    }, message => {
+        game.startMessageID = message.id;
+        for(let i = 0; i < SLOTS; i++) {
+            setTimeout(() => {
+                message.addReaction((i + 1) + '\u20e3').then();
+            }, i * 1000);
+        }
     });
 };
 
 module.exports = {
-    async listen(data) {
-        if(!game || game.channel !== data.channel || data.command !== 'p') return;
-        let slot = +data.paramStr;
-        if(!(slot > 0 && slot <= SLOTS)) return data.reply(`Pick a slot from 1 to ${SLOTS}`);
-        let { member: user, channel: { guild } } = data.messageObject;
-        let body = new p2.Body({ mass: BALL_MASS, position: [slot * SLOT_WIDTH, HEIGHT] });
-        body.addShape(new p2.Circle({ radius: BALL_RADIUS }));
+    async react(message, { id: emojiID, name: emojiName }, userID) {
+        if(!game || message.channel.id !== game.channel || game.startMessageID !== message.id) return;
+        let { channel: { guild } } = message;
+        let user = guild.members.get(userID);
+        let slotIndex = SLOT_EMOJI.slice(0, SLOTS).indexOf(emojiName);
+        if(slotIndex < 0) return; // Invalid slot
+        let slotPosition = Math.round(slotIndex * (REACT_WIDTH + REACT_SPACE) + REACT_WIDTH / 2);
+        let body = new p2.Body({
+            mass: BALL_MASS, position: [slotPosition, - BALL_RADIUS],
+            damping: BALL_DAMPING, angularDamping: 0
+        });
+        body.addShape(new p2.Circle({ radius: BALL_RADIUS, material: BALL_MATERIAL }));
         game.world.addBody(body);
-        game.slots[slot].push(data.userID);
-        game.maxSlotStack = Math.max(game.maxSlotStack, game.slots[slot].length);
+        game.slots[slotIndex].push(userID);
+        game.maxSlotStack = Math.max(game.maxSlotStack, game.slots[slotIndex].length);
         let avatarImg = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
         let avatarCtx = avatarImg.getContext('2d');
         avatarCtx.beginPath();
         avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
         try {
-            let avatarImgData = await download(`${AVATAR_URL}${data.userID}/${user.avatar}.png`);
+            let avatarImgData = await download(`${AVATAR_URL}${userID}/${user.avatar}.png`);
             let img = new Canvas.Image;
             img.src = avatarImgData;
             avatarCtx.clip();
@@ -121,14 +126,13 @@ module.exports = {
             avatarCtx.fillStyle = DEFAULT_BALL_COLOR;
             avatarCtx.fill();
         }
-        game.players.set(data.userID, {
-            slot, body, color: discord.getUserColor(user, guild) || DEFAULT_USER_COLOR, avatarImg
+        game.players.set(userID, {
+            slot: slotIndex, body, color: discord.getUserColor(user, guild) || DEFAULT_USER_COLOR, avatarImg
         });
         let finalGIF = await simulate(game.world);
-        console.log(finalGIF);
-        // discord.uploadFile({
-        //     to: data.channel, filename: `pachinko-${Date.now()}.gif`, file: finalGIF
-        // });
+        discord.uploadFile({
+            to: game.channel, filename: `pachinko-play-${game.time}.gif`, file: finalGIF
+        });
     },
     dev: true,
     commands: _commands
@@ -199,9 +203,8 @@ function drawMap(world) {
     return canvas;
 }
 
-function simulate(world) {
+function animateSlots() {
     return new Promise((resolve, reject) => {
-        let frame = 0;
         let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
         let ctx = canvas.getContext('2d');
         let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
@@ -212,7 +215,51 @@ function simulate(world) {
         encoderStream.on('data', d => buffers.push(d));
         encoderStream.on('end', () => {
             let encodedBuffer = Buffer.concat(buffers);
-            fse.outputFile('play.gif', encodedBuffer).then(() => console.log('wrote file!')).catch(console.log);
+            fse.outputFile('board.gif', encodedBuffer).then().catch(console.log);
+            resolve(encodedBuffer);
+        });
+
+        encoder.start();
+        encoder.setRepeat(-1); // No repeat
+        encoder.setQuality(4);
+        ctx.drawImage(game.mapImage, 0, 0);
+        let slotWidth = REACT_WIDTH + REACT_SPACE;
+        for(let s = 0; s < SLOTS; s++) {
+            let slotX = s * slotWidth;
+            for(let sf = 0; sf < 11; sf++) {
+                let t = sf / 10;
+                t *= (2 - t); // Ease out quad
+                ctx.fillStyle = BG_COLOR;
+                ctx.fillRect(slotX + 1, 0, slotWidth - REACT_SPACE - 2, 31);
+                ctx.drawImage(SLOT_IMAGE,
+                    slotX, 0, slotWidth, SLOT_IMAGE.height,
+                    slotX, -SLOT_IMAGE.height * (1 - t), slotWidth, SLOT_IMAGE.height
+                );
+                ctx.fillStyle = BORDER_COLOR;
+                ctx.fillRect(slotX, 0, slotWidth, 1);
+                if(sf === 0) encoder.setDelay(30);
+                if(sf === 10) {
+                    encoder.setDelay(700);
+                }
+                encoder.addFrame(ctx);
+            }
+        }
+        encoder.finish();
+    });
+}
+
+function simulate(world) {
+    return new Promise((resolve, reject) => {
+        let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
+        let ctx = canvas.getContext('2d');
+        let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
+
+        let buffers = [];
+        let encoderStream = encoder.createReadStream();
+        encoderStream.on('data', d => buffers.push(d));
+        encoderStream.on('end', () => {
+            let encodedBuffer = Buffer.concat(buffers);
+            fse.outputFile('play.gif', encodedBuffer).then().catch(console.log);
             resolve(encodedBuffer);
             // TODO: Imagemin output is buggy!
             // imagemin.buffer(encodedBuffer, { use: [imageminGifsicle({ optimizationLevel: 1 })] })
@@ -220,7 +267,7 @@ function simulate(world) {
         });
 
         encoder.start();
-        encoder.setRepeat(0);
+        encoder.setRepeat(0); // Repeat forever
         encoder.setDelay(Math.round(1000 / FPS));
         encoder.setQuality(4);
         ctx.drawImage(game.mapImage, 0, 0);
@@ -238,7 +285,7 @@ function simulate(world) {
         let playerBody;
         for(let [userID, player] of game.players) {
             // player.body.position[1] = HEIGHT;
-            player.body.force[0] = 2; //util.random(-1, 1) * 10;
+            player.body.force[0] = util.random(-1, 1) * 3;
             console.log('player start position', player.body.position, player.body.force);
             playerBody = player.body;
         }
@@ -248,6 +295,8 @@ function simulate(world) {
 
             // TODO: Light up pegs when hit
             // Store hit pegs in an array to be drawn below
+
+            // TODO: User "claims" peg when hit for more points, pegs can be reclaimed
 
         });
         for(let i = 0; i < 2000; i++) {
