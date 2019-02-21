@@ -23,7 +23,8 @@ module.exports = {
         if(!username || username.trim() === '') return false;
         for(let [guildID, guild] of bot.guilds) {
             for(let [memberID, member] of guild.members) {
-                if((member.nick || member.username).toLowerCase() === username) return memberID;
+                if((member.nick && member.nick.toLowerCase() === username)
+                    || member.username.toLowerCase() === username) return memberID;
             }
         }
         for(let aliasID of Object.keys(config.userAliases)) {
