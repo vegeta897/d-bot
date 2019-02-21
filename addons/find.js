@@ -35,8 +35,8 @@ _commands.last = async function(data) {
     findHelper.addChannelQuery(command.query, data.channel);
     let userMessages = await messages.cursor(db => db.cfind(command.query).sort({time:-1}));
     if(!userMessages) return data.reply(`No messages found from **${params.string}**`, true);
-    var msgNum = Math.min(userMessages.length, params.limit);
-    command.limit = Math.min(msgNum, params.limit);
+    var msgNum = Math.min(userMessages.length, params.limit || 1);
+    command.limit = Math.min(msgNum, params.limit || 1);
     var message = findHelper.formatMessage(userMessages[msgNum - 1], [msgNum, userMessages.length]);
     data.reply(message, true, function(message) {
         command.responseID = message[0].id;
