@@ -96,6 +96,8 @@ function generateHelpMessage() {
     return msg;
 }
 
+// TODO: Refactor project files, give each addon its own folder
+
 module.exports = {
     scanAddons,
     readMessage(message) {

@@ -19,6 +19,8 @@ _commands.me = data => {
     data.reply(`_${data.user} ${data.paramStr}_`);
 };
 
+_commands.echo = data => data.reply(data.paramStr);
+
 _commands.earliest = async data => {
     let firstMessage = await messages.cursor(db => db.cfind().sort({ time: 1 }).limit(1));
     data.reply(`Earliest message logged was on ` +

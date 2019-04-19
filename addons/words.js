@@ -22,11 +22,10 @@ _commands.graph = async function(data) {
     let allMessages = await messages.cursor(db => db.cfind(query).sort({ time: 1 }));
     if(!allMessages) return data.reply(`Couldn't find any messages` + (graphUsers ? '' : ` containing _${data.paramStr}_`));
 
-    // TODO: Rewrite using maps
     // TODO: Use logarithmic scale when appropriate
 
-    let dailyUsage = {};
-    words.forEach(w => dailyUsage[w] = []);
+    let dailyUsage = new Map();
+    words.forEach(w => dailyUsage.set(w, []));
     let firstDate = graphUsers || graphChannels ? new Date(allMessages[0].time) : null,
         firstDay = graphUsers || graphChannels ? Math.floor(firstDate.getTime() / 8.64e7) : null;
     for(let { content: text, time, user, channel: channelID } of allMessages) {
@@ -35,36 +34,36 @@ _commands.graph = async function(data) {
             let username = discord.getUsernameFromID(user);
             if(!username) continue;
             if(!words.includes(username)) words.push(username);
-            if(!dailyUsage[username]) dailyUsage[username] = [];
-            dailyUsage[username][day] = (dailyUsage[username][day] || 0) + 1;
+            if(!dailyUsage.has(username)) dailyUsage.set(username, []);
+            dailyUsage.get(username)[day] = (dailyUsage.get(username)[day] || 0) + 1;
         } else if(graphChannels) {
             if(channelID === '86915384589967360') continue;
             let guildID = discord.bot.channelGuildMap[channelID];
             let channel = guildID && discord.bot.guilds.get(guildID).channels.get(channelID).name;
             if(!channel) continue;
             if(!words.includes(channel)) words.push(channel);
-            if(!dailyUsage[channel]) dailyUsage[channel] = [];
-            dailyUsage[channel][day] = (dailyUsage[channel][day] || 0) + 1;
+            if(!dailyUsage.has(channel)) dailyUsage.set(channel, []);
+            dailyUsage.get(channel)[day] = (dailyUsage.get(channel)[day] || 0) + 1;
         } else {
             words.forEach((word, i) => {
                 let rxMatches = util.getRegExpMatches(text, util.regExpify(word));
                 if(!rxMatches || rxMatches.length === 0 || !rxMatches[0]) return;
                 if(!firstDay) {
                     firstDate = new Date(time);
-                    firstDay = Math.floor(firstDate.getTime() / 8.64e7);
+                    firstDay = Math.floor(firstDate / 8.64e7);
                 }
                 day = Math.floor(new Date(time) / 8.64e7 - firstDay);
-                dailyUsage[words[i]][day] = (dailyUsage[words[i]][day] || 0) + rxMatches.length;
+                dailyUsage.get(words[i])[day] = (dailyUsage.get(words[i])[day] || 0) + rxMatches.length;
             });
         }
     }
     let totalDays = Math.floor(new Date() / 8.64e7) - firstDay;
     if(!firstDay || totalDays < 1) return data.reply(`Not enough usage to graph that`);
     let sumArray = (t, c) => t + c;
-    let maxTotal = words.filter(w => dailyUsage[w])
-        .map(w => dailyUsage[w].reduce(sumArray, 0)).reduce((t, c) => Math.max(t, c), 0);
-    if(graphUsers) words = words.filter(w => dailyUsage[w].reduce(sumArray, 0) > maxTotal / 300);
-    words.sort((a, b) => dailyUsage[b].reduce(sumArray, 0) - dailyUsage[a].reduce(sumArray, 0));
+    let maxTotal = words.filter(w => dailyUsage.has(w))
+        .map(w => dailyUsage.get(w).reduce(sumArray, 0)).reduce((t, c) => Math.max(t, c), 0);
+    if(graphUsers) words = words.filter(w => dailyUsage.get(w).reduce(sumArray, 0) > maxTotal / 300);
+    words.sort((a, b) => dailyUsage.get(b).reduce(sumArray, 0) - dailyUsage.get(a).reduce(sumArray, 0));
     let yInc;
     let yIncs = [1, 5, 10, 15, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000];
     for(let i = 0; i < yIncs.length; i++) {
@@ -88,7 +87,7 @@ _commands.graph = async function(data) {
     ctx.globalAlpha = 0.8;
     let colors = words.length === 1 ? COLORS : COLORS.slice(1);
     for(let w = words.length - 1; w >= 0; w--) { // Draw word usage data
-        let usage = dailyUsage[words[w]];
+        let usage = dailyUsage.get(words[w]);
         if(!usage) continue;
         let total = 0;
         let prevY = 1;
@@ -132,18 +131,22 @@ _commands.graph = async function(data) {
         if(n > 0) imgCtx.fillText(Math.round(n * yInc).toLocaleString(), LEFT + GRAPH_W + 16, y);
     }
     imgCtx.textBaseLine = 'top';
-    let prevLabelRight = -10;
+    let prevMonthLabelRight = -10;
     let dayLines = totalDays < 20;
     let halfMonthLines = totalDays < 15 * 16;
     let monthLines = totalDays < 30.5 * 16;
     let quarterLines = totalDays < 30.5 * 4 * 16;
-    for(let d = 0; d <= totalDays; d++) { // Draw X axis
-        let date = firstDate.addDays(d), prevDate = firstDate.addDays(d - 1);
-        let month = date.getMonth(), prevMonth = prevDate.getMonth();
+    for(let d = 0; d <= totalDays; d++) { // Draw X axis TODO: Rewrite this cuz it sucks
+        let date = firstDate.addDays(d),
+            prevDate = firstDate.addDays(d - 1);
+        let month = date.getMonth(),
+            prevMonth = prevDate.getMonth();
         let halfMonth = month + (date.getDate() > 14 ? 0.5 : 0),
             prevHalfMonth = prevMonth + (prevDate.getDate() > 14 ? 0.5 : 0);
-        let quarter = Math.floor(month / 3), prevQuarter = Math.floor(prevMonth / 3);
-        let year = date.getFullYear(), prevYear = prevDate.getFullYear();
+        let quarter = Math.floor(month / 3),
+            prevQuarter = Math.floor(prevMonth / 3);
+        let year = date.getFullYear(),
+            prevYear = prevDate.getFullYear();
         if(d !== 0 && d !== totalDays && !dayLines
             && (!halfMonthLines || halfMonth === prevHalfMonth)
             && (!monthLines || month === prevMonth)
@@ -157,14 +160,16 @@ _commands.graph = async function(data) {
         imgCtx.fillStyle = `rgba(240, 240, 240, ${alpha})`;
         imgCtx.fillRect(x - 1, TOP, 3, GRAPH_H);
         if(d === totalDays) continue;
-        if(prevLabelRight + 10 > x) continue;
-        if(halfMonthLines && !dayLines && month === prevMonth) continue;
-        let monthStr = DateFormat(date, totalDays < 50 ? 'mmm d' : 'mmm');
-        let labelRight = x + imgCtx.measureText(monthStr).width;
-        if(labelRight > IMAGE_W) continue;
         imgCtx.fillStyle = '#AAAAAA';
-        prevLabelRight = labelRight;
-        imgCtx.fillText(monthStr, x, TOP + GRAPH_H + 16);
+        if(prevMonthLabelRight + 10 <= x && month > prevMonth) {
+            //if(halfMonthLines && !dayLines && month === prevMonth) continue;
+            let monthStr = DateFormat(date, totalDays < 50 ? 'mmm d' : 'mmm');
+            let monthLabelRight = x + imgCtx.measureText(monthStr).width;
+            if(monthLabelRight <= IMAGE_W) {
+                prevMonthLabelRight = monthLabelRight;
+                imgCtx.fillText(monthStr, x, TOP + GRAPH_H + 16);
+            }
+        }
         if(d === 0 || year !== prevYear) imgCtx.fillText(year.toString(), x, TOP + GRAPH_H + 16 + 30);
     }
     imgCtx.drawImage(graphCanvas, LEFT, TOP);
