@@ -43,6 +43,13 @@ module.exports = {
             rolePosition = role.position;
         }
         return color;
+    },
+    getUsersInRole: (guild, role) => {
+        let users = [];
+        for(let [userID, user] of guild.members) {
+            if(user.roles.includes(role.id)) users.push(userID);
+        }
+        return users;
     }
 };
 
