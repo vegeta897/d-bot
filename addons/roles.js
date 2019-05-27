@@ -23,13 +23,13 @@ function syncServerRoles(server) {
             }
             roleData[roleID].users = discord.getUsersInRole(server, role);
         }
-        console.dir(servers);
         return servers;
     });
 }
 
 async function openRole(server, role, user) {
     if(!user.roles.includes(config.adminRole)) throw new Error('You do not have admin permissions!');
+    if([config.adminRole, config.modRole].includes(role.id)) throw new Error(`For safety, you can't open that role`);
     rolesData.trans('servers', servers => {
         if(servers[server.id].roles[role.id]) {
             throw new Error('That role is already public');

@@ -6,6 +6,7 @@
     "!"
   ],
   "adminRole": "some_role_id",
+  "modRole": "some_role_id",
   "privateChannels": [],
   "noLogServers": [],
   "noLogChannels": [],

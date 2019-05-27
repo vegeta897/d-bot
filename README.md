@@ -26,7 +26,8 @@ The config file is mostly optional things. You can remove any optional property 
 * `prefixes` *array* -  Array of strings to prefix your commands with. You can have just one, or many, but they can only be one character each.
 
 ### Optional
-* `adminRole` *string* - Role ID for users permitted to perform admin-like commands such as editing channels.
+* `adminRole` *string* - Role ID for users permitted to perform admin-like commands.
+* `modRole` *string* - Role ID for users permitted to perform mod-like commands such as editing channels.
 * `privateChannels` *array* - Array of channel ID strings that are ignored when commands such as `find` or `last` are used outside of these channels. When such a command is used inside a private channel, only messages from within that channel are searched.
 * `noLogServers` *array* - Array of server ID strings that D-Bot will not log messages for
 * `noLogChannels` *array* - Array of channel ID strings that D-Bot will not log messages for
