@@ -1,7 +1,7 @@
 // Bring some beauty to the dull grays of discord chat
 var util = require(__base+'core/util.js');
 var discord = require(__base+'core/discord.js');
-var Canvas = require('canvas');
+var { Canvas, createCanvas } = require('canvas');
 var { wordsToNumbers } = require('words-to-numbers');
 var requireUncached = require('require-uncached');
 const { resizeCanvas, cropCanvas, flipCanvas, rotateCanvas, UnitContext } = requireUncached('./helpers/canvas.js');
@@ -26,7 +26,7 @@ const ASPECT = 4 / 2; // Target aspect ratio (Discord's image embedding is 4:3, 
 
 function drawShape(elem, res) {
     if(!elem.shape) return;
-    elem.canvas = new Canvas(Math.ceil(elem.width * res), Math.ceil(elem.height * res));
+    elem.canvas = createCanvas(Math.ceil(elem.width * res), Math.ceil(elem.height * res));
     let ctx = new UnitContext(elem.canvas.getContext('2d'), res);
     ctx.fillStyle = elem.color.hex;
     DRAW_SHAPE[elem.shape](ctx, elem);
@@ -84,7 +84,7 @@ function arrangeElements(elems) {
         let wider = newBox.width > box.width, taller = newBox.height > box.height;
         let bits = 12;
         let score = (1 << bits++) - Math.min(Math.abs(elem.x), Math.abs(elem.y));
-        if(Math.abs(1 - newBox.width / newBox.height / ASPECT) 
+        if(Math.abs(1 - newBox.width / newBox.height / ASPECT)
             <= Math.abs(1 - box.width / box.height / ASPECT)) score += 1 << bits++;
         if(!taller || !wider) score += 1 << bits++;
         if(!wider && !taller) score += 1 << bits;
@@ -135,7 +135,7 @@ _commands.draw = function(data) {
     });
     let elements = [];
     let element = { num: 1, colors: [], colorMods: [] };
-    
+
     function parse(phrase) {
         let parsed = false;
         let parsedElement = Object.assign({}, element);
@@ -230,7 +230,7 @@ _commands.draw = function(data) {
         // console.log(JSON.stringify(elem, null, '\t'));
         drawShape(elem, res);
     });
-    let canvas = new Canvas(box.width * res * (1 + SPACE), box.height * res * (1 + SPACE));
+    let canvas = createCanvas(box.width * res * (1 + SPACE), box.height * res * (1 + SPACE));
     let ctx = canvas.getContext('2d');
     elements.forEach(elem => ctx.drawImage( // Draw to canvas
         elem.canvas,
@@ -238,7 +238,7 @@ _commands.draw = function(data) {
         (elem.y - box.bTop + (elem.u - 1) * SPACE / 2) * res * (1 + SPACE) + elem.oy * res
     ));
     //canvas = cropCanvas(resizeCanvas(canvas, 1200, 900), 20);
-    discord.bot.uploadFile({
+    discord.uploadFile({
         to: data.channel, filename: data.paramStr.split(' ').join('-') + '.png', file: canvas.toBuffer()
     });
 };
@@ -264,7 +264,7 @@ function arrangeElementsRadial(elems) {
     };
     let placed = [];
 
-    let dot = new Canvas(2,2);
+    let dot = createCanvas(2,2);
     let dotCtx = dot.getContext('2d');
     dotCtx.fillStyle = '#00FF00';
     dotCtx.fillRect(0,0,2,2);

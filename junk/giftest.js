@@ -1,9 +1,9 @@
 'use strict';
 
-var Canvas = require('canvas');
+var { Canvas, createCanvas } = require('canvas');
 var GIFEncoder = require('gifencoder');
 var fs = require('fs');
-var canvas = new Canvas(100, 100),
+var canvas = createCanvas(100, 100),
     ctx = canvas.getContext('2d');
 
 var encoder = new GIFEncoder(100,100);

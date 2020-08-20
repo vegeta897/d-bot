@@ -1,1 +1,1 @@
-forever start main.js --spinSleepTime 5000
+forever start --spinSleepTime 5000 main.js

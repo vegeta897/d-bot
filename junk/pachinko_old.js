@@ -4,7 +4,7 @@ const discord = require(__base+'core/discord.js');
 const config = require(__base+'core/config.js');
 const storage = require(__base+'core/storage.js');
 const { Thumbnail } = require('../addons/helpers/canvas.js');
-const Canvas = require('canvas');
+const { Canvas, createCanvas, Image } = require('canvas');
 const GIFEncoder = require('gifencoder');
 const fs = require('fs');
 const imagemin = require('imagemin');
@@ -48,7 +48,7 @@ const BG_COLOR = '#202225';
 
 const AVATAR_URL = 'https://cdn.discordapp.com/avatars/';
 
-const SLOT_IMAGE = new Canvas(WIDTH * RES, TOP_SPACE * RES);
+const SLOT_IMAGE = createCanvas(WIDTH * RES, TOP_SPACE * RES);
 
 function drawSlots() {
     let slotCtx = SLOT_IMAGE.getContext('2d');
@@ -103,7 +103,7 @@ function generateMap() {
 }
 
 function drawMap(map) {
-    let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
+    let canvas = createCanvas(WIDTH * RES, HEIGHT * RES);
     let ctx = canvas.getContext('2d');
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, WIDTH * RES, HEIGHT * RES);
@@ -131,7 +131,7 @@ let multiply = (a, f) => ({ x: a.x * f, y: a.y * f });
 
 function simulate(map, cb) {
     let frame = 0;
-    let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
+    let canvas = createCanvas(WIDTH * RES, HEIGHT * RES);
     let ctx = canvas.getContext('2d');
     let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
     encoder.createReadStream().pipe(fs.createWriteStream(IMAGE_PATH));
@@ -249,7 +249,7 @@ _commands.pachinko_old = function(data) {
     for(let i = 0; i <= SLOTS; i++) game.slots.push([]);
     game.map = generateMap();
     game.map.image = drawMap(game.map);
-    let canvas = new Canvas(game.map.image.width, game.map.image.height);
+    let canvas = createCanvas(game.map.image.width, game.map.image.height);
     let ctx = canvas.getContext('2d');
     ctx.drawImage(game.map.image, 0, 0);
     ctx.drawImage(SLOT_IMAGE, 0, 0);
@@ -274,7 +274,7 @@ module.exports = {
         let slot = +data.paramStr;
         if(!(slot > 0 && slot <= SLOTS)) return data.reply(`Pick a slot from 1 to ${SLOTS}`);
         let { member: user, channel: { guild } } = data.messageObject;
-        let avatarImg = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
+        let avatarImg = createCanvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
         let avatarCtx = avatarImg.getContext('2d');
         game.players.set(data.userID, {
             slot, color: discord.getUserColor(user, guild) || DEFAULT_USER_COLOR, avatarImg,
@@ -298,7 +298,7 @@ module.exports = {
         avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
         let avatarURL = `${AVATAR_URL}${data.userID}/${user.avatar}.png`;
         download(avatarURL).then(imgData => {
-            let img = new Canvas.Image;
+            let img = new Image();
             img.src = imgData;
             avatarCtx.clip();
             let resizedAvatar = new Thumbnail(img, BALL_RADIUS * 2 * RES, 3);

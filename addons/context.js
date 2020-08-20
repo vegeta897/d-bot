@@ -38,7 +38,7 @@ async function traverse(channel, direction, reply) {
     if(!contextMessages) return reply(`No messages found ${direction} that`);
     // Include pivot message if found from a search and message is older than a day
     if(contexts[channel].first === contexts[channel].last && contexts[channel].pivotMessage
-        && new Date().getTime() - contexts[channel].pivotMessage.time > 3600000) {
+        && Date.now() - contexts[channel].pivotMessage.time > 3600000) {
         contextMessages.unshift(contexts[channel].pivotMessage);
     }
     if(direction === 'before') {

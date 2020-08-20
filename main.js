@@ -27,7 +27,8 @@ bot.on('messageCreate', message => {
 } );
 
 bot.on('messageReactionAdd', addons.seeReaction);
+bot.on('messageReactionRemove', (message, emoji, userID) => addons.seeReaction(message, emoji, userID, true));
 
-bot.connect();
+bot.connect().then().catch(e => console.log('Error connecting:', e));
 
 // TODO: Delete original command and error message when a command is retried successfully immediately after

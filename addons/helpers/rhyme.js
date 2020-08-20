@@ -36,12 +36,12 @@ var Rhyme = {
         var wordUpdated;
         for(let usedWord of usedWords) {
             if(usedWord.word === word) {
-                usedWord.lastUsed = new Date().getTime();
+                usedWord.lastUsed = Date.now();
                 wordUpdated = true;
                 break;
             }
         }
-        if(!wordUpdated) usedWords.push({ word, lastUsed: new Date().getTime() });
+        if(!wordUpdated) usedWords.push({ word, lastUsed: Date.now() });
         rhymeStorage.save();
     }
 };
@@ -63,7 +63,7 @@ function parseTags(words) {
 function inBlacklist(word) {
     if(!word) return false;
     for(var i = 0; i < usedWords.length; i++) {
-        if(usedWords[i].lastUsed < new Date().getTime() - EXPIRE_TIME) {
+        if(usedWords[i].lastUsed < Date.now() - EXPIRE_TIME) {
             usedWords.splice(i, 1);
             i--;
         } else if(usedWords[i].word === word) return true;

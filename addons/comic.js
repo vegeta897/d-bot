@@ -6,7 +6,7 @@ const discord = require(__base+'core/discord.js');
 const config = require(__base+'core/config.js');
 const requireUncached = require('require-uncached');
 const images = requireUncached('./helpers/comic/images.js');
-const Canvas = require('canvas');
+const { createCanvas, Canvas, Image } = require('canvas');
 const download = require('download');
 
 // ✔️️ Multiple messages from the same user can clump into one frame
@@ -65,7 +65,7 @@ _commands.comic = async function(data) {
     // util.timer.start('draw comic');
     await drawActors(frames);
     drawText(frames);
-    let { canvas: mainCanvas, ctx: mainContext } = createCanvas(FRAME_WIDTH * FRAME_COLUMNS, FRAME_HEIGHT * 2);
+    let { canvas: mainCanvas, ctx: mainContext } = makeCanvas(FRAME_WIDTH * FRAME_COLUMNS, FRAME_HEIGHT * 2);
     for(let f = 0; f < frames.length; f++) {
         frames[f].number = f + 1;
         drawFrameToComic(mainContext, mainCanvas, frames[f]);
@@ -80,8 +80,8 @@ _commands.comic = async function(data) {
     }/*, () => util.timer.stop('upload').results().reset()*/);
 };
 
-function createCanvas(width, height) {
-    let newCanvas = new Canvas(width, height),
+function makeCanvas(width, height) {
+    let newCanvas = createCanvas(width, height),
         newCtx = newCanvas.getContext('2d');
     newCtx.patternQuality = 'best';
     return { canvas: newCanvas, ctx: newCtx };
@@ -205,7 +205,7 @@ async function drawActors(frames) {
     for(let i = 0; i < frames.length; i++) {
         // console.log('drawing frame',da-frames.length+5);
         let frame = frames[i];
-        let bgCanvas = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
+        let bgCanvas = makeCanvas(FRAME_WIDTH, FRAME_HEIGHT);
         bgCanvas.ctx.rect(0,0,FRAME_WIDTH,FRAME_HEIGHT);
         let bgGradient = bgCanvas.ctx.createRadialGradient(
             FRAME_WIDTH/2, 0, FRAME_HEIGHT/2,
@@ -227,7 +227,7 @@ async function drawActors(frames) {
         if(image && image[0]) {
             get_image: try {
                 let imgData = await download(image[0]);
-                let bgImage = new Canvas.Image;
+                let bgImage = new Image();
                 bgImage.src = imgData;
                 if(!imgData || !bgImage.width) break get_image;
                 let scale = Math.max(FRAME_WIDTH / bgImage.width, FRAME_HEIGHT / bgImage.height);
@@ -240,7 +240,7 @@ async function drawActors(frames) {
         }
         frame.bgImage = bgCanvas.canvas;
         frame.collisionMaps = [];
-        frame.actorImage = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
+        frame.actorImage = makeCanvas(FRAME_WIDTH, FRAME_HEIGHT);
         for(let aKey of Object.keys(frame.actors)) {
             let actorState = 'idle';
             if(frame.speaker) {
@@ -276,7 +276,7 @@ function drawText(frames) {
         let { text, actors, collisionMaps } = frame;
         if(!frame.text) continue;
         let { lines, fontSize, align } = planText(text, actors[frame.speaker], collisionMaps, DEFAULT_FONT_SIZE);
-        frame.textImage = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
+        frame.textImage = makeCanvas(FRAME_WIDTH, FRAME_HEIGHT);
         for(let { text, x, y } of lines) {
             fillText(frame.textImage.ctx, text, x, y, fontSize, align, SCALE);
         }
@@ -328,7 +328,7 @@ function planText(text, align, collisionMaps, maxShrink) {
         let plan = { fontSize: DEFAULT_FONT_SIZE - s, align: align, lines: [] };
         plan.lineHeight = Math.round(plan.fontSize * 0.85);
         let horizontalPadding = Math.round(plan.fontSize * 0.35);
-        let ctx = createCanvas(FRAME_WIDTH, FRAME_HEIGHT).ctx;
+        let ctx = makeCanvas(FRAME_WIDTH, FRAME_HEIGHT).ctx;
         ctx.font = plan.fontSize + FONT_FAMILY;
         ctx.textAlign = align;
         let words = text.split(' ');

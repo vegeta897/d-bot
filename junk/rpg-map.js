@@ -1,9 +1,8 @@
 var cWidth = 400, cHeight = 300; // Max embedded image dimensions
 
-var Canvas = require('canvas')
-    , Image = Canvas.Image
-    , canvas = new Canvas(cWidth, cHeight)
-    , ctx = canvas.getContext('2d');
+var { Canvas, createCanvas, Image } = require('canvas');
+var canvas = createCanvas(cWidth, cHeight);
+var ctx = canvas.getContext('2d');
 
 ctx.fillStyle = 'white';
 ctx.fillRect(0,0,cWidth,cHeight);
@@ -24,5 +23,5 @@ stream.on('end', function(){
 });
 
 module.exports = {
-    
+
 };

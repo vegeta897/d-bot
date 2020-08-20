@@ -56,6 +56,53 @@ _commands.regicide = async function(data) { // Find words that have changed king
         overthrows.map(o => `${o[1].overthrows} overthrows — **${o[0]}**`).join('\n'));
 };
 
+_commands.kingofkings = async function(data) {
+    let allMessages = await messages.cursor(db => db.cfind());
+    if(!allMessages) return data.reply(`No messages in database`);
+    let dictionary = new Map();
+    for(let { content: text, user } of allMessages) {
+        let words = util.getRegExpMatches(text.toLowerCase(), new RegExp(`(?:\\S{0}|^|[^a-z])(\\S+)(?![a-z])`, 'gi'));
+        if(!words || words.length === 0 || !words[0]) continue;
+        for(let word of words) {
+            if(!dictionary.has(word)) dictionary.set(word, new Map() );
+            let users = dictionary.get(word);
+            users.set(user, (users.get(user) || 0) + 1);
+        }
+    }
+    let kings = new Map();
+    for(let [word, wordUsers] of dictionary) {
+        if(wordUsers.size < 2) continue;
+        let king = [[], 0];
+        for(let [user, count] of wordUsers) {
+            if(count < 2) continue;
+            if(count === king[1]) {
+                king[0].push(user);
+            } else if(count > king[1]) {
+                king = [[user], count];
+            }
+        }
+        if(king[1] === 0) continue;
+        for(let kingUser of king[0]) {
+            if(!kings.has(kingUser)) {
+                kings.set(kingUser, 1);
+            } else {
+                kings.set(kingUser, kings.get(kingUser) + 1);
+            }
+        }
+    }
+    kings = Array.from(kings)
+        .map(([id, count]) => [discord.getUsernameFromID(id), count])
+        .filter(([name]) => name)
+        .sort((a, b) => b[1] - a[1]);
+    let kingList = '**Top Kings**```xl\n';
+    let longestKingName = Math.max(...kings.map(([name]) => name.length));
+    kingList += 'User'.padEnd(longestKingName) + '   King Count\n';
+    kingList += ''.padEnd(longestKingName + 13, '-') + '\n';
+    kingList += kings.map(king => king[0].padEnd(longestKingName) + '   ' + king[1].toString().padStart(10)).join('\n');
+    kingList += '```';
+    data.reply(kingList);
+};
+
 module.exports = {
     commands: _commands,
     help: {

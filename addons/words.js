@@ -2,7 +2,7 @@
 var util = require('./../core/util.js');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
-var Canvas = require('canvas');
+var { Canvas, createCanvas } = require('canvas');
 var regexgen = require('regexgen');
 var requireUncached = require('require-uncached');
 const { UnitContext } = requireUncached('./helpers/canvas.js');
@@ -78,9 +78,9 @@ _commands.graph = async function(data) {
     const TOP = 20 + Math.ceil(words.length / wordsPerLine) * wordLabelSize, BOTTOM = 58,
         LEFT = 0, RIGHT = 16 + 16 * (Math.ceil(maxTotal / yInc) * yInc).toLocaleString().length;
     const GRAPH_W = IMAGE_W - RIGHT - LEFT, GRAPH_H = IMAGE_H - TOP - BOTTOM;
-    let imgCanvas = new Canvas(IMAGE_W, IMAGE_H);
+    let imgCanvas = createCanvas(IMAGE_W, IMAGE_H);
     let imgCtx = imgCanvas.getContext('2d');
-    let graphCanvas = new Canvas(GRAPH_W, GRAPH_H);
+    let graphCanvas = createCanvas(GRAPH_W, GRAPH_H);
     let ctx = new UnitContext(graphCanvas.getContext('2d'), GRAPH_W, GRAPH_H);
     ctx.lineWidth(0.004);
     ctx.globalCompositeOperation = 'screen';

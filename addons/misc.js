@@ -8,6 +8,7 @@ const DateFormat = require('dateformat');
 const moment = require('moment-timezone');
 const convert = require('convert-units');
 const timestring = require('timestring');
+const wiki = require('wikijs').default({ apiUrl: 'https://commons.wikimedia.org/w/api.php' });
 
 const timeData = storage.json('time', { zoneUsers: {} }, '\t');
 const reminderData = storage.json('reminders', { reminders: [] }, '\t');
@@ -21,10 +22,22 @@ _commands.me = data => {
 
 _commands.echo = data => data.reply(data.paramStr);
 
+_commands.channelsay = data => {
+    let guildID = discord.bot.channelGuildMap[data.params[0]];
+    if(!guildID) {
+        return data.reply('Invalid channel');
+    }
+    let message = data.params.slice(1).join(' ');
+    if(message.trim() === '') {
+        return data.reply('Message can\'t be blank');
+    }
+    discord.bot.guilds.get(guildID).channels.get(data.params[0]).createMessage(message)
+};
+
 _commands.earliest = async data => {
     let firstMessage = await messages.cursor(db => db.cfind().sort({ time: 1 }).limit(1));
     data.reply(`Earliest message logged was on ` +
-        DateFormat(new Date(firstMessage[0].time), 'mmmm dS, yyyy at h:MM:ss TT') + ' EST');
+        DateFormat(new Date(firstMessage[0].time), 'mmmm dS, yyyy "at" h:MM:ss TT') + ' EST');
 };
 
 _commands.youtube = async data => {
@@ -57,7 +70,6 @@ _commands.time = async data => {
             }
             if(!assigned) {
                 data.reply('Invalid timezone, you must choose one of: ' + Object.keys(timezones).join(', '));
-                return zu; // Return original data
             }
             else {
                 data.reply(`You've been assigned to timezone \`${assigned}\``);
@@ -69,9 +81,10 @@ _commands.time = async data => {
     let message = '__Local Times__';
     let now = moment();
     let zoneUsers = timeData.get('zoneUsers');
-    for(let tz of Object.keys(timezones)) {
+    for(let tz of Object.keys(timezones).sort((a, b) => now.tz(timezones[a]).format('ZZ') - now.tz(timezones[b]).format('ZZ'))) {
+        if(!zoneUsers[tz] || zoneUsers[tz].length === 0) continue;
         message += `\n${now.tz(timezones[tz]).format('ddd h:mm a')} - **${tz}**`;
-        if(zoneUsers[tz] && zoneUsers[tz].length > 0) message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u)).join(', ');
+        message += ' - ' + zoneUsers[tz].map(u => discord.getUsernameFromID(u)).join(', ');
     }
     data.reply(message);
 };
@@ -119,6 +132,57 @@ _commands.remind = async data => {
         return reminders;
     });
     data.reply('Reminder set!');
+};
+
+_commands.wikimage = async data => {
+    let [randomPage] = await wiki.random(1);
+    randomPage = await wiki.page(randomPage);
+    let image = await randomPage.mainImage();
+    data.reply(image);
+};
+
+const impureWords = ['fuck', 'fucks', 'fucking', 'fucked', 'fucker', 'feck', 'shit', 'shite', 'shat', 'shits',
+    'ass', 'asses', 'jackass', 'dumbass', 'shithead', 'shitty', 'damn' ,'damnit', 'dammit', 'damned', 'dick',
+    'cock', 'motherfuck' ,'motherfucker', 'asshole', 'pussy', 'cunt', 'twat', 'bitch', 'bitching'];
+
+_commands.pure = async data => {
+    let userMessages = await messages.cursor(db => db.cfind({ user: data.userID }));
+    let pureCount = 0;
+    let impureCount = 0;
+    for(let message of userMessages) {
+        for(let word of message.content.split(' ')) {
+            if(word.trim() === '') continue;
+            if(impureWords.includes(word.toLowerCase())) impureCount++;
+            else pureCount++;
+        }
+    }
+    data.reply(`You're **${+(100 * pureCount / (pureCount + impureCount)).toFixed(2)}%** pure.`)
+};
+
+const dotaHeroes = ['Phantom Lancer','Tiny','Undying','Bristleback','Treant Protector','Broodmother','Lycan','Ogre Magi','Gyrocopter','Snapfire','Riki','Terrorblade','Witch Doctor','Nature\'s Prophet','Kunkka','Wraith King','Slardar','Slark','Razor','Pangolier','Bounty Hunter','Sven','Dragon Knight','Lich','Ursa','Death Prophet','Axe','Anti-Mage','Crystal Maiden','Luna','Mirana','Nyx Assassin','Monkey King','Spirit Breaker','Vengeful Spirit','Juggernaut','Doom','Night Stalker','Dazzle','Jakiro','Batrider','Bloodseeker','Beastmaster','Ancient Apparition','Dark Willow','Tidehunter','Sand King','Disruptor','Outworld Devourer','chaos Knight','Centaur Warrunner','Abaddon','Venomancer','Viper','Zeus','Winter Wyvern','Windranger','Lion','Grimstroke','Keeper of the Light','Earthshaker','Leshrac','Lifestealer','Tusk','Void Spirit','Tinker','Silencer','Shadow Demon','Shadow Shaman','Lina','Sniper','Mars','Omniknight','Drow Ranger','Magnus','Phantom Assassin','Phoenix','Enchantress','Pudge','Faceless Void','Shadow Fiend','Alchemist','Weaver','Clockwerk','Pugna','Enigma','Huskar','Underlord','Elder Titan','Puck','Bane','Chen','Dark Seer','Visage','Warlock','Techies','Invoker','Rubick','Oracle','Necrophos','Storm Spirit','Skywrath Mage','Queen of Pain','Meepo','Io','Naga Siren','Troll Warlord','Brewmaster','Legion Commander','Medusa','Clinkz','Arc Warden','Ember Spirit','Morphling','Earth Spirit','Timbersaw','Lone Druid','Templar Assassin','Spectre'];
+_commands.hero = async data => {
+    data.reply(util.pickInArray(dotaHeroes));
+};
+
+const request = require('request');
+
+_commands.imgtest = async data => {
+    request.get({ url: 'https://i.imgur.com/mXzHIk0.jpg', encoding:null }, (err, res, body) => {
+        if(err) return console.log(err);
+        discord.uploadFile({
+            to: data.channel,
+            filename: 'test.jpg',
+            file: body
+        })
+    });
+};
+
+_commands.g = async data => {
+    if(data.paramStr.trim() === 'th' && data.userID === '86928421359198208') data.reply('Done.');
+};
+
+_commands.msgtest = async data => {
+    data.messageObject.channel.createMessage(`Sorry, I couldn't find that ${undefined}.`).then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
 };
 
 const unitAliases = {

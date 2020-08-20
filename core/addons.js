@@ -16,12 +16,19 @@ var reactListeners = []; // Addon names
 var tickers = []; // Addon names
 var help = {}; // Command reference
 
+discord.commands = commands; // For addons to access full list of commands
+
 //var commandAttempts = {}; // Tracking unknown command attempts to offer help when needed
 
 //scanAddons();
 
 setInterval(function tick() {
-    for(let ticker of tickers) addons.get(ticker).tick();
+    for(let ticker of tickers) {
+        let ticked = addons.get(ticker).tick();
+        if(ticked && ticked.catch) {
+            ticked.catch(err => console.error(`Error: ${ticker} ticking`, err));
+        }
+    }
 }, 1000);
 
 function scanAddons() {
@@ -132,6 +139,7 @@ module.exports = {
             let addon = addons.get(commands.get(command));
             if(addon && (!addon.dev || author.id === config.owner)) {
                 let commanded = addon.commands[command](Object.assign({}, msgData));
+                msgData.consumed = true; // Command has triggered an addon
                 if(commanded && commanded.catch) commanded.catch(err => console.error(`Error: ${command} command`, err));
             }
             // else if(!commands[command]) { // Unknown command
@@ -153,12 +161,12 @@ module.exports = {
         }
         return !!msgData.command;
     },
-    seeReaction(message, emoji, userID) {
+    seeReaction(message, emoji, userID, removed) {
         for(let listener of reactListeners) {
             if(!addons.get(listener).dev || userID === config.owner) {
-                let listened = addons.get(listener).react(message, emoji, userID);
-                if(listened && listened.catch) {
-                    listened.catch(err => console.error(`Error: ${listener} reaction listener`, err));
+                let reacted = addons.get(listener).react(message, emoji, userID, removed);
+                if(reacted && reacted.catch) {
+                    reacted.catch(err => console.error(`Error: ${listener} reaction listener`, err));
                 }
             }
         }

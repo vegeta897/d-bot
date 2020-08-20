@@ -1,6 +1,6 @@
 'use strict';
 var util = require('./../util.js');
-var Canvas = require('canvas');
+var { Canvas, createCanvas } = require('canvas');
 var GIFEncoder = require('gifencoder');
 var fs = require('fs');
 
@@ -10,7 +10,7 @@ var main = createCanvas(),
     canvas = main.canvas, ctx = main.ctx;
 
 function createCanvas() {
-    var newCanvas = new Canvas(cWidth, cHeight), newCtx = newCanvas.getContext('2d');
+    var newCanvas = createCanvas(cWidth, cHeight), newCtx = newCanvas.getContext('2d');
     newCtx.antialias = 'none';
     newCtx.patternQuality = 'nearest';
     newCtx.filter = 'nearest';
@@ -136,7 +136,7 @@ function drawPlayers(playerMap, frame, empty, turn) {
     for(pKey in playerMap) { if (!playerMap.hasOwnProperty(pKey)) continue;
         player = playerMap[pKey];
         var move = { x: player.x - player.prevX, y: player.y - player.prevY };
-        var progress = frame.stage == 'start' ? 0 
+        var progress = frame.stage == 'start' ? 0
             : frame.stage == 'move' ? Math.easeInOutCubic(frame.frame,0,1,12) : 1;
         var x = player.prevX + move.x*progress, y = player.prevY + move.y*progress,
             canvasX = Math.round(x * gridSize), canvasY = Math.round(y * gridSize);
@@ -227,7 +227,7 @@ function drawLasers(laserMap,frame,current) {
             var laserProgress = frame.frame % 2;
             var fromD = { x: laser.from.x*gridSize/2, y: laser.from.y*gridSize/2 },
                 toD = { x: laser.to.x*gridSize/2, y: laser.to.y*gridSize/2 };
-            ctx.strokeStyle = current ? laser.reflected ? '#ffffff' 
+            ctx.strokeStyle = current ? laser.reflected ? '#ffffff'
                 : laser.player.color : 'rgba(128,128,128,0.1)';
             var start = { x: canvasX+fromD.x, y: canvasY+fromD.y },
                 mid = { x: canvasX, y: canvasY },

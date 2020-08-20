@@ -3,7 +3,7 @@ var util = require(__base+'core/util.js');
 var messages = require(__base+'core/messages.js');
 var discord = require(__base+'core/discord.js');
 var storage = require(__base+'core/storage.js');
-var Canvas = require('canvas');
+var { Canvas, createCanvas } = require('canvas');
 
 var wordMap = storage.json('word-map');
 if(!wordMap.get('words')) {
@@ -99,7 +99,7 @@ _commands.mapkov = function(data) {
     const HEADER = 30;
     const LINE_HEIGHT = 24;
     const SPACE = '    ';
-    let canvas = new Canvas(400,
+    let canvas = createCanvas(400,
         HEADER + lastMarkov.choices.length * LINE_HEIGHT);
     let ctx = canvas.getContext('2d');
     ctx.fillStyle = '#bbbbbb';

@@ -1,10 +1,10 @@
 // Canvas utilities
-const Canvas = require('canvas');
+const { createCanvas, Canvas } = require('canvas');
 
 function resizeCanvas(canvas, maxWidth, maxHeight) {
     let factor = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
     if(factor >= 1) return canvas;
-    let newCanvas = new Canvas(Math.ceil(canvas.width * factor), Math.ceil(canvas.height * factor));
+    let newCanvas = createCanvas(Math.ceil(canvas.width * factor), Math.ceil(canvas.height * factor));
     let newCtx = newCanvas.getContext('2d');
     newCtx.drawImage(canvas, 0, 0, newCanvas.width, newCanvas.height);
     return newCanvas;
@@ -26,7 +26,7 @@ function cropCanvas(canvas, padding = 0) {
     let boundingW = right - left + 1;
     let boundingH = bottom - top + 1;
     if(boundingW > 0 && boundingH > 0) {
-        let newCanvas = new Canvas(boundingW + padding * 2, boundingH + padding * 2);
+        let newCanvas = createCanvas(boundingW + padding * 2, boundingH + padding * 2);
         let newCtx = newCanvas.getContext('2d');
         newCtx.drawImage(canvas, left, top, boundingW, boundingH, padding, padding, boundingW, boundingH);
         return newCanvas;
@@ -34,7 +34,7 @@ function cropCanvas(canvas, padding = 0) {
 }
 
 function flipCanvas(canvas) { // Only need horizontal flip, because of rotation
-    let newCanvas = new Canvas(canvas.width, canvas.height);
+    let newCanvas = createCanvas(canvas.width, canvas.height);
     let ctx = newCanvas.getContext('2d');
     ctx.save();
     ctx.translate(canvas.width, 0);
@@ -49,7 +49,7 @@ function rotateCanvas(canvas, rotation) {
     // 90 or 270 degree rotation requires swapped canvas width/height
     let newWidth = rotation === 2 ? canvas.width : canvas.height;
     let newHeight = rotation === 2 ? canvas.height : canvas.width;
-    let newCanvas = new Canvas(newWidth, newHeight);
+    let newCanvas = createCanvas(newWidth, newHeight);
     let ctx = newCanvas.getContext('2d');
     ctx.save();
     ctx.translate(newWidth / 2, newHeight / 2);
@@ -91,7 +91,7 @@ module.exports = {
 
 // Cleaner image down-scaling (adapted from https://stackoverflow.com/a/3223466/2612679)
 function Thumbnail(img, sx, lobes) {
-    this.canvas = new Canvas(img.width, img.height);
+    this.canvas = createCanvas(img.width, img.height);
     this.ctx = this.canvas.getContext('2d');
     this.ctx.drawImage(img, 0, 0);
     this.img = img;

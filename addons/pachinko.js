@@ -4,7 +4,7 @@ const discord = require(__base+'core/discord.js');
 const config = require(__base+'core/config.js');
 const storage = require(__base+'core/storage.js');
 const { Thumbnail } = require('./helpers/canvas.js');
-const Canvas = require('canvas');
+const { Canvas, createCanvas, Image } = require('canvas');
 const GIFEncoder = require('gifencoder');
 const fse = require('fs-extra');
 const imagemin = require('imagemin');
@@ -40,7 +40,7 @@ const DEFAULT_USER_COLOR = '#AAABAD';
 const DEFAULT_BALL_COLOR = '#7289DA';
 
 const AVATAR_URL = 'https://cdn.discordapp.com/avatars/';
-const SLOT_IMAGE = new Canvas.Image;
+const SLOT_IMAGE = new Image();
 SLOT_IMAGE.src = fse.readFileSync('./addons/assets/pachinko-slots.png');
 const SLOT_EMOJI = ['1\u20e3','2\u20e3','3\u20e3','4\u20e3','5\u20e3','6\u20e3','7\u20e3','8\u20e3','9\u20e3'];
 
@@ -57,6 +57,13 @@ const SUBFRAMES = 8;
 let game = false;
 
 const _commands = {};
+
+// TODO: Style the pachinko board more like Discord UI
+// idea: win powerups to use in a future round, like sticky ball causes other balls to stick to you?
+
+// TODO: EDIT MESSAGE INSTEAD OF CREATING NEW ONE
+
+// TODO: Use ECSY
 
 _commands.pachinko = async function(data) {
     console.log('starting pachinko');
@@ -75,7 +82,7 @@ _commands.pachinko = async function(data) {
     console.log('generated map');
     game.mapImage = drawMap(game.world);
     console.log('drawn map');
-    let canvas = new Canvas(game.mapImage.width, game.mapImage.height);
+    let canvas = createCanvas(game.mapImage.width, game.mapImage.height);
     let ctx = canvas.getContext('2d');
     ctx.drawImage(game.mapImage, 0, 0);
     ctx.drawImage(SLOT_IMAGE, 0, 0);
@@ -89,13 +96,14 @@ _commands.pachinko = async function(data) {
         for(let i = 0; i < SLOTS; i++) {
             setTimeout(() => {
                 message.addReaction((i + 1) + '\u20e3').then();
-            }, i * 1000);
+            }, i * 1000); // TODO: See how close to 1/0.25s you can get this
         }
     });
 };
 
 module.exports = {
-    async react(message, { id: emojiID, name: emojiName }, userID) {
+    async react(message, { id: emojiID, name: emojiName }, userID, removed) {
+        if(userID === discord.bot.user.id || removed) return;
         if(!game || message.channel.id !== game.channel || game.startMessageID !== message.id) return;
         let { channel: { guild } } = message;
         let user = guild.members.get(userID);
@@ -110,13 +118,13 @@ module.exports = {
         game.world.addBody(body);
         game.slots[slotIndex].push(userID);
         game.maxSlotStack = Math.max(game.maxSlotStack, game.slots[slotIndex].length);
-        let avatarImg = new Canvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
+        let avatarImg = createCanvas(BALL_RADIUS * 2 * RES, BALL_RADIUS * 2 * RES);
         let avatarCtx = avatarImg.getContext('2d');
         avatarCtx.beginPath();
         avatarCtx.arc(BALL_RADIUS * RES, BALL_RADIUS * RES, BALL_RADIUS * RES, 0, 2 * Math.PI);
         try {
             let avatarImgData = await download(`${AVATAR_URL}${userID}/${user.avatar}.png`);
-            let img = new Canvas.Image;
+            let img = new Image();
             img.src = avatarImgData;
             avatarCtx.clip();
             let resizedAvatar = new Thumbnail(img, BALL_RADIUS * 2 * RES, 3);
@@ -179,7 +187,7 @@ function generateMap(world) {
 }
 
 function drawMap(world) {
-    let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
+    let canvas = createCanvas(WIDTH * RES, HEIGHT * RES);
     let ctx = canvas.getContext('2d');
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, WIDTH * RES, HEIGHT * RES);
@@ -205,12 +213,11 @@ function drawMap(world) {
 
 function animateSlots() {
     return new Promise((resolve, reject) => {
-        let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
+        let canvas = createCanvas(WIDTH * RES, HEIGHT * RES);
         let ctx = canvas.getContext('2d');
         let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
 
         let buffers = [];
-        console.log('creating read stream');
         let encoderStream = encoder.createReadStream();
         encoderStream.on('data', d => buffers.push(d));
         encoderStream.on('end', () => {
@@ -250,7 +257,7 @@ function animateSlots() {
 
 function simulate(world) {
     return new Promise((resolve, reject) => {
-        let canvas = new Canvas(WIDTH * RES, HEIGHT * RES);
+        let canvas = createCanvas(WIDTH * RES, HEIGHT * RES);
         let ctx = canvas.getContext('2d');
         let encoder = new GIFEncoder(WIDTH * RES, HEIGHT * RES);
 
@@ -347,4 +354,4 @@ function testRun() {
         reply: (msg, polite, cb) => discord.sendMessage('209177876975583232', msg, polite, cb)
     });
 }
-if(discord.bot.uptime > 0) testRun();
+// if(discord.bot.uptime > 0) testRun();

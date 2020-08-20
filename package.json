@@ -5,11 +5,12 @@
   "main": "main.js",
   "dependencies": {
     "callsite": "^1.0.0",
-    "canvas": "^1.6.9",
+    "canvas": "^2.6.1",
+    "color-namer": "^1.4.0",
     "convert-units": "^2.3.4",
     "dateformat": "^1.0.12",
-    "download": "^5.0.3",
-    "eris": "^0.9.0",
+    "download": "^7.1.0",
+    "eris": "^0.13.2",
     "eris-json": "^1.0.0",
     "expect-telnet": "^0.5.5",
     "forever": "^0.15.3",
@@ -30,6 +31,7 @@
     "request-promise": "^4.2.1",
     "require-uncached": "^1.0.3",
     "timestring": "^5.0.1",
+    "wikijs": "^4.13.0",
     "words-to-numbers": "^1.3.1",
     "xml2js": "^0.4.18"
   },

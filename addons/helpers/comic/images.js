@@ -1,8 +1,7 @@
 'use strict';
 const fs = require('fs');
 const util = require(__base+'core/util.js');
-const Canvas = require('canvas'),
-    Image = Canvas.Image;
+const { Canvas, createCanvas, Image } = require('canvas');
 
 const images = { users: {} };
 const COLLIDE_PRECISION = 2;
@@ -16,9 +15,9 @@ for(var i = 0; i < imageList.length; i++) {
     var props = imageList[i].split('-'), user = props[0], state = props[1];
     if(!images.users[user]) images.users[user] = {};
     if(!images.users[user][state]) images.users[user][state] = [];
-    var img = new Image;
+    var img = new Image();
     img.src = fs.readFileSync(__dirname + '/img/users/' + imageList[i]);
-    var imgCanvas = new Canvas(FRAME_WIDTH, FRAME_HEIGHT), imgCtx = imgCanvas.getContext('2d');
+    var imgCanvas = createCanvas(FRAME_WIDTH, FRAME_HEIGHT), imgCtx = imgCanvas.getContext('2d');
     imgCtx.drawImage(img,0,0,img.width, img.height, 0,0, FRAME_WIDTH, FRAME_HEIGHT);
     var imgData = imgCtx.getImageData(0,0,FRAME_WIDTH, FRAME_HEIGHT).data;
     var collisionMap = { side: RIGHT, rows: [] };
@@ -70,9 +69,9 @@ module.exports = {
         }
         var variation = util.randomInt(1,images.users[user][state].length);
         var imageName = user+'-'+state+'-'+ variation + '.png',
-            img = new Image;
+            img = new Image();
         img.src = fs.readFileSync(__dirname + '/img/users/' + imageName);
-        var imgCanvas = new Canvas(FRAME_WIDTH, FRAME_HEIGHT), imgCtx = imgCanvas.getContext('2d');
+        var imgCanvas = createCanvas(FRAME_WIDTH, FRAME_HEIGHT), imgCtx = imgCanvas.getContext('2d');
         imgCtx.patternQuality = 'best';
         imgCtx.drawImage(img,0,0,img.width, img.height, 0,0, FRAME_WIDTH, FRAME_HEIGHT);
         //imgCtx.fillStyle = 'rgba(255,0,0,0.2)';

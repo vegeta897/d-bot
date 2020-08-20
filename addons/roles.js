@@ -86,7 +86,7 @@ _commands.role = async function(data) {
     }
     let [action, roleName] = data.params;
     let role = data.server.roles.find(r => r.name.toLowerCase() === roleName.toLowerCase());
-    if(!role) return data.reply(`The role \`${roleName}\` does not exist`);
+    if(!role) return data.reply(`The role \`${roleName}\` does not exist, you have to create it first`);
     syncServerRoles(data.server);
     let method;
     if(action === 'open') method = openRole;

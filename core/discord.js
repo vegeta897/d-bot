@@ -129,9 +129,34 @@ function suppressLinks(message) {
     return message.replace(util.urlRX, match => (match[0] === ' ' ? ' ' : '') + '<' + match.trim() + '>');
 }
 
+let recentErrorCount = 0;
+
 bot.on('error', error => {
-    _sendMessages(config.owner, `An error has occurred: \`\`\`${error}\`\`\``);
-    console.log(new Date(), error);
+    if(recentErrorCount++ === 100) {
+        console.log(new Date(), 'Too many errors, disconnecting');
+        bot.disconnect({ reconnect: true });
+        setTimeout(() => {
+            bot.connect()
+                .then(() => {
+                recentErrorCount = 0;
+            })
+                .catch(e => console.log('Error reconnecting:', e));
+        }, 30 * 1000)
+    } else {
+        let readableError = error.message || error.error || error;
+        if(!readableError.startsWith('connect') &&
+            !readableError.startsWith('getaddrinfo') &&
+            !readableError.startsWith('WebSocket was closed') &&
+            !readableError.startsWith('Connection reset by peer') &&
+            !readableError.includes('ECONNRESET')) {
+            _sendMessages(config.owner, `An error has occurred: \`\`\`${readableError}\`\`\``)
+                .then().catch(e => console.log('Could not send error message to owner', e));
+        }
+        console.log(new Date(), 'Eris.js error event message:', readableError);
+        setTimeout(() => {
+            recentErrorCount = 0;
+        }, 10 * 1000)
+    }
 });
 
 bot.on('debug', debug => {

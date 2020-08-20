@@ -30,7 +30,7 @@ function submitGuess(newGuess, user) {
     newGuess = newGuess.substr(0,7).toLowerCase() === 'how to ' ? newGuess.substr(7) : newGuess;
     var guessScore = FuzzySet([wwData.get('answer').toLowerCase()]).get(newGuess.toLowerCase());
     guessScore = guessScore ? guessScore[0][0] : 0;
-    var now = new Date().getTime();
+    var now = Date.now();
     let players = wwData.get('players');
     players[user] = { guess: newGuess, guessScore: guessScore, guessTime: now };
     var everyoneGuessed = true;
@@ -75,13 +75,13 @@ function endRound() {
         discord.bot.sendChannelTyping(wwData.get('channel'));
         wwData.set('round', wwData.get('round') + 1);
         wwData.set('state', 'playing');
-        wwData.set('stateBegan', new Date().getTime());
+        wwData.set('stateBegan', Date.now());
         discord.uploadFile({
             to: wwData.get('channel'),
             file: imgData, filename: 'wikihow.jpg',
             message: `**Round ${wwData.get('round')} begins!** Submit your guesses!`
         },function(err, res){
-            wwData.set('stateBegan', new Date().getTime());
+            wwData.set('stateBegan', Date.now());
         });
     }
 }
@@ -202,7 +202,7 @@ _commands.wikiwhat = function(data) {
         resetData();
     } else if(wwData.get('state') === 'idle') {
         wwData.set('state', 'starting');
-        wwData.set('stateBegan', new Date().getTime());
+        wwData.set('stateBegan', Date.now());
         wwData.set('channel', data.channel);
         wwData.set('players', { [data.userID]: {} });
         wwData.set('bestGuesses', []);
@@ -227,14 +227,14 @@ module.exports = {
         if(wwData.get('state') !== 'playing' || data.params.length === 0 || data.channel !== wwData.get('channel')) return;
         submitGuess(data.paramStr, data.userID);
     },
-    tick() {
+    async tick() {
         if(!stateDurations[wwData.get('state')]) return;
-        if(new Date().getTime() >= wwData.get('stateBegan') + stateDurations[wwData.get('state')]*1000) {
+        if(Date.now() >= wwData.get('stateBegan') + stateDurations[wwData.get('state')]*1000) {
             switch(wwData.get('state')) {
                 case 'starting':
                     discord.bot.sendChannelTyping(wwData.get('channel'));
                     wwData.set('state', 'playing');
-                    wwData.set('stateBegan', new Date().getTime());
+                    wwData.set('stateBegan', Date.now());
                     wwData.set('round', 1);
                     discord.uploadFile({
                         to: wwData.get('channel'),
@@ -243,7 +243,7 @@ module.exports = {
                         + 'Type `/guess` or `/g` to guess\n'
                         + '*You only get one guess,* but you can change it during the round\n'
                     },function() {
-                        wwData.set('stateBegan', new Date().getTime());
+                        wwData.set('stateBegan', Date.now());
                     });
                     break;
                 case 'playing':
@@ -252,7 +252,7 @@ module.exports = {
                         wwData.set('downloaded', wwData.get('round'));
                     });
                     wwData.set('state', 'postround');
-                    wwData.set('stateBegan', new Date().getTime());
+                    wwData.set('stateBegan', Date.now());
                     discord.sendMessage(wwData.get('channel'), `Round ${wwData.get('round')} has ended!`);
                     break;
                 case 'postround':
