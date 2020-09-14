@@ -39,7 +39,7 @@
 		"bot"
 	],
 	"engines": {
-		"node": ">=0.12.9.0"
+		"node": ">=12.9.0"
 	},
 	"author": "Devin Spikowski",
 	"license": "ISC",
