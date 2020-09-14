@@ -3,14 +3,23 @@
 	"version": "2.0.0",
 	"description": "A quirky Discord bot made for single, small, private servers",
 	"main": "build/main.js",
-	"dependencies": {},
+	"dependencies": {
+		"eris": "^0.13.3"
+	},
 	"devDependencies": {
+		"@types/node": "^14.10.1",
+		"@typescript-eslint/eslint-plugin": "^4.1.1",
+		"@typescript-eslint/parser": "^4.1.1",
+		"eslint": "^7.9.0",
+		"eslint-config-prettier": "^6.11.0",
+		"eslint-plugin-prettier": "^3.1.4",
 		"prettier": "^2.1.1",
 		"typescript": "^4.0.2"
 	},
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"debug": "node main.js debug"
+		"debug": "node build/main.js debug",
+		"lint": "eslint src/**/*.{js,ts} --quiet --fix"
 	},
 	"private": true,
 	"repository": {

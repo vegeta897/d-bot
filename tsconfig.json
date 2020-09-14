@@ -5,7 +5,10 @@
 		"target": "es2019",
 		"lib": ["es2020", "dom"],
 		"strict": true,
+		"esModuleInterop": true,
 		"noUnusedLocals": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
 		"sourceMap": true,
 		"outDir": "build"
 	}
