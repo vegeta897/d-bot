@@ -1,0 +1,12 @@
+{
+	"compileOnSave": true,
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es2019",
+		"lib": ["es2020", "dom"],
+		"strict": true,
+		"noUnusedLocals": true,
+		"sourceMap": true,
+		"outDir": "build"
+	}
+}

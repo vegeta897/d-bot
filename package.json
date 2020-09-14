@@ -1,0 +1,34 @@
+{
+	"name": "d-bot",
+	"version": "2.0.0",
+	"description": "A quirky Discord bot made for single, small, private servers",
+	"main": "build/main.js",
+	"dependencies": {},
+	"devDependencies": {
+		"prettier": "^2.1.1",
+		"typescript": "^4.0.2"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"debug": "node main.js debug"
+	},
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/vegeta897/d-bot.git"
+	},
+	"keywords": [
+		"Discord",
+		"Discordapp",
+		"bot"
+	],
+	"engines": {
+		"node": ">=0.12.9.0"
+	},
+	"author": "Devin Spikowski",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/vegeta897/d-bot/issues"
+	},
+	"homepage": "https://github.com/vegeta897/d-bot#readme"
+}
