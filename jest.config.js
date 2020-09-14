@@ -1,12 +1,14 @@
 module.exports = {
 	preset: 'ts-jest',
 	testEnvironment: 'node',
-	roots: ['<rootDir>/src', '<rootDir>/tests'],
 	testMatch: ['/tests/**/*.+(ts|tsx|js)', '**/?(*.)+(spec|test).+(ts|tsx|js)'],
+	globals: {
+		'ts-jest': {
+			tsConfig: '<rootDir>/tests/tsconfig.json',
+		},
+	},
 	moduleNameMapper: {
-		'src/(.*)': '<rootDir>/src/$1',
-		'Modules/(.*)': '<rootDir>/src/Modules/$1',
-		'tests/(.*)': '<rootDir>/tests/$1',
+		'@src/(.*)': '<rootDir>/src/$1',
 	},
 	coverageThreshold: {
 		global: {

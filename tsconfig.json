@@ -6,16 +6,14 @@
 		"lib": ["es2020", "dom"],
 		"strict": true,
 		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
 		"noUnusedLocals": true,
 		"noImplicitReturns": true,
+		"noImplicitAny": true,
 		"noFallthroughCasesInSwitch": true,
 		"sourceMap": true,
-		"outDir": "build",
-		"baseUrl": "./",
-		"paths": {
-			"src/*": ["src/*"],
-			"Modules/*": ["src/Modules/*"],
-			"tests/*": ["tests/*"]
-		}
-	}
+		"outDir": "build"
+	},
+	"include": ["src/**/*"]
 }
