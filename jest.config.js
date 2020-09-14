@@ -5,6 +5,7 @@ module.exports = {
 	testMatch: ['/tests/**/*.+(ts|tsx|js)', '**/?(*.)+(spec|test).+(ts|tsx|js)'],
 	moduleNameMapper: {
 		'src/(.*)': '<rootDir>/src/$1',
+		'Modules/(.*)': '<rootDir>/src/Modules/$1',
 		'tests/(.*)': '<rootDir>/tests/$1',
 	},
 	coverageThreshold: {
