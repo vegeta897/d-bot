@@ -1,8 +1,21 @@
 import { CommandClient } from 'eris'
 import { DISCORD_TOKEN } from './config'
+import { Discord } from './Core/Discord'
 
-const bot = new CommandClient(DISCORD_TOKEN)
-bot.on('ready', () => {
-	console.log(`Bot ready: ${bot.user.username}#${bot.user.discriminator}`)
+const discord = new Discord({
+	client: new CommandClient(
+		DISCORD_TOKEN,
+		{},
+		{
+			prefix: ']',
+			owner: 'vegeta897#7777',
+		}
+	),
 })
-bot.connect()
+
+discord.connect()
+
+async function registerCommands(): Promise<void> {
+	discord.registerCommand((await import('./Commands/RollCommand')).RollCommand)
+}
+registerCommands().catch(console.error)
