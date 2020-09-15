@@ -16,6 +16,8 @@ const discord = new Discord({
 discord.connect()
 
 async function registerCommands(): Promise<void> {
-	discord.registerCommand((await import('./Commands/RollCommand')).RollCommand)
+	discord.registerCommand(
+		(await import('./Commands/Roll/RollCommand')).RollCommand
+	)
 }
 registerCommands().catch(console.error)

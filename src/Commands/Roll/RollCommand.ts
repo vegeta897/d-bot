@@ -1,10 +1,11 @@
-import { Roll } from '../Modules/Roll'
-import { DBotCommand } from './Command'
+import { Roll } from './Roll'
+import { DBotCommand } from '../Command'
 
 const paramsRegex = /(\d+)[\D ]+(\d+)/
 const usage = '`XdY` or `X Y`'
 
 // TODO: Create parameter validation system
+// TODO: Add tests
 export const RollCommand = new DBotCommand({
 	label: 'roll',
 	generator: (_msg, params) => {

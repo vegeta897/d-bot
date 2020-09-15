@@ -1,4 +1,4 @@
-import { Roll } from '@src/Modules/Roll'
+import { Roll } from '@src/Commands/Roll/Roll'
 
 describe('roll', () => {
 	it('returns correct array length', () => {
