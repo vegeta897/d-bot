@@ -3,7 +3,7 @@ import type { CommandProcessor, DBotCommandOptions } from '../Command'
 
 const usage = '`XdY` or `X Y`'
 
-const Errors = {
+export const Errors = {
 	Invalid: `Invalid usage, try ${usage}`,
 }
 
