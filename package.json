@@ -24,7 +24,7 @@
 	},
 	"scripts": {
 		"build": "tsc --build --clean",
-		"start": "npm run build && node build/main.js",
+		"start": "npm run build && node .",
 		"test": "npx jest --runInBand --detectOpenHandles --colors --verbose --reporters=default",
 		"test:coverage": "jest --coverage",
 		"debug": "node build/main.js debug",

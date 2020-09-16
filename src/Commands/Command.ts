@@ -1,21 +1,43 @@
-import type { CommandClient, CommandGenerator, CommandOptions } from 'eris'
+import type {
+	CommandClient,
+	CommandGeneratorFunction,
+	CommandOptions,
+} from 'eris'
 
-interface IDBotCommandArgs {
+export interface CommandProcessor<T = string[]> {
+	parse?: (params: string[]) => T
+	execute: (executeParams: {
+		message: Parameters<CommandGeneratorFunction>[0]
+		params: T
+	}) => ReturnType<CommandGeneratorFunction>
+}
+
+export interface DBotCommandOptions {
 	label: string
-	generator: CommandGenerator
-	options?: CommandOptions
+	processor: CommandProcessor<any>
+	commandOptions?: CommandOptions
 }
 
 export class DBotCommand {
-	private readonly label: string
-	private readonly generator: CommandGenerator
+	private readonly label
+	private readonly processor
 	private readonly options?: CommandOptions
-	constructor(args: IDBotCommandArgs) {
-		this.label = args.label
-		this.generator = args.generator
-		this.options = { caseInsensitive: true, ...args.options }
+	constructor({ label, processor, commandOptions }: DBotCommandOptions) {
+		this.label = label
+		this.processor = processor
+		this.options = { caseInsensitive: true, ...commandOptions }
 	}
-	register(client: CommandClient): void {
+	private readonly generator: CommandGeneratorFunction = (message, params) => {
+		try {
+			return this.processor.execute({
+				message,
+				params: this.processor.parse ? this.processor.parse(params) : params,
+			})
+		} catch (err) {
+			return err
+		}
+	}
+	readonly register = (client: CommandClient): void => {
 		client.registerCommand(this.label, this.generator, this.options)
 	}
 }
