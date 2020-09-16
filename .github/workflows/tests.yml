@@ -31,7 +31,7 @@ jobs:
         run: npm install
 
       - name: Running Tests
-        run: npm run test:coverage
+        run: npm run test
 
       - name: Posting Coverages
         uses: coverallsapp/github-action@master
