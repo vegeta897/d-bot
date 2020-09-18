@@ -19,5 +19,8 @@ async function registerCommands(): Promise<void> {
 	discord.registerCommand(
 		(await import('./Commands/Roll/RollCommand')).RollCommand
 	)
+	discord.registerCommand(
+		(await import('./Commands/Ping/PingCommand')).PingCommand
+	)
 }
 registerCommands().catch(console.error)

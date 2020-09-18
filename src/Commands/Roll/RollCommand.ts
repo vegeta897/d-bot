@@ -1,40 +1,56 @@
 import { Roll } from './Roll'
-import type { CommandProcessor, DBotCommandOptions } from '../Command'
+import { DBotCommandParsed } from '../Command'
+import * as t from 'io-ts'
 
-const usage = '`XdY` or `X Y`'
+const RollParamsV = t.type({
+	diceSides: t.number,
+	diceCount: t.number,
+})
 
-export const Errors = {
-	Invalid: `Invalid usage, try ${usage}`,
-}
+type RollParams = t.TypeOf<typeof RollParamsV>
 
-const paramsRegex = /(\d+)[\D ]+(\d+)/
-
-export const processor: CommandProcessor<[number, number]> = {
-	parse: (params) => {
-		const paramString = params.join(' ').toLowerCase()
-		if (!paramsRegex.test(paramString)) {
-			throw Errors.Invalid
-		}
-		const [, diceCount, diceSides] = [...paramString.matchAll(paramsRegex)][0]
-		return [+diceCount, +diceSides]
-	},
-	execute: ({ params: [diceCount, diceSides] }) => {
-		const result = Roll(diceCount, diceSides)
-		return `Rolling a **${diceSides}** sided die **${diceCount}** times!
-${result.map((roll) => `**${roll}**`).join('\n')}
-Total: **${result.reduce((p, c) => p + c)}**`
-	},
-}
-
-export const RollCommand: DBotCommandOptions = {
+export const RollCommand = new DBotCommandParsed<RollParams>({
 	label: 'roll',
-	processor,
+	processor: {
+		validator: RollParamsV,
+		parsers: [
+			([xDy]) => {
+				if (!/\d+d\d+/i.test(xDy)) return
+				const [x, y] = xDy.toLowerCase().split('d')
+				return { diceCount: +x, diceSides: +y }
+			},
+			([x, y]) => {
+				if (x === '') return
+				const diceCount = +x
+				const diceSides = +y
+				if (isNaN(diceCount) || isNaN(diceSides)) return
+				return { diceCount, diceSides }
+			},
+			([x]) => {
+				if (x === '') return
+				const diceSides = +x
+				if (isNaN(diceSides)) return
+				return { diceCount: 1, diceSides }
+			},
+		],
+	},
+	execute: ({ params: { diceCount, diceSides } }) => {
+		const result = Roll(diceCount, diceSides)
+		const message = [
+			`Rolling a **${diceSides}** sided die`,
+			'!\n',
+			result.map((roll) => `**${roll}**`).join('\n'),
+		]
+		if (diceCount > 1) {
+			message[0] += ` **${diceCount}** times`
+			message.push(`\nTotal: **${result.reduce((p, c) => p + c)}**`)
+		}
+		return message.join('')
+	},
 	commandOptions: {
 		argsRequired: true,
 		description: 'Roll some dice',
 		fullDescription: 'Roll X number of Y-sided dice\nExample: `4d6`',
-		usage,
+		usage: '`XdY` or `X Y`',
 	},
-}
-
-// TODO: Create parameter validation system
+})

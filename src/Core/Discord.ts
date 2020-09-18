@@ -1,5 +1,5 @@
 import { CommandClient } from 'eris'
-import { DBotCommand, DBotCommandOptions } from '../Commands/Command'
+import type { DBotCommand } from '../Commands/Command'
 
 export class Discord {
 	bot: CommandClient
@@ -14,7 +14,7 @@ export class Discord {
 	connect(): void {
 		this.bot.connect()
 	}
-	registerCommand(commandOptions: DBotCommandOptions): void {
-		new DBotCommand(commandOptions).register(this.bot)
+	registerCommand(command: DBotCommand): void {
+		command.register(this.bot)
 	}
 }

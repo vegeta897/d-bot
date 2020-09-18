@@ -5,6 +5,8 @@
 	"main": "build/main.js",
 	"dependencies": {
 		"eris": "^0.13.3",
+		"fp-ts": "^2.8.2",
+		"io-ts": "^2.2.10",
 		"random": "^2.2.0"
 	},
 	"devDependencies": {
