@@ -16,8 +16,12 @@ export const RollCommand = new DBotCommandParsed<RollParams>({
 		parsers: [
 			([xDy]) => {
 				if (!/\d+d\d+/i.test(xDy)) return
-				const [x, y] = xDy.toLowerCase().split('d')
-				return { diceCount: +x, diceSides: +y }
+				const [diceCount, diceSides] = xDy
+					.toLowerCase()
+					.split('d')
+					.map((n) => +n)
+				if (isNaN(diceCount) || isNaN(diceSides)) return
+				return { diceCount, diceSides }
 			},
 			([x, y]) => {
 				if (x === '') return
@@ -35,6 +39,10 @@ export const RollCommand = new DBotCommandParsed<RollParams>({
 		],
 	},
 	execute: ({ params: { diceCount, diceSides } }) => {
+		if (diceSides < 2) throw 'Number of sides must be at least 2'
+		if (diceSides > 0x7fffffff) throw 'Number of sides must be a 32-bit integer'
+		if (diceCount < 1) throw 'Number of dice must be at least 1'
+		if (diceCount > 100) throw 'Number of dice must be less than 100'
 		const result = Roll(diceCount, diceSides)
 		const message = [
 			`Rolling a **${diceSides}** sided die`,

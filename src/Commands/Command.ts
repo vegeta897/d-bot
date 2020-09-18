@@ -26,7 +26,7 @@ export abstract class DBotCommand {
 		this.label = label
 		this.options = { caseInsensitive: true, ...commandOptions }
 	}
-	protected readonly generator: CommandGeneratorFunction | undefined
+	protected readonly generator?: CommandGeneratorFunction
 	readonly register = (client: CommandClient): void => {
 		client.registerCommand(
 			this.label,
