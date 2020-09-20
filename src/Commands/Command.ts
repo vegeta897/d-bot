@@ -8,13 +8,12 @@ import { isRight } from 'fp-ts/Either'
 
 interface DBotCommandOptions {
 	label: string
-	errors?: { params?: string }
 	commandOptions?: CommandOptions
 }
 
 interface DBotCommandSimpleOptions extends DBotCommandOptions {
 	execute: (executeParams: {
-		message: Parameters<CommandGeneratorFunction>[0]
+		message?: Parameters<CommandGeneratorFunction>[0]
 		params: string[]
 	}) => ReturnType<CommandGeneratorFunction>
 }
@@ -59,7 +58,7 @@ interface DBotCommandParsedOptions<
 		validator: t.Type<T>
 	}
 	execute: (executeParams: {
-		message: Parameters<CommandGeneratorFunction>[0]
+		message?: Parameters<CommandGeneratorFunction>[0]
 		params: T
 	}) => ReturnType<CommandGeneratorFunction>
 }

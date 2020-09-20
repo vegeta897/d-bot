@@ -15,15 +15,16 @@ export const RollCommand = new DBotCommandParsed<RollParams>({
 		validator: RollParamsV,
 		parsers: [
 			([xDy]) => {
+				// roll 2d6
 				if (!/\d+d\d+/i.test(xDy)) return
 				const [diceCount, diceSides] = xDy
 					.toLowerCase()
 					.split('d')
 					.map((n) => +n)
-				if (isNaN(diceCount) || isNaN(diceSides)) return
 				return { diceCount, diceSides }
 			},
 			([x, y]) => {
+				// roll 2 6
 				if (x === '') return
 				const diceCount = +x
 				const diceSides = +y
@@ -31,6 +32,7 @@ export const RollCommand = new DBotCommandParsed<RollParams>({
 				return { diceCount, diceSides }
 			},
 			([x]) => {
+				// roll 6
 				if (x === '') return
 				const diceSides = +x
 				if (isNaN(diceSides)) return
