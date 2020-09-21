@@ -25,5 +25,8 @@ async function registerCommands(): Promise<void> {
 	discord.registerCommand(
 		(await import('./Commands/Odds/OddsCommand')).OddsCommand
 	)
+	discord.registerCommand(
+		(await import('./Commands/Flip/FlipCommand')).FlipCommand
+	)
 }
 registerCommands().catch(console.error)

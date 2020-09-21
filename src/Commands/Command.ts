@@ -97,7 +97,6 @@ export class DBotCommandParsed<
 		try {
 			parsedParams = this.parse(params)
 		} catch (parseError) {
-			console.log('101 reached!!')
 			return parseError
 		}
 		try {

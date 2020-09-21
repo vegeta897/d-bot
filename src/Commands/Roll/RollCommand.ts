@@ -1,6 +1,7 @@
 import { Roll } from './Roll'
 import { DBotCommandParsed } from '../Command'
 import * as t from 'io-ts'
+import { CreateResultList } from '../Common/ResultList'
 
 const RollParamsV = t.type({
 	diceSides: t.number,
@@ -23,17 +24,16 @@ export const RollCommand = new DBotCommandParsed<RollParams>({
 					.map((n) => +n)
 				return { diceCount, diceSides }
 			},
-			([x, y]) => {
+			([x, yOrDelimiter, y2]) => {
 				// roll 2 6
-				if (x === '') return
+				// roll 2 d 6
 				const diceCount = +x
-				const diceSides = +y
+				const diceSides = +yOrDelimiter || +y2
 				if (isNaN(diceCount) || isNaN(diceSides)) return
 				return { diceCount, diceSides }
 			},
 			([x]) => {
 				// roll 6
-				if (x === '') return
 				const diceSides = +x
 				if (isNaN(diceSides)) return
 				return { diceCount: 1, diceSides }
@@ -44,18 +44,26 @@ export const RollCommand = new DBotCommandParsed<RollParams>({
 		if (diceSides < 2) throw 'Number of sides must be at least 2'
 		if (diceSides > 0x7fffffff) throw 'Number of sides must be a 32-bit integer'
 		if (diceCount < 1) throw 'Number of dice must be at least 1'
-		if (diceCount > 100) throw 'Number of dice must be less than 100'
-		const result = Roll(diceCount, diceSides)
+		if (diceCount > 1000000) throw 'Number of dice must be less than a million'
+		const rolls = Roll(diceCount, diceSides)
 		const message = [
-			`Rolling a **${diceSides}** sided die`,
-			'!\n',
-			result.map((roll) => `**${roll}**`).join('\n'),
+			`Rolling a **${diceSides}** sided die${
+				diceCount > 1 ? ` **${diceCount}** times` : ''
+			}!`,
 		]
+		message.push(
+			CreateResultList(
+				rolls.map((roll) => `**${roll}**`),
+				{
+					resultsPerLineSizes: [1, 5, 10],
+					delimiter: ' ',
+				}
+			).resultList
+		)
 		if (diceCount > 1) {
-			message[0] += ` **${diceCount}** times`
-			message.push(`\nTotal: **${result.reduce((p, c) => p + c)}**`)
+			message.push(`Total: **${rolls.reduce((p, c) => p + c)}**`)
 		}
-		return message.join('')
+		return message.join('\n')
 	},
 	commandOptions: {
 		argsRequired: true,
