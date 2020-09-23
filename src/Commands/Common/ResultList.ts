@@ -48,8 +48,8 @@ export function CreateResultList(
 		oneLineLength += resultLength
 		const remaining = results.length - i
 		if (oneLineLength > maxLines * MAX_LINE_WIDTH && remaining > 1) {
-			oneLineList += '\n' + createRemainingLine(remainingResults)
 			remainingResults = remaining
+			oneLineList += '\n' + `... *${remainingResults} more results*`
 			multiLine = false
 			truncated = true
 			break
@@ -98,8 +98,4 @@ export function CalculateResultsPerLine({
 		resultCount / resultsPerLine > maxLines
 	)
 	return resultsPerLine
-}
-
-function createRemainingLine(remaining: number): string {
-	return `... *${remaining} more results*`
 }

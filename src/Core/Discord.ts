@@ -1,20 +1,22 @@
 import { CommandClient } from 'eris'
-import type { DBotCommand } from '../Commands/Command'
+import { DISCORD_TOKEN } from '../config'
 
-export class Discord {
-	bot: CommandClient
-	constructor(options: { client: CommandClient }) {
-		this.bot = options.client
-		this.bot.on('ready', () => {
-			console.log(
-				`Bot ready: ${this.bot.user.username}#${this.bot.user.discriminator}`
-			)
-		})
+export class Discord extends CommandClient {
+	private static instance: Discord
+	private constructor() {
+		super(
+			DISCORD_TOKEN,
+			{},
+			{
+				prefix: ']',
+				owner: 'vegeta897#7777',
+			}
+		)
 	}
-	connect(): void {
-		this.bot.connect()
-	}
-	registerCommand(command: DBotCommand): void {
-		command.register(this.bot)
+	static get bot(): Discord {
+		if (!this.instance) {
+			this.instance = new Discord()
+		}
+		return this.instance
 	}
 }

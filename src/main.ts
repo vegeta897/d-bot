@@ -1,32 +1,14 @@
-import { CommandClient } from 'eris'
-import { DISCORD_TOKEN } from './config'
 import { Discord } from './Core/Discord'
+import { LoadCommands } from './Commands/Loader'
 
-const discord = new Discord({
-	client: new CommandClient(
-		DISCORD_TOKEN,
-		{},
-		{
-			prefix: ']',
-			owner: 'vegeta897#7777',
-		}
-	),
-})
-
-discord.connect()
-
-async function registerCommands(): Promise<void> {
-	discord.registerCommand(
-		(await import('./Commands/Roll/RollCommand')).RollCommand
-	)
-	discord.registerCommand(
-		(await import('./Commands/Ping/PingCommand')).PingCommand
-	)
-	discord.registerCommand(
-		(await import('./Commands/Odds/OddsCommand')).OddsCommand
-	)
-	discord.registerCommand(
-		(await import('./Commands/Flip/FlipCommand')).FlipCommand
-	)
+async function init(): Promise<void> {
+	await LoadCommands().catch(console.error)
+	Discord.bot.on('ready', () => {
+		console.log(
+			`Bot ready: ${Discord.bot.user.username}#${Discord.bot.user.discriminator}`
+		)
+	})
+	await Discord.bot.connect()
 }
-registerCommands().catch(console.error)
+
+init()
