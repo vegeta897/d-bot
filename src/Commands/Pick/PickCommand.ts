@@ -21,7 +21,6 @@ export const PickCommand = new DBotCommandParsed<PickParams>({
 					.replace(/,+ /g, ' or ')
 					.split(' or ')
 				if (choices.length === 1) return
-				if (choices[0] === '') return
 				return {
 					choices,
 				}
@@ -32,10 +31,7 @@ export const PickCommand = new DBotCommandParsed<PickParams>({
 			},
 		],
 	},
-	execute: ({ params: { choices } }) => {
-		console.log(choices)
-		return choices[random.int(choices.length)]
-	},
+	execute: ({ params: { choices } }) => choices[random.int(choices.length - 1)],
 	commandOptions: {
 		argsRequired: true,
 		description: 'Pick a random item',
