@@ -50,9 +50,8 @@ export class DBotCommandSimple extends DBotCommand {
 	}
 }
 
-interface DBotCommandParsedOptions<
-	T extends Record<string, number | string | undefined>
-> extends DBotCommandOptions {
+interface DBotCommandParsedOptions<T extends Record<string, unknown>>
+	extends DBotCommandOptions {
 	processor: {
 		parsers: { (params: string[]): T | void }[]
 		validator: t.Type<T>
@@ -64,7 +63,7 @@ interface DBotCommandParsedOptions<
 }
 
 export class DBotCommandParsed<
-	T extends Record<string, number | string | undefined>
+	T extends Record<string, unknown>
 > extends DBotCommand {
 	private readonly processor
 	readonly execute

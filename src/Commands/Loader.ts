@@ -14,7 +14,7 @@ export async function LoadCommands(): Promise<void> {
 				command[commandName + 'Command'].register(Discord.bot)
 				loaded++
 			} catch (e) {
-				console.log(e)
+				console.error(e)
 			}
 		}
 		console.log('Loaded', loaded, 'commands!')
