@@ -7,13 +7,11 @@ export async function LoadCommands(): Promise<void> {
 		let loaded = 0
 		for (const match of matches) {
 			try {
-				const command = await import(
-					match.replace('src/Commands', '.').replace('.ts', '')
-				)
 				const [, commandName] = match.match(
-					/^src\/Commands\/\w+\/(\w+Command)\.ts$/
+					/^src\/Commands\/\w+\/(\w+)Command\.ts$/
 				) as string[]
-				command[commandName].register(Discord.bot)
+				const command = await import(`./${commandName}/${commandName}Command`)
+				command[commandName + 'Command'].register(Discord.bot)
 				loaded++
 			} catch (e) {
 				console.log(e)
