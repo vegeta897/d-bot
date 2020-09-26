@@ -1,6 +1,7 @@
-import { PickCommand } from '@src/Commands/Pick/PickCommand'
+import { PickCommand, PickParser } from '@src/Commands/Pick/PickCommand'
 
-const { parse, execute } = PickCommand
+const { execute } = PickCommand
+const { parse } = PickParser
 
 const choices = ['1', '2', '3']
 describe('pick command parsing', () => {
@@ -20,6 +21,6 @@ describe('pick command parsing', () => {
 
 describe('pick command execution', () => {
 	it('returns one of the choices', () => {
-		expect(choices).toContain(execute({ params: { choices } }))
+		expect(choices).toContain(execute({ params: choices }))
 	})
 })

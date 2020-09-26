@@ -1,5 +1,6 @@
 import { Roll } from './Roll'
-import { DBotCommandParsed } from '../Command'
+import { DBotCommand } from '../Command'
+import { Parser } from '../Parser'
 import * as t from 'io-ts'
 import { CreateResultList } from '../Common/ResultList'
 
@@ -10,37 +11,39 @@ const RollParamsV = t.type({
 
 type RollParams = t.TypeOf<typeof RollParamsV>
 
-export const RollCommand = new DBotCommandParsed<RollParams>({
+export const RollParser = new Parser<RollParams>({
+	validator: RollParamsV,
+	parsers: [
+		([xDy]) => {
+			// roll 2d6
+			if (!/\d+d\d+/i.test(xDy)) return
+			const [diceCount, diceSides] = xDy
+				.toLowerCase()
+				.split('d')
+				.map((n) => +n)
+			return { diceCount, diceSides }
+		},
+		([x, yOrDelimiter, y2]) => {
+			// roll 2 6
+			// roll 2 d 6
+			const diceCount = +x
+			const diceSides = +yOrDelimiter || +y2
+			if (isNaN(diceCount) || isNaN(diceSides)) return
+			return { diceCount, diceSides }
+		},
+		([x]) => {
+			// roll 6
+			const diceSides = +x
+			if (isNaN(diceSides)) return
+			return { diceCount: 1, diceSides }
+		},
+	],
+})
+
+export const RollCommand = new DBotCommand({
 	label: 'roll',
-	processor: {
-		validator: RollParamsV,
-		parsers: [
-			([xDy]) => {
-				// roll 2d6
-				if (!/\d+d\d+/i.test(xDy)) return
-				const [diceCount, diceSides] = xDy
-					.toLowerCase()
-					.split('d')
-					.map((n) => +n)
-				return { diceCount, diceSides }
-			},
-			([x, yOrDelimiter, y2]) => {
-				// roll 2 6
-				// roll 2 d 6
-				const diceCount = +x
-				const diceSides = +yOrDelimiter || +y2
-				if (isNaN(diceCount) || isNaN(diceSides)) return
-				return { diceCount, diceSides }
-			},
-			([x]) => {
-				// roll 6
-				const diceSides = +x
-				if (isNaN(diceSides)) return
-				return { diceCount: 1, diceSides }
-			},
-		],
-	},
-	execute: ({ params: { diceCount, diceSides } }) => {
+	execute: ({ params }) => {
+		const { diceCount, diceSides } = RollParser.parse(params)
 		if (diceSides < 2) throw 'Number of sides must be at least 2'
 		if (diceSides > 0x7fffffff) throw 'Number of sides must be a 32-bit integer'
 		if (diceCount < 1) throw 'Number of dice must be at least 1'

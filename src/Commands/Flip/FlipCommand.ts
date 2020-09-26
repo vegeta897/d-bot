@@ -1,8 +1,8 @@
-import { DBotCommandSimple } from '../Command'
+import { DBotCommand } from '../Command'
 import { CreateResultList } from '../Common/ResultList'
 import random from 'random'
 
-export const FlipCommand = new DBotCommandSimple({
+export const FlipCommand = new DBotCommand({
 	label: 'flip',
 	execute: ({ params }) => {
 		let flips = 1

@@ -1,6 +1,7 @@
-import { RollCommand } from '@src/Commands/Roll/RollCommand'
+import { RollCommand, RollParser } from '@src/Commands/Roll/RollCommand'
 
-const { parse, execute } = RollCommand
+const { execute } = RollCommand
+const { parse } = RollParser
 
 const diceCount = 2
 const diceSides = 6
@@ -39,7 +40,7 @@ describe('roll command execution', () => {
 	function createExecute(diceCountInput: number, diceSidesInput: number) {
 		return () =>
 			execute({
-				params: { diceCount: diceCountInput, diceSides: diceSidesInput },
+				params: [diceCountInput.toString(), diceSidesInput.toString()],
 			})
 	}
 	const singleDice = createExecute(1, diceSides)() as string

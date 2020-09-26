@@ -1,6 +1,6 @@
-import { DBotCommandSimple } from '../Command'
+import { DBotCommand } from '../Command'
 
-export const PingCommand = new DBotCommandSimple({
+export const PingCommand = new DBotCommand({
 	label: 'ping',
 	execute: () => 'Pong!',
 	commandOptions: {

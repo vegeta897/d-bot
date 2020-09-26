@@ -1,4 +1,5 @@
-import { DBotCommandParsed } from '../Command'
+import { DBotCommand } from '../Command'
+import { Parser } from '../Parser'
 import * as t from 'io-ts'
 import random from 'random'
 
@@ -8,30 +9,32 @@ const PickParamsV = t.type({
 
 type PickParams = t.TypeOf<typeof PickParamsV>
 
-export const PickCommand = new DBotCommandParsed<PickParams>({
+export const PickParser = new Parser<PickParams>({
+	validator: PickParamsV,
+	parsers: [
+		(params) => {
+			// pick 1, 2 or 3
+			const choices = params
+				.join(' ')
+				.replace(/ or /gi, ', ')
+				.replace(/,+ /g, ' or ')
+				.split(' or ')
+			if (choices.length === 1) return
+			return { choices }
+		},
+		(choices) => {
+			// pick 1 2 3
+			return { choices }
+		},
+	],
+})
+
+export const PickCommand = new DBotCommand({
 	label: 'pick',
-	processor: {
-		validator: PickParamsV,
-		parsers: [
-			(params) => {
-				// pick 1, 2 or 3
-				const choices = params
-					.join(' ')
-					.replace(/ or /gi, ', ')
-					.replace(/,+ /g, ' or ')
-					.split(' or ')
-				if (choices.length === 1) return
-				return {
-					choices,
-				}
-			},
-			(choices) => {
-				// pick 1 2 3
-				return { choices }
-			},
-		],
+	execute: ({ params }) => {
+		const { choices } = PickParser.parse(params)
+		return choices[random.int(choices.length - 1)]
 	},
-	execute: ({ params: { choices } }) => choices[random.int(choices.length - 1)],
 	commandOptions: {
 		argsRequired: true,
 		description: 'Pick a random item',
