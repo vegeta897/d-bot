@@ -1,16 +1,12 @@
 import { DBotCommand } from '../Command'
 import { Parser } from '../Parser'
-import * as t from 'io-ts'
+import { object, string, array } from 'superstruct'
 import random from 'random'
 
-const PickParamsV = t.type({
-	choices: t.array(t.string),
-})
-
-type PickParams = t.TypeOf<typeof PickParamsV>
-
-export const PickParser = new Parser<PickParams>({
-	validator: PickParamsV,
+export const PickParser = new Parser({
+	validator: object({
+		choices: array(string()),
+	}),
 	parsers: [
 		(params) => {
 			// pick 1, 2 or 3

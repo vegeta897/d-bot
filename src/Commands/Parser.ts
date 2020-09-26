@@ -1,9 +1,8 @@
-import * as t from 'io-ts'
-import { isRight } from 'fp-ts/Either'
+import { is, Struct } from 'superstruct'
 
 interface ParserOptions<T extends Record<string, unknown>> {
 	parsers: { (params: string[]): T | void }[]
-	validator: t.Type<T>
+	validator: Struct<T>
 }
 
 export class Parser<T extends Record<string, unknown>> {
@@ -17,7 +16,7 @@ export class Parser<T extends Record<string, unknown>> {
 		let parsed
 		for (const parser of this.parsers) {
 			const parseAttempt = parser(params)
-			if (parseAttempt && isRight(this.validator.decode(parseAttempt))) {
+			if (parseAttempt && is(parseAttempt, this.validator)) {
 				parsed = parseAttempt
 				break
 			}

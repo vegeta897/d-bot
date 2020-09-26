@@ -1,18 +1,14 @@
 import { Roll } from './Roll'
 import { DBotCommand } from '../Command'
 import { Parser } from '../Parser'
-import * as t from 'io-ts'
 import { CreateResultList } from '../Common/ResultList'
+import { object, number } from 'superstruct'
 
-const RollParamsV = t.type({
-	diceSides: t.number,
-	diceCount: t.number,
-})
-
-type RollParams = t.TypeOf<typeof RollParamsV>
-
-export const RollParser = new Parser<RollParams>({
-	validator: RollParamsV,
+export const RollParser = new Parser({
+	validator: object({
+		diceSides: number(),
+		diceCount: number(),
+	}),
 	parsers: [
 		([xDy]) => {
 			// roll 2d6

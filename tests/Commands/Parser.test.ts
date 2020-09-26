@@ -1,13 +1,11 @@
 import { Parser } from '@src/Commands/Parser'
-import * as t from 'io-ts'
+import { number, object } from 'superstruct'
 
 describe('parsed command', () => {
-	const ParamsV = t.type({
-		test: t.number,
-	})
-	type Params = t.TypeOf<typeof ParamsV>
-	const parser = new Parser<Params>({
-		validator: ParamsV,
+	const parser = new Parser({
+		validator: object({
+			test: number(),
+		}),
 		parsers: [
 			([test]) => {
 				if (test === 'a') return

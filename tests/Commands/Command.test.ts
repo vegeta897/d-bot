@@ -3,22 +3,33 @@ import { DBotCommand } from '@src/Commands/Command'
 
 const client = new CommandClient('')
 
-describe('simple command', () => {
-	const commandSimple = new DBotCommand({
+describe('command', () => {
+	const command = new DBotCommand({
 		label: 'command',
 		execute: () => '',
 	})
 	it('registers to client', () => {
-		commandSimple.register(client)
+		command.register(client)
 		expect(client.commands).toHaveProperty('command')
 	})
-	it('returns error', () => {
-		const commandError = new DBotCommand({
+	function createErrorCommand(usage?: string): DBotCommand {
+		return new DBotCommand({
 			label: 'command',
 			execute: () => {
 				throw 'error'
 			},
+			commandOptions: {
+				usage,
+			},
 		})
-		expect(commandError.generator({} as Message, [])).toEqual('error')
+	}
+	it('returns error', () => {
+		expect(createErrorCommand().generator({} as Message, [])).toEqual('error')
+	})
+	it('returns error with usage example', () => {
+		const usage = 'example'
+		expect(createErrorCommand(usage).generator({} as Message, [])).toEqual(
+			`error, try ${usage}`
+		)
 	})
 })
