@@ -36,4 +36,7 @@ export class DBotCommand {
 			this.options
 		)
 	}
+	readonly unregister = (client: CommandClient): void => {
+		if (client.commands[this.label]) client.unregisterCommand(this.label)
+	}
 }

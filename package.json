@@ -4,6 +4,7 @@
 	"description": "A quirky Discord bot made for single, small, private servers",
 	"main": "build/main.js",
 	"dependencies": {
+		"clear-module": "^4.1.1",
 		"eris": "^0.13.3",
 		"glob": "^7.1.6",
 		"random": "^2.2.0",

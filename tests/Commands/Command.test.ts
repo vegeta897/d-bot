@@ -12,6 +12,11 @@ describe('command', () => {
 		command.register(client)
 		expect(client.commands).toHaveProperty('command')
 	})
+	it('unregisters from client', () => {
+		command.unregister(client)
+		expect(client.commands).not.toHaveProperty('command')
+		command.unregister(client) // Test unregister when already unregistered
+	})
 	function createErrorCommand(usage?: string): DBotCommand {
 		return new DBotCommand({
 			label: 'command',
