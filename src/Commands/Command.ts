@@ -19,7 +19,7 @@ export class DBotCommand {
 	readonly execute
 	constructor({ execute, label, commandOptions }: DBotCommandOptions) {
 		this.label = label
-		this.options = { caseInsensitive: true, ...commandOptions }
+		this.options = { ...commandOptions }
 		this.execute = execute
 	}
 	readonly generator: CommandGeneratorFunction = (message, params) => {

@@ -1,5 +1,6 @@
 import { CommandClient, User } from 'eris'
 import { DISCORD_TOKEN } from '../config'
+import { Intents } from './Intents'
 
 export class Discord {
 	private static clientInstance: CommandClient
@@ -7,10 +8,11 @@ export class Discord {
 		if (!this.clientInstance) {
 			this.clientInstance = new CommandClient(
 				DISCORD_TOKEN,
-				{},
+				{ intents: Intents },
 				{
 					prefix: ']',
 					owner: 'vegeta897#7777',
+					defaultCommandOptions: { caseInsensitive: true },
 				}
 			)
 		}
