@@ -29,16 +29,17 @@ export async function LoadCommands(): Promise<void> {
 async function ReloadCommand(moduleName: string): Promise<string> {
 	moduleName = moduleName.charAt(0).toUpperCase() + moduleName.slice(1)
 	try {
-		clearModule(`./${moduleName}/${moduleName}Command`)
-		await loadCommandModule(moduleName)
-		return `Successfully reloaded \`${moduleName}\``
+		// TODO: Add support for command unload methods to handle clearing additional modules and other cleanup tasks
+		clearModule.single(`./${moduleName}/${moduleName}Command`)
+		const loaded = await loadCommandModule(moduleName)
+		if (loaded > 0) return `Successfully reloaded \`${moduleName}\``
 	} catch (err) {
 		console.error(err)
 		if (err.message.startsWith('Cannot find module')) {
 			return `Unknown module \`${moduleName}\``
 		}
-		return `Failed to reload \`${moduleName}\``
 	}
+	return `Failed to reload \`${moduleName}\``
 }
 
 async function loadCommandModule(moduleName: string): Promise<number> {
