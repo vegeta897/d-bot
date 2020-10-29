@@ -12,7 +12,7 @@ export async function LoadCommands(): Promise<void> {
 				const [, moduleName] = match.match(
 					/^src\/Commands\/\w+\/(\w+)Command\.ts$/
 				) as string[]
-				loaded = await loadCommandModule(moduleName)
+				loaded += await loadCommandModule(moduleName)
 			} catch (e) {
 				console.error(e)
 			}
