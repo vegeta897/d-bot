@@ -9,7 +9,7 @@
 		"glob": "^7.1.6",
 		"random": "^2.2.0",
 		"remove-markdown": "^0.3.0",
-		"superstruct": "^0.10.12"
+		"superstruct": "^0.12.1"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.3",
