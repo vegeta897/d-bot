@@ -43,8 +43,8 @@ export function CreateResultList(
 	for (const [i, result] of results.entries()) {
 		// Building one-line list in case multi-line exceeds line length
 		oneLineList += (i > 0 ? delimiter : '') + result
-		const resultLength =
-			(removeMarkdown ? RemoveMD(result) : result).length + delimiter.length
+		let resultLength = (removeMarkdown ? RemoveMD(result) : result).length
+		resultLength += delimiter.length
 		oneLineLength += resultLength
 		const remaining = results.length - i
 		if (oneLineLength > maxLines * MAX_LINE_WIDTH && remaining > 1) {
