@@ -1,4 +1,5 @@
 import { RollCommand, RollParser } from '@src/Commands/Roll/RollCommand'
+import { Message } from 'eris'
 
 const { execute } = RollCommand
 const { parse } = RollParser
@@ -41,6 +42,7 @@ describe('roll command execution', () => {
 		return () =>
 			execute({
 				params: [diceCountInput.toString(), diceSidesInput.toString()],
+				message: {} as Message,
 			})
 	}
 	const singleDice = createExecute(1, diceSides)() as string

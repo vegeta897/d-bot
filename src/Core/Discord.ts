@@ -1,5 +1,15 @@
-import { CommandClient, User } from 'eris'
-import { DISCORD_TOKEN } from '../config'
+/* istanbul ignore file */
+import {
+	CommandClient,
+	Guild,
+	Message,
+	MessageContent,
+	MessageFile,
+	PrivateChannel,
+	TextChannel,
+	User,
+} from 'eris'
+import { DISCORD_TOKEN, DEFAULT_BOT_CHANNEL_ID } from '../config'
 import { Intents } from './Intents'
 
 export class Discord {
@@ -37,6 +47,23 @@ export class Discord {
 			if (foundMember) return this.bot.users.get(foundMember.id)
 		}
 		return undefined
+	}
+	static getDefaultChannel(guild: Guild): TextChannel {
+		const defaultBotChannel = guild.channels.get(DEFAULT_BOT_CHANNEL_ID)
+		if (defaultBotChannel instanceof TextChannel) return defaultBotChannel
+		const mainChannel = guild.channels.get(guild.id)
+		if (mainChannel instanceof TextChannel) return mainChannel
+		const anyChannel = guild.channels.filter((c) => c instanceof TextChannel)[0]
+		if (anyChannel instanceof TextChannel) return anyChannel
+		throw `Could not find a default channel in guild ${guild.id}`
+	}
+	// Unify Promise return of TextChannel and PrivateChannel
+	static sendMessage(
+		channel: TextChannel | PrivateChannel,
+		content: MessageContent,
+		file?: MessageFile | MessageFile[]
+	): Promise<Message> {
+		return channel.createMessage(content, file)
 	}
 }
 

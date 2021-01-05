@@ -1,4 +1,6 @@
+/* istanbul ignore file */
 import * as fse from 'fs-extra'
+import deepCopy from 'deepcopy'
 
 interface IJSONFileOptions<T> {
 	initData: T
@@ -45,7 +47,7 @@ export class JSONFile<T extends Record<K, T[K]>, K extends keyof T & string> {
 			this.save()
 		}
 	}
-	save(): void {
+	private save(): void {
 		if (this.saving) return
 		this.saving = true
 		// Prevent redundant save calls with setTimeout
@@ -71,7 +73,7 @@ export class JSONFile<T extends Record<K, T[K]>, K extends keyof T & string> {
 		}, 0)
 	}
 	get(key: K): T[K] {
-		return this.data.get(key) as T[K]
+		return deepCopy(this.data.get(key)) as T[K]
 	}
 	set(key: K, value: T[K]): T[K] {
 		this.data.set(key, value)

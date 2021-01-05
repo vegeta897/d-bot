@@ -8,7 +8,7 @@ interface DBotCommandOptions {
 	label: string
 	commandOptions?: CommandOptions
 	execute: (executeParams: {
-		message?: Parameters<CommandGeneratorFunction>[0]
+		message: Parameters<CommandGeneratorFunction>[0]
 		params: string[]
 	}) => ReturnType<CommandGeneratorFunction>
 }

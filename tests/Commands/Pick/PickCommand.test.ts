@@ -1,4 +1,5 @@
 import { PickCommand, PickParser } from '@src/Commands/Pick/PickCommand'
+import { Message } from 'eris'
 
 const { execute } = PickCommand
 const { parse } = PickParser
@@ -17,10 +18,15 @@ describe('pick command parsing', () => {
 	it('parses space delimited choices', () => {
 		expect(parse(choices).choices).toStrictEqual(choices)
 	})
+	it('throws with invalid parameters', () => {
+		expect(() => parse(['1'])).toThrow('Invalid parameters')
+	})
 })
 
 describe('pick command execution', () => {
 	it('returns one of the choices', () => {
-		expect(choices).toContain(execute({ params: choices }))
+		expect(choices).toContain(
+			execute({ params: choices, message: {} as Message })
+		)
 	})
 })

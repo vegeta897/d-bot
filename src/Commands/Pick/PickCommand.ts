@@ -20,6 +20,7 @@ export const PickParser = new Parser({
 		},
 		(choices) => {
 			// pick 1 2 3
+			if (choices.length === 1) return
 			return { choices }
 		},
 	],
