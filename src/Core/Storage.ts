@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 import * as fse from 'fs-extra'
 import deepCopy from 'deepcopy'
 

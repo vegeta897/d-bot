@@ -2,9 +2,14 @@ import { RemindParser, RemindCommand } from '@src/Commands/Remind/RemindCommand'
 import Reminder from '@src/Commands/Remind/Reminder'
 import { Message } from 'eris'
 import { mocked } from 'ts-jest/utils'
-jest.mock('@src/Commands/Remind/Reminder')
 
-beforeEach(() => mocked(Reminder).mockClear())
+jest.mock('@src/Commands/Remind/Reminder', () => {
+	return jest.fn().mockImplementation(() => {
+		return {
+			getHumanDuration: () => 'duration',
+		}
+	})
+})
 
 const { parse } = RemindParser
 const { execute } = RemindCommand
@@ -48,10 +53,12 @@ describe('remind command parsing', () => {
 
 describe('remind command execution', () => {
 	it('creates a Reminder instance', () => {
+		const MockedReminder = mocked(Reminder)
+		beforeEach(() => MockedReminder.mockClear())
 		execute({
 			params: ['1s', 'a'],
 			message: { author: { id: '123' }, channel: { id: '123' } } as Message,
 		})
-		expect(mocked(Reminder)).toHaveBeenCalledTimes(1)
+		expect(MockedReminder).toHaveBeenCalledTimes(1)
 	})
 })

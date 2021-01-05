@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 import hash from 'object-hash'
 import { JSONFile } from '../../Core/Storage'
 import { Discord } from '../../Core/Discord'
