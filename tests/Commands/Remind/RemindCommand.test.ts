@@ -3,13 +3,7 @@ import Reminder from '@src/Commands/Remind/Reminder'
 import { Message } from 'eris'
 import { mocked } from 'ts-jest/utils'
 
-jest.mock('@src/Commands/Remind/Reminder', () => {
-	return jest.fn().mockImplementation(() => {
-		return {
-			getHumanDuration: () => 'duration',
-		}
-	})
-})
+jest.mock('@src/Commands/Remind/Reminder')
 
 const { parse } = RemindParser
 const { execute } = RemindCommand

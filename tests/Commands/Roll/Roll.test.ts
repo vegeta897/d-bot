@@ -7,7 +7,7 @@ describe('roll', () => {
 		expect(result).toHaveLength(numDice)
 	})
 	it('totals within bounds', () => {
-		const diceCount = 100
+		const diceCount = 1000
 		const diceSides = 20
 		const minimumTotal = diceCount
 		const maximumTotal = diceCount * diceSides
