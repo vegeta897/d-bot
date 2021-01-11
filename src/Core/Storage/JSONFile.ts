@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import * as fse from 'fs-extra'
 import deepCopy from 'deepcopy'
 
@@ -15,7 +16,7 @@ const JSON_FILE_DEFAULTS = {
 const PATH = 'storage/' as const
 fse.ensureDirSync(PATH)
 
-export class JSONFile<T extends Record<K, T[K]>, K extends keyof T & string> {
+export default class JSONFile<T extends Record<K, T[K]>, K extends keyof T & string> {
 	private readonly data: Map<K, T[K]>
 	private readonly spaces: number | string
 	private readonly EOL: string

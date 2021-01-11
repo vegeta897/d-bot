@@ -1,6 +1,6 @@
 import hash from 'object-hash'
-import { JSONFile } from '../../Core/Storage'
-import { Discord } from '../../Core/Discord'
+import JSONFile from '../../Core/Storage/JSONFile'
+import Discord from '../../Core/Discord'
 import schedule from 'node-schedule'
 import { Guild, TextChannel } from 'eris'
 import dayjs from 'dayjs'

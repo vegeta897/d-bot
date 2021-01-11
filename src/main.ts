@@ -1,4 +1,4 @@
-import { Discord } from './Core/Discord'
+import Discord from './Core/Discord'
 import { LoadCommands } from './Commands/Loader'
 
 async function init(): Promise<void> {

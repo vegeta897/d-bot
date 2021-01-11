@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import {
 	CommandClient,
 	Guild,
@@ -11,8 +12,9 @@ import {
 import { DISCORD_TOKEN, DEFAULT_BOT_CHANNEL_ID } from '../config'
 import { Intents } from './Intents'
 
-export class Discord {
+export default class Discord {
 	private static clientInstance: CommandClient
+
 	static get bot(): CommandClient {
 		if (!this.clientInstance) {
 			this.clientInstance = new CommandClient(
@@ -27,6 +29,7 @@ export class Discord {
 		}
 		return this.clientInstance
 	}
+
 	static findUserByName(
 		name: string,
 		{
@@ -47,6 +50,7 @@ export class Discord {
 		}
 		return undefined
 	}
+
 	static getDefaultChannel(guild: Guild): TextChannel {
 		const defaultBotChannel = guild.channels.get(DEFAULT_BOT_CHANNEL_ID)
 		if (defaultBotChannel instanceof TextChannel) return defaultBotChannel
@@ -56,6 +60,7 @@ export class Discord {
 		if (anyChannel instanceof TextChannel) return anyChannel
 		throw `Could not find a default channel in guild ${guild.id}`
 	}
+
 	// Unify Promise return of TextChannel and PrivateChannel
 	static sendMessage(
 		channel: TextChannel | PrivateChannel,
@@ -63,6 +68,10 @@ export class Discord {
 		file?: MessageFile | MessageFile[]
 	): Promise<Message> {
 		return channel.createMessage(content, file)
+	}
+
+	static stripCommand(messageContent: string): string {
+		return messageContent.substring(messageContent.indexOf(' ') + 1)
 	}
 }
 

@@ -1,23 +1,27 @@
 import glob from 'glob'
-import { Discord } from '../Core/Discord'
+import Discord from '../Core/Discord'
 import { DBotCommand } from './Command'
 import clearModule from 'clear-module'
 
 export async function LoadCommands(): Promise<void> {
 	glob('*/Commands/*/*Command.ts', async (err, matches) => {
 		if (err) console.error(err)
-		let loaded = 0
+		const loadedCommands = []
 		for (const match of matches) {
 			try {
 				const [, moduleName] = match.match(
 					/^src\/Commands\/\w+\/(\w+)Command\.ts$/
 				) as string[]
-				loaded += await loadCommandModule(moduleName)
+				loadedCommands.push(...(await loadCommandModule(moduleName)))
 			} catch (e) {
 				console.error(e)
 			}
 		}
-		console.log('Loaded', loaded, 'commands!')
+		loadedCommands.forEach((command) => {
+			command.register(Discord.bot)
+			if (command.init) command.init()
+		})
+		console.log('Loaded', loadedCommands.length, 'commands!')
 	})
 	Discord.bot.registerCommand(
 		'reload',
@@ -29,10 +33,20 @@ export async function LoadCommands(): Promise<void> {
 async function ReloadCommand(moduleName: string): Promise<string> {
 	moduleName = moduleName.charAt(0).toUpperCase() + moduleName.slice(1)
 	try {
-		// TODO: Add support for command unload methods to handle clearing additional modules and other cleanup tasks
+		const commands = await loadCommandModule(moduleName)
+		commands.forEach((command) => {
+			if (command.terminate) command.terminate()
+			command.unregister(Discord.bot)
+		})
 		clearModule.single(`./${moduleName}/${moduleName}Command`)
-		const loaded = await loadCommandModule(moduleName)
-		if (loaded > 0) return `Successfully reloaded \`${moduleName}\``
+		const reloadedCommands = await loadCommandModule(moduleName)
+		if (reloadedCommands.length > 0) {
+			reloadedCommands.forEach((command) => {
+				command.register(Discord.bot)
+				if (command.init) command.init()
+			})
+			return `Successfully reloaded \`${moduleName}\``
+		}
 	} catch (err) {
 		console.error(err)
 		if (err.message.startsWith('Cannot find module')) {
@@ -42,16 +56,12 @@ async function ReloadCommand(moduleName: string): Promise<string> {
 	return `Failed to reload \`${moduleName}\``
 }
 
-async function loadCommandModule(moduleName: string): Promise<number> {
-	let loaded = 0
+async function loadCommandModule(moduleName: string): Promise<DBotCommand[]> {
+	const loadedCommands = []
 	const commandModule = await import(`./${moduleName}/${moduleName}Command`)
 	for (const exportName of Object.keys(commandModule)) {
 		const command = commandModule[exportName]
-		if (command instanceof DBotCommand) {
-			command.unregister(Discord.bot)
-			command.register(Discord.bot)
-			loaded++
-		}
+		if (command instanceof DBotCommand) loadedCommands.push(command)
 	}
-	return loaded
+	return loadedCommands
 }

@@ -7,6 +7,8 @@ import type {
 interface DBotCommandOptions {
 	label: string
 	commandOptions?: CommandOptions
+	init?: () => void
+	terminate?: () => void
 	execute: (executeParams: {
 		message: Parameters<CommandGeneratorFunction>[0]
 		params: string[]
@@ -16,11 +18,21 @@ interface DBotCommandOptions {
 export class DBotCommand {
 	private readonly label
 	private readonly options: CommandOptions
+	readonly init
 	readonly execute
-	constructor({ execute, label, commandOptions }: DBotCommandOptions) {
+	readonly terminate
+	constructor({
+		init,
+		terminate,
+		execute,
+		label,
+		commandOptions,
+	}: DBotCommandOptions) {
+		this.init = init
+		this.execute = execute
+		this.terminate = terminate
 		this.label = label
 		this.options = { ...commandOptions }
-		this.execute = execute
 	}
 	readonly generator: CommandGeneratorFunction = (message, params) => {
 		try {
