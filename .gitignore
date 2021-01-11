@@ -41,7 +41,7 @@ org.eclipse.*
 # Custom
 build
 debug/*.json
-storage
+./storage
 src/config.ts
 addons/helpers/comic/dev-log
 addons/helpers/comic/fonts
