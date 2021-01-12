@@ -1,8 +1,10 @@
 import { RollCommand, RollParser } from '@src/Commands/Roll/RollCommand'
 import { Message } from 'eris'
 
-const { execute } = RollCommand
+const { execute, terminate } = RollCommand
 const { parse } = RollParser
+
+if (terminate) terminate() // For coverage
 
 const diceCount = 2
 const diceSides = 6

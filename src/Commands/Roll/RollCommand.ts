@@ -3,6 +3,7 @@ import { DBotCommand } from '../Command'
 import { Parser } from '../Parser'
 import { CreateResultList } from '../Common/ResultList'
 import { object, number } from 'superstruct'
+import clearModule from 'clear-module'
 
 export const RollParser = new Parser({
 	validator: object({
@@ -63,6 +64,9 @@ export const RollCommand = new DBotCommand({
 			message.push(`Total: **${rolls.reduce((p, c) => p + c)}**`)
 		}
 		return message.join('\n')
+	},
+	terminate: () => {
+		clearModule.single('./Roll')
 	},
 	commandOptions: {
 		argsRequired: true,

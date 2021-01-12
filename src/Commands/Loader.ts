@@ -19,7 +19,7 @@ export async function LoadCommands(): Promise<void> {
 		}
 		loadedCommands.forEach((command) => {
 			command.register(Discord.bot)
-			if (command.init) command.init()
+			if (command.init) command.init(onReady)
 		})
 		console.log('Loaded', loadedCommands.length, 'commands!')
 	})
@@ -43,7 +43,7 @@ async function ReloadCommand(moduleName: string): Promise<string> {
 		if (reloadedCommands.length > 0) {
 			reloadedCommands.forEach((command) => {
 				command.register(Discord.bot)
-				if (command.init) command.init()
+				if (command.init) command.init(onReady)
 			})
 			return `Successfully reloaded \`${moduleName}\``
 		}
@@ -64,4 +64,9 @@ async function loadCommandModule(moduleName: string): Promise<DBotCommand[]> {
 		if (command instanceof DBotCommand) loadedCommands.push(command)
 	}
 	return loadedCommands
+}
+
+function onReady(fn: () => void) {
+	if (Discord.ready) fn()
+	else Discord.bot.on('ready', () => fn())
 }

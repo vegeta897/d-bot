@@ -6,7 +6,10 @@ import { mocked } from 'ts-jest/utils'
 jest.mock('@src/Commands/Remind/Reminder')
 
 const { parse } = RemindParser
-const { execute } = RemindCommand
+const { execute, init, terminate } = RemindCommand
+
+if (init) init((fn) => fn()) // For coverage
+if (terminate) terminate()
 
 describe('remind command parsing', () => {
 	it('parses single units of time', () => {

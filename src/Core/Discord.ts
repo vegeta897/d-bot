@@ -73,7 +73,15 @@ export default class Discord {
 	static stripCommand(messageContent: string): string {
 		return messageContent.substring(messageContent.indexOf(' ') + 1)
 	}
+
+	static get ready(): boolean {
+		return ready
+	}
 }
+
+let ready = false
+Discord.bot.on('ready', () => (ready = true))
+Discord.bot.on('disconnect', () => (ready = false))
 
 function compareStrings(a: string, b: string, matchCase: boolean): boolean {
 	if (matchCase) return a === b

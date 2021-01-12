@@ -7,7 +7,7 @@ import type {
 interface DBotCommandOptions {
 	label: string
 	commandOptions?: CommandOptions
-	init?: () => void
+	init?: (onReady: (fn: () => void) => void) => void
 	terminate?: () => void
 	execute: (executeParams: {
 		message: Parameters<CommandGeneratorFunction>[0]

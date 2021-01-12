@@ -2,7 +2,8 @@ import { DBotCommand } from '../Command'
 import { number, object, string } from 'superstruct'
 import { Parser } from '../Parser'
 import timestring from 'timestring'
-import Reminder from './Reminder'
+import Reminder, { initReminders, terminateReminders } from './Reminder'
+import clearModule from 'clear-module'
 
 export const RemindParser = new Parser({
 	validator: object({
@@ -30,6 +31,9 @@ export const RemindParser = new Parser({
 
 export const RemindCommand = new DBotCommand({
 	label: 'remind',
+	init: (onReady) => {
+		onReady(() => initReminders())
+	},
 	execute: ({ params, message }) => {
 		const { time, text } = RemindParser.parse(params)
 		const reminder = new Reminder({
@@ -39,6 +43,10 @@ export const RemindCommand = new DBotCommand({
 			channel: message.channel.id,
 		})
 		return `✅ Reminder set for: ${reminder.getHumanDuration()}`
+	},
+	terminate: () => {
+		terminateReminders()
+		clearModule.single('./Reminder')
 	},
 	commandOptions: {
 		argsRequired: true,

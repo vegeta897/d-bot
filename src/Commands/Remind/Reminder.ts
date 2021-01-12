@@ -1,7 +1,7 @@
 import hash from 'object-hash'
 import JSONFile from '../../Core/Storage/JSONFile'
 import Discord from '../../Core/Discord'
-import schedule from 'node-schedule'
+import schedule, { Job } from 'node-schedule'
 import { Guild, TextChannel } from 'eris'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
@@ -21,10 +21,6 @@ interface IReminder {
 const initData: { reminders: IReminder[] } = { reminders: [] }
 const reminderData = new JSONFile('reminders', { initData })
 
-Discord.bot.on('ready', () => {
-	reminderData.get('reminders').forEach((r) => new Reminder(r))
-})
-
 export default class Reminder implements IReminder {
 	time
 	text
@@ -41,9 +37,11 @@ export default class Reminder implements IReminder {
 		this.save()
 		if (Date.now() >= this.time) sendReminder(this).catch(console.error)
 		else
-			schedule.scheduleJob(new Date(this.time), async () => {
-				sendReminder(this).catch(console.error)
-			})
+			reminderJobs.push(
+				schedule.scheduleJob(new Date(this.time), async () => {
+					sendReminder(this).catch(console.error)
+				})
+			)
 	}
 
 	getHumanDuration(): string {
@@ -112,4 +110,15 @@ async function sendReminder(reminder: Reminder): Promise<void> {
 	Discord.sendMessage(channel, message)
 		.then(() => reminder.delete())
 		.catch(() => reminder.update({ sendFailed: true }))
+}
+
+const reminderJobs: Job[] = []
+
+export function initReminders(): void {
+	terminateReminders()
+	reminderData.get('reminders').forEach((r) => new Reminder(r))
+}
+
+export function terminateReminders(): void {
+	reminderJobs.forEach((job) => job.cancel())
 }
