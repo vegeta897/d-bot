@@ -8,20 +8,21 @@ interface IJSONFileOptions<T> {
 	EOL?: string
 }
 
-const JSON_FILE_DEFAULTS = {
-	spaces: '\t',
-	EOL: '\n',
-} as const
+const JSON_FILE_DEFAULTS = { spaces: '\t', EOL: '\n' } as const
 
 const PATH = 'storage/' as const
 fse.ensureDirSync(PATH)
 
-export default class JSONFile<T extends Record<K, T[K]>, K extends keyof T & string> {
-	private readonly data: Map<K, T[K]>
+type primitiveTypes = string | number | boolean | unknown[]
+type StorageTypes = primitiveTypes | Map<string, primitiveTypes>
+
+export default class JSONFile<T extends Record<string, StorageTypes>> {
+	private readonly data: Map<string, StorageTypes> = new Map()
 	private readonly spaces: number | string
 	private readonly EOL: string
 	private readonly path: string
 	private saving = false
+
 	constructor(
 		filename: string,
 		{ initData, spaces, EOL }: IJSONFileOptions<T>
@@ -31,15 +32,27 @@ export default class JSONFile<T extends Record<K, T[K]>, K extends keyof T & str
 		this.EOL = EOL || JSON_FILE_DEFAULTS.EOL
 		const initDataMap = objectToMapShallow(
 			initData || Object.create(null)
-		) as Map<K, T[K]>
+		) as Map<string, StorageTypes>
 		try {
 			const data = fse.readJSONSync(this.path, {
 				encoding: 'utf8',
 			})
-			this.data = new Map([...initDataMap, ...objectToMapShallow(data)]) as Map<
-				K,
-				T[K]
-			>
+			const dataMap = new Map([
+				...initDataMap,
+				...objectToMapShallow(data),
+			]) as Map<string, primitiveTypes | Record<string, primitiveTypes>>
+			dataMap.forEach((dataValue, dataKey) => {
+				const valueIsObject =
+					typeof dataValue === 'object' &&
+					dataValue !== null &&
+					!(dataValue instanceof Array)
+				this.data.set(
+					dataKey,
+					(valueIsObject
+						? objectToMapShallow(dataValue as Record<string, unknown>)
+						: dataValue) as StorageTypes
+				)
+			})
 		} catch (err) {
 			console.log(`Creating new JSON file "${filename}"`)
 			this.data = initDataMap
@@ -47,6 +60,7 @@ export default class JSONFile<T extends Record<K, T[K]>, K extends keyof T & str
 			this.save()
 		}
 	}
+
 	private save(): void {
 		if (this.saving) return
 		this.saving = true
@@ -56,7 +70,10 @@ export default class JSONFile<T extends Record<K, T[K]>, K extends keyof T & str
 				// Write to temporary file
 				await fse.writeJson(
 					this.path + '.tmp',
-					mapToObjectShallow(this.data as Map<string, unknown>),
+					mapToObjectShallow(this.data, (value) => {
+						// Convert any map property values to objects
+						return value instanceof Map ? mapToObjectShallow(value) : value
+					}),
 					{
 						spaces: this.spaces,
 						EOL: this.EOL,
@@ -72,15 +89,21 @@ export default class JSONFile<T extends Record<K, T[K]>, K extends keyof T & str
 			}
 		}, 0)
 	}
-	get(key: K): T[K] {
+
+	get<K extends keyof T & string>(key: K): T[K] {
 		return deepCopy(this.data.get(key)) as T[K]
 	}
-	set(key: K, value: T[K]): T[K] {
+
+	set<K extends keyof T & string>(key: K, value: T[K]): T[K] {
 		this.data.set(key, value)
 		this.save()
 		return value
 	}
-	trans(key: K, transFunction: (data: T[K]) => T[K]): T[K] {
+
+	trans<K extends keyof T & string>(
+		key: K,
+		transFunction: (data: T[K]) => T[K]
+	): T[K] {
 		this.data.set(key, transFunction(this.get(key)))
 		this.save()
 		return this.get(key)
@@ -96,10 +119,11 @@ function objectToMapShallow(
 	return map
 }
 
-function mapToObjectShallow(
-	map: Map<string, unknown>
-): Record<string, unknown> {
+function mapToObjectShallow<T>(
+	map: Map<string, T>,
+	valueTransformFn?: (value: T) => unknown
+): Record<string, T> {
 	const obj = Object.create(null)
-	for (const [k, v] of map) obj[k] = v
+	for (const [k, v] of map) obj[k] = valueTransformFn ? valueTransformFn(v) : v
 	return obj
 }
