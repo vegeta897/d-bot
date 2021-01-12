@@ -42,7 +42,8 @@
 		"start": "npm run build && node .",
 		"test": "npx jest --colors --verbose --coverage --reporters=default",
 		"debug": "node build/main.js debug",
-		"lint": "eslint src/**/*.{js,ts} --quiet --fix"
+		"lint": "eslint src/**/*.{js,ts} --quiet --fix",
+		"format": "prettier --write ."
 	},
 	"private": true,
 	"repository": {

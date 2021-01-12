@@ -39,10 +39,10 @@ org.eclipse.*
 *.exe
 
 # Custom
-build
+/build/
 debug/*.json
-./storage
-src/config.ts
+/storage/
+/src/config.ts
 addons/helpers/comic/dev-log
 addons/helpers/comic/fonts
 
@@ -63,7 +63,7 @@ pids
 lib-cov
 
 # Coverage directory used by tools like istanbul
-coverage
+/coverage/
 
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
