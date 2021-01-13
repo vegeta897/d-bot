@@ -1,7 +1,15 @@
 import { FlipCommand } from '@src/Commands/Flip/FlipCommand'
-import { Message } from 'eris'
+import type { Message } from 'eris'
+import random from 'random'
 
 const { execute } = FlipCommand
+
+let flipResult = 0
+// Ensure both flip outcomes occur, for coverage
+jest.spyOn(random, 'int').mockImplementation(() => {
+	flipResult++
+	return (flipResult %= 2)
+})
 
 describe('flip command execution', () => {
 	function doExecute(params: string[]) {
