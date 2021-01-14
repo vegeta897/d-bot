@@ -13,7 +13,7 @@ const JSON_FILE_DEFAULTS = { spaces: '\t', EOL: '\n' } as const
 const PATH = 'storage/' as const
 fse.ensureDirSync(PATH)
 
-type primitiveTypes = string | number | boolean | unknown[]
+type primitiveTypes = string | number | boolean | null | unknown[]
 type StorageTypes = primitiveTypes | Map<string, primitiveTypes>
 
 export default class JSONFile<T extends Record<string, StorageTypes>> {
@@ -30,35 +30,31 @@ export default class JSONFile<T extends Record<string, StorageTypes>> {
 		this.path = PATH + '/' + filename + '.json'
 		this.spaces = spaces || JSON_FILE_DEFAULTS.spaces
 		this.EOL = EOL || JSON_FILE_DEFAULTS.EOL
-		const initDataMap = objectToMapShallow(
-			initData || Object.create(null)
-		) as Map<string, StorageTypes>
+		objectToMapShallow(initData || Object.create(null)).forEach((value, key) =>
+			this.data.set(key, value as StorageTypes)
+		)
+		let fileData
 		try {
-			const data = fse.readJSONSync(this.path, {
+			fileData = fse.readJSONSync(this.path, {
 				encoding: 'utf8',
-			})
-			const dataMap = new Map([
-				...initDataMap,
-				...objectToMapShallow(data),
-			]) as Map<string, primitiveTypes | Record<string, primitiveTypes>>
-			dataMap.forEach((dataValue, dataKey) => {
-				const valueIsObject =
-					typeof dataValue === 'object' &&
-					dataValue !== null &&
-					!(dataValue instanceof Array)
-				this.data.set(
-					dataKey,
-					(valueIsObject
-						? objectToMapShallow(dataValue as Record<string, unknown>)
-						: dataValue) as StorageTypes
-				)
 			})
 		} catch (err) {
 			console.log(`Creating new JSON file "${filename}"`)
-			this.data = initDataMap
-		} finally {
-			this.save()
 		}
+		if (!fileData) return
+		objectToMapShallow(fileData).forEach((dataValue, dataKey) => {
+			const valueIsObject =
+				typeof dataValue === 'object' &&
+				dataValue !== null &&
+				!(dataValue instanceof Array)
+			this.data.set(
+				dataKey,
+				(valueIsObject
+					? objectToMapShallow(dataValue as Record<string, unknown>)
+					: dataValue) as StorageTypes
+			)
+		})
+		this.save()
 	}
 
 	private save(): void {
@@ -67,18 +63,15 @@ export default class JSONFile<T extends Record<string, StorageTypes>> {
 		// Prevent redundant save calls with setTimeout
 		setTimeout(async () => {
 			try {
+				const jsonData = mapToObjectShallow(this.data, (value) => {
+					// Convert any map property values to objects
+					return value instanceof Map ? mapToObjectShallow(value) : value
+				})
 				// Write to temporary file
-				await fse.writeJson(
-					this.path + '.tmp',
-					mapToObjectShallow(this.data, (value) => {
-						// Convert any map property values to objects
-						return value instanceof Map ? mapToObjectShallow(value) : value
-					}),
-					{
-						spaces: this.spaces,
-						EOL: this.EOL,
-					}
-				)
+				await fse.writeJson(this.path + '.tmp', jsonData, {
+					spaces: this.spaces,
+					EOL: this.EOL,
+				})
 				// Move/rename temporary file into the real one
 				await fse.move(this.path + '.tmp', this.path, {
 					overwrite: true,
