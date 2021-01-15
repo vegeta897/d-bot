@@ -9,8 +9,8 @@ import {
 	TextChannel,
 	User,
 } from 'eris'
-import { DISCORD_TOKEN, DEFAULT_BOT_CHANNEL_ID } from '../config'
 import { Intents } from './Intents'
+import Config, { DISCORD_CLIENT_TOKEN } from '../Config'
 
 export default class Discord {
 	private static clientInstance: CommandClient
@@ -18,7 +18,7 @@ export default class Discord {
 	static get bot(): CommandClient {
 		if (!this.clientInstance) {
 			this.clientInstance = new CommandClient(
-				DISCORD_TOKEN,
+				DISCORD_CLIENT_TOKEN,
 				{ intents: Intents },
 				{
 					prefix: ']',
@@ -52,8 +52,11 @@ export default class Discord {
 	}
 
 	static getDefaultChannel(guild: Guild): TextChannel {
-		const defaultBotChannel = guild.channels.get(DEFAULT_BOT_CHANNEL_ID)
-		if (defaultBotChannel instanceof TextChannel) return defaultBotChannel
+		const { defaultChannelID } = Config.getModuleData('discord')
+		if (defaultChannelID) {
+			const defaultBotChannel = guild.channels.get(defaultChannelID)
+			if (defaultBotChannel instanceof TextChannel) return defaultBotChannel
+		}
 		const mainChannel = guild.channels.get(guild.id)
 		if (mainChannel instanceof TextChannel) return mainChannel
 		const anyChannel = guild.channels.filter((c) => c instanceof TextChannel)[0]

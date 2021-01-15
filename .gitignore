@@ -42,9 +42,12 @@ org.eclipse.*
 /build/
 debug/*.json
 /storage/
-/src/config.ts
 addons/helpers/comic/dev-log
 addons/helpers/comic/fonts
+
+# dotenv environment variables file
+.env
+.env.test
 
 # Visual Studio
 *.sln

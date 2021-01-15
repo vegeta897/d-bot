@@ -10,4 +10,8 @@ module.exports = {
 	moduleNameMapper: {
 		'@src/(.*)': '<rootDir>/src/$1',
 	},
+	coveragePathIgnorePatterns: [
+		'<rootDir>/src/Config/',
+		'<rootDir>/node_modules/',
+	],
 }
