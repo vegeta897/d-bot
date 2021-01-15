@@ -60,13 +60,14 @@ const Config = {
 	getModule<K extends keyof ConfigType>(moduleName: K): IExportProperty {
 		return configProperties[moduleName].export()
 	},
+	getDiscordClientToken(): string {
+		const discordClientToken = process.env.DISCORD_CLIENT_TOKEN
+		assert(discordClientToken, size(string(), 1, 100))
+		return discordClientToken
+	},
 }
 
 export default Config
-
-const discordClientToken = process.env.DISCORD_CLIENT_TOKEN
-assert(discordClientToken, size(string(), 1, 100))
-export const DISCORD_CLIENT_TOKEN = discordClientToken
 
 // function traverse(object: Record<string, unknown>, path: string[]) {
 // 	const final = path.slice(-1)[0]
