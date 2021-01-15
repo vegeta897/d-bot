@@ -1,17 +1,4 @@
-import type { TimeZone } from '../Types/Time'
-
-type TimeZones = Record<string, TimeZone>
-
-interface IDiscordConfig {
-	defaultChannelID: string | null
-}
-interface ITimeConfig {
-	timeZones: TimeZones
-}
-export type ConfigType = {
-	discord: IDiscordConfig
-	time: ITimeConfig
-}
+import { ConfigType } from '../Types/Config'
 
 const InitData: ConfigType = {
 	discord: {

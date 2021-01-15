@@ -1,8 +1,12 @@
 import { TimeCommand } from '@src/Commands/Time/TimeCommand'
 import * as TimeFunctions from '@src/Commands/Time/Time'
 import type { Message } from 'eris'
+import Config from '@src/Config'
+import InitData from '@src/Config/InitData'
 
 const { execute, init } = TimeCommand
+
+jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.time)
 
 if (init) init((fn) => fn()) // For coverage
 

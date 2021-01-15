@@ -7,11 +7,14 @@ import { mocked } from 'ts-jest/utils'
 import JSONFile from '@src/Core/Storage/JSONFile'
 import Discord from '@src/Core/Discord'
 import Config from '@src/Config'
+import InitData from '@src/Config/InitData'
 import type { TextChannel, CommandClient } from 'eris'
 import type { TimeZone } from '@src/Types/Time'
 
 jest.mock('@src/Core/Storage/JSONFile')
 const mockedJSONFile = mocked(JSONFile, true).mock.instances[0]
+
+jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.time)
 
 function mockConfigTimeZones(timeZones: Record<string, TimeZone>) {
 	jest.spyOn(Config, 'getModuleData').mockImplementationOnce(() => ({
@@ -21,9 +24,6 @@ function mockConfigTimeZones(timeZones: Record<string, TimeZone>) {
 
 describe('time zone validation', () => {
 	it('does not throw with at least one valid time zone defined', () => {
-		mockConfigTimeZones({
-			Eastern: 'America/New_York',
-		})
 		expect(() => validateTimeZones()).not.toThrow()
 	})
 	it('throws if no time zones defined', () => {

@@ -60,14 +60,12 @@ export function getTimeZoneUserList({ guild }: TextChannel): string {
 export function assignUserTimeZone(inputName: string, userID: string): string {
 	const TimeZones = Config.getModuleData('time').timeZones
 	const [tzLabel, tzName] =
-		Object.entries(Config.getModuleData('time').timeZones).find(
-			([tzLabel, tzName]) => {
-				return (
-					inputName === tzName.toLowerCase() ||
-					inputName === tzLabel.toLowerCase()
-				)
-			}
-		) || []
+		Object.entries(TimeZones).find(([tzLabel, tzName]) => {
+			return (
+				inputName === tzName.toLowerCase() ||
+				inputName === tzLabel.toLowerCase()
+			)
+		}) || []
 	if (!tzName) {
 		return `Invalid time zone, try one of these:\n> ${Object.keys(
 			TimeZones
