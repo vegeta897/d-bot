@@ -40,6 +40,8 @@ jobs:
 
       - name: Running Tests
         run: npm run test
+        env:
+          DISCORD_CLIENT_TOKEN: token
 
       - name: Posting Coverages
         uses: coverallsapp/github-action@master
