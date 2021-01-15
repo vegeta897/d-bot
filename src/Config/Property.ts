@@ -9,23 +9,35 @@ interface IProperty {
 export interface IExportProperty<T = unknown> extends IProperty {
 	value?: T
 	properties?: IExportProperty[]
+	path: string[]
 }
 
-export abstract class Property {
+export abstract class Property implements IProperty {
 	name: string
 	description?: string
+	parent?: PropertyParent
 	protected constructor({ name, description }: IProperty) {
 		this.name = name
 		this.description = description
 	}
 	abstract validate(): void
-	abstract getValue(): unknown
-	abstract setValue(value: unknown): void
+	abstract get value(): unknown
+	abstract set value(value: unknown)
 	abstract export(): IExportProperty
+	get path(): string[] {
+		const path = [this.name]
+		let currentNode = this.parent
+		if (!currentNode) return path
+		while (currentNode) {
+			path.unshift(currentNode.name)
+			currentNode = currentNode.parent
+		}
+		return path
+	}
 }
 
 export class PropertyValue<T> extends Property {
-	private value: T
+	private _value: T
 	private readonly schema?: Struct<T>
 	constructor({
 		name,
@@ -37,25 +49,22 @@ export class PropertyValue<T> extends Property {
 		value: T
 	}) {
 		super({ name, description })
-		this.value = value
+		this._value = value
 		this.schema = schema
 	}
-	getValue(): T {
-		return deepcopy(this.value)
+	get value(): T {
+		return deepcopy(this._value)
 	}
-	setValue(value: T): void {
+	set value(value: T) {
 		if (this.schema) assert(value, this.schema)
-		this.value = value
+		this._value = value
 	}
 	validate(): void {
 		if (this.schema) assert(this.value, this.schema)
 	}
 	export(): IExportProperty<T> {
-		return {
-			name: this.name,
-			description: this.description,
-			value: this.value,
-		}
+		const { name, description, value, path } = this
+		return { name, description, value, path }
 	}
 }
 
@@ -70,28 +79,28 @@ export class PropertyParent extends Property {
 	}) {
 		super({ name, description })
 		this.properties = properties
+		this.properties.forEach((prop) => (prop.parent = this))
 	}
-	getValue(): Record<string, unknown> {
+	get value(): Record<string, unknown> {
 		const value: Record<string, unknown> = {}
-		this.properties.forEach((prop) => {
-			value[prop.name] = prop.getValue()
-		})
+		this.properties.forEach((prop) => (value[prop.name] = prop.value))
 		return value
 	}
-	setValue(value: Record<string, unknown>): void {
+	set value(value: Record<string, unknown>) {
 		Object.entries(value).forEach(([key, keyValue]) => {
 			const property = this.properties.find((prop) => prop.name === key)
-			if (property) property.setValue(keyValue)
+			if (property) property.value = keyValue
 			else throw `Invalid property ${key} in ${this.name}`
 		})
 	}
 	validate(): void {
 		this.properties.forEach((prop) => prop.validate())
 	}
-	export(): IExportProperty {
+	export(): IExportProperty<never> {
 		return {
 			name: this.name,
 			description: this.description,
+			path: this.path,
 			properties: this.properties.map((prop) => prop.export()),
 		}
 	}

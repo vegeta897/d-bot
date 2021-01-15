@@ -48,14 +48,14 @@ const Config = {
 		configProperties.discord.validate()
 		configProperties.time.validate()
 		Object.values(configProperties).forEach((module) => {
-			module.setValue(configData.get(module.name as keyof ConfigType))
+			module.value = configData.get(module.name as keyof ConfigType)
 		})
 	},
 	getModules(): IExportProperty[] {
 		return Object.values(configProperties).map((module) => module.export())
 	},
 	getModuleData<K extends keyof ConfigType>(moduleName: K): ConfigType[K] {
-		return configProperties[moduleName].getValue() as ConfigType[K]
+		return configProperties[moduleName].value as ConfigType[K]
 	},
 	getModule<K extends keyof ConfigType>(moduleName: K): IExportProperty {
 		return configProperties[moduleName].export()
