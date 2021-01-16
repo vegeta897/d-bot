@@ -17,7 +17,7 @@ const mockedJSONFile = mocked(JSONFile, true).mock.instances[0] as JSONFile<{
 	users: Map<UserID, TimeZoneName>
 }>
 
-jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.time)
+jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.Time)
 
 function mockConfigTimeZones(timeZones: Map<TimeZoneLabel, TimeZoneName>) {
 	jest.spyOn(Config, 'getModuleData').mockImplementationOnce(() => ({

@@ -4,11 +4,12 @@ import type { Message } from 'eris'
 import Config from '@src/Config'
 import InitData from '@src/Config/InitData'
 
-const { execute, init } = TimeCommand
+jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.Time)
 
-jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.time)
+const { execute, init, terminate } = TimeCommand
 
 if (init) init((fn) => fn()) // For coverage
+if (terminate) terminate()
 
 describe('time command execution', () => {
 	it('calls getTimeZoneUserList with no params', () => {
