@@ -6,7 +6,7 @@ export const FlipCommand = new DBotCommand({
 	label: 'flip',
 	execute: ({ params }) => {
 		let flips = 1
-		if (params.length > 0) {
+		if (params[0]) {
 			flips = +params[0]
 			if (isNaN(flips)) flips = 1
 			if (flips < 1) throw 'Number of flips must be at least 1'

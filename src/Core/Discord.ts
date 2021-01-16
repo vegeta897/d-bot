@@ -86,7 +86,7 @@ let ready = false
 Discord.bot.on('ready', () => (ready = true))
 Discord.bot.on('disconnect', () => (ready = false))
 
-function compareStrings(a: string, b: string, matchCase: boolean): boolean {
+function compareStrings(a: string, b: string, matchCase = false): boolean {
 	if (matchCase) return a === b
 	else return a.toLowerCase() === b.toLowerCase()
 }

@@ -35,7 +35,7 @@ export abstract class Property<T = unknown> implements IProperty {
 		return path
 	}
 	get module(): string {
-		return this.path[0]
+		return this.path[0] || this.name
 	}
 }
 
@@ -97,12 +97,12 @@ export class PropertyParent<
 		Object.entries(value).forEach(([key, keyValue]) => {
 			const property = this.properties.find((prop) => prop.name === key)
 			if (property) property.value = keyValue
-			else throw `Invalid property ${key} in ${this.name}`
+			else throw `Unknown property ${key} in ${this.name}`
 		})
 	}
 	getProperty<K extends keyof T>(propName: K): Property<T[K]> {
 		const prop = this.properties.find((prop) => prop.name === propName)
-		if (!prop) throw `Invalid property ${propName} in ${this.name}`
+		if (!prop) throw `Unknown property ${propName} in ${this.name}`
 		return prop as Property<T[K]>
 	}
 	validate(): void {

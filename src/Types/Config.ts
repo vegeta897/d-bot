@@ -1,11 +1,17 @@
-import type { TimeZone } from './Time'
+import type { TimeZoneLabel, TimeZoneName } from './Time'
+import { MapPropertiesKey } from '../Constants/Config'
 
-export type TimeZones = Record<string, TimeZone>
+interface IConfigProp<T> {
+	[MapPropertiesKey]?: (keyof T)[]
+	[index: string]: unknown
+}
 
-export type DiscordConfig = {
+export type TimeZones = Map<TimeZoneLabel, TimeZoneName>
+
+export type DiscordConfig = IConfigProp<TimeConfig> & {
 	defaultChannelID: string | null
 }
-export type TimeConfig = {
+export type TimeConfig = IConfigProp<TimeConfig> & {
 	timeZones: TimeZones
 }
 export type ConfigType = {

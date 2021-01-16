@@ -6,6 +6,7 @@ import { Guild, TextChannel } from 'eris'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import type { ChannelID } from '../../Types/Discord'
 
 dayjs.extend(duration)
 dayjs.extend(relativeTime)
@@ -94,7 +95,7 @@ async function sendReminder(reminder: Reminder): Promise<void> {
 	let channel = Discord.bot.getChannel(reminder.channel)
 	if (!(channel instanceof TextChannel)) {
 		const guild = Discord.bot.guilds.get(
-			Discord.bot.channelGuildMap[reminder.channel]
+			Discord.bot.channelGuildMap[reminder.channel] as ChannelID
 		)
 		if (guild instanceof Guild) {
 			channel = Discord.getDefaultChannel(guild)

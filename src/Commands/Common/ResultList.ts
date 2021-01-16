@@ -87,6 +87,8 @@ export function CalculateResultsPerLine({
 	maxLines: number
 }): number {
 	const [maxResultsPerLine] = resultsPerLineSizes.slice(-1)
+	if (!maxResultsPerLine)
+		throw `Invalid parameter "resultsPerLineSizes" \`${resultsPerLineSizes}\``
 	// Return resultCount if it exceeds line count in highest size
 	if (resultCount / maxResultsPerLine > maxLines) return resultCount
 	resultsPerLineSizes = [...resultsPerLineSizes] // Copy array

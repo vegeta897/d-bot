@@ -5,32 +5,32 @@ import timezone from 'dayjs/plugin/timezone'
 import type { TextChannel } from 'eris'
 import Discord from '../../Core/Discord'
 import Config from '../../Config'
-import type { TimeZone } from '../../Types/Time'
+import type { TimeZoneName } from '../../Types/Time'
+import type { UserID } from '../../Types/Discord'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-const initData: { users: Record<string, TimeZone> } = { users: {} }
+const initData: { users: Map<UserID, TimeZoneName> } = { users: new Map() }
 const tzData = new JSONFile('tz-users', { initData })
 
 export function validateTimeZones(): void {
 	// Validate time zones in config
-	const TimeZones = Config.getModuleData('time').timeZones
-	if (Object.keys(TimeZones).length === 0)
-		throw 'No time zones have been defined in config'
-	Object.values(TimeZones).forEach((tz) => {
+	const { timeZones } = Config.getModuleData('time')
+	if (timeZones.size === 0) throw 'No time zones have been defined in config'
+	timeZones.forEach((timeZoneName) => {
 		try {
-			dayjs.tz(Date.now(), tz)
+			dayjs.tz(Date.now(), timeZoneName)
 		} catch (e) {
-			throw `Invalid time zone name defined in config: ${tz}`
+			throw `Invalid time zone name defined in config: ${timeZoneName}`
 		}
 	})
 }
 
 export function getTimeZoneUserList({ guild }: TextChannel): string {
-	const tzUsers = tzData.getAsMap('users')
+	const tzUsers = tzData.get('users')
 	if (tzUsers.size === 0) throw 'Assign yourself to a time zone'
-	const timeZoneList = Object.entries(Config.getModuleData('time').timeZones)
+	const timeZoneList = [...Config.getModuleData('time').timeZones.entries()]
 		.map(([tzLabel, tzName]) => {
 			const time = dayjs().tz(tzName)
 			return {
@@ -57,26 +57,30 @@ export function getTimeZoneUserList({ guild }: TextChannel): string {
 	)
 }
 
-export function assignUserTimeZone(inputName: string, userID: string): string {
-	const TimeZones = Config.getModuleData('time').timeZones
+export function assignUserTimeZone(inputName: string, userID: UserID): string {
+	const { timeZones } = Config.getModuleData('time')
 	const [tzLabel, tzName] =
-		Object.entries(TimeZones).find(([tzLabel, tzName]) => {
+		[...timeZones.entries()].find(([tzLabel, tzName]) => {
 			return (
 				inputName === tzName.toLowerCase() ||
 				inputName === tzLabel.toLowerCase()
 			)
 		}) || []
 	if (!tzName) {
-		return `Invalid time zone, try one of these:\n> ${Object.keys(
-			TimeZones
-		).join(', ')}`
+		return `Invalid time zone, try one of these:\n> ${[
+			...timeZones.keys(),
+		].join(', ')}`
 	}
-	tzData.transAsMap('users', (users) => {
+	tzData.trans('users', (users) => {
 		// Clean up undefined users and time zones
-		const TimeZoneNames = Object.values<TimeZone>(TimeZones)
+		const TimeZoneNames = [...timeZones.values()]
 		for (const [tzUserID, timeZone] of users) {
-			if (!Discord.bot.users.has(tzUserID) || !TimeZoneNames.includes(timeZone))
+			if (
+				!Discord.bot.users.has(tzUserID) ||
+				!TimeZoneNames.includes(timeZone)
+			) {
 				users.delete(tzUserID)
+			}
 		}
 		users.set(userID, tzName)
 		return users

@@ -78,18 +78,23 @@ describe('CreateResultList function', () => {
 })
 
 describe('CalculateResultsPerLine function', () => {
+	const runCalc = (
+		resultCount: number,
+		resultsPerLineSizes = [1, 4, 10],
+		maxLines = 5
+	): number =>
+		CalculateResultsPerLine({
+			resultCount,
+			resultsPerLineSizes,
+			maxLines,
+		})
 	it('returns the first valid size', () => {
-		const resultsPerLineSizes = [1, 4, 10]
-		const maxLines = 5
-		const runCalc = (resultCount: number): number =>
-			CalculateResultsPerLine({
-				resultCount,
-				resultsPerLineSizes,
-				maxLines,
-			})
 		expect(runCalc(5)).toBe(1)
 		expect(runCalc(20)).toBe(4)
 		expect(runCalc(50)).toBe(10)
 		expect(runCalc(100)).toBe(100)
+	})
+	it('throws with invalid resultsPerLineSizes', () => {
+		expect(() => runCalc(1, [])).toThrow(/Invalid parameter/)
 	})
 })

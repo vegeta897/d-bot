@@ -12,7 +12,7 @@ export async function LoadCommands(): Promise<void> {
 				const [, moduleName] = match.match(
 					/^src\/Commands\/\w+\/(\w+)Command\.ts$/
 				) as string[]
-				loadedCommands.push(...(await loadCommandModule(moduleName)))
+				loadedCommands.push(...(await loadCommandModule(moduleName as string)))
 			} catch (e) {
 				console.error(e)
 			}
@@ -25,7 +25,7 @@ export async function LoadCommands(): Promise<void> {
 	})
 	Discord.bot.registerCommand(
 		'reload',
-		(message, [name]) => ReloadCommand(name),
+		(message, [name]) => ReloadCommand(name as string),
 		{ requirements: { permissions: { administrator: true } } }
 	)
 }

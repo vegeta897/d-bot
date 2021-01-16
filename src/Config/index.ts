@@ -8,9 +8,14 @@ import InitData from './InitData'
 
 let configData: JSONFile<ConfigType>
 
+// TODO: Stop trying to type nested stuff. Just use getModule for normal config property use, and non-type-safe getPath for ConfigCommand and use try catch for errors in retrieval and writing
+
 const Config = {
 	init(): void {
-		configData = new JSONFile('config', { initData: InitData })
+		configData = new JSONFile('config', {
+			initData: InitData,
+			convertAllObjectsToMaps: false,
+		})
 		Object.values(ConfigProperties).forEach((module) => {
 			module.value = configData.get(module.name as keyof ConfigType)
 		})

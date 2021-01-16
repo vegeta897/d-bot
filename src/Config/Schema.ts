@@ -1,8 +1,8 @@
 import { PropertyParent, PropertyValue } from './Property'
-import { nullable, record, refine, string, Struct } from 'superstruct'
+import { nullable, refine, string, Struct, map } from 'superstruct'
 import type { ConfigType, DiscordConfig, TimeConfig } from '../Types/Config'
 import { TimeZoneList } from '../Constants/Time'
-import type { TimeZone } from '../Types/Time'
+import type { TimeZoneName } from '../Types/Time'
 
 const defaultChannelID = new PropertyValue<
 	ConfigType['discord']['defaultChannelID']
@@ -14,11 +14,11 @@ const defaultChannelID = new PropertyValue<
 const timeZones = new PropertyValue<ConfigType['time']['timeZones']>({
 	name: 'timeZones',
 	description: '',
-	schema: record(
+	schema: map(
 		string(),
 		refine(string(), 'TimeZone', (value) =>
-			TimeZoneList.includes(value as TimeZone)
-		) as Struct<TimeZone>
+			TimeZoneList.includes(value as TimeZoneName)
+		) as Struct<TimeZoneName>
 	),
 })
 
