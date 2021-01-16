@@ -6,6 +6,7 @@ import {
 	getTimeZoneUserList,
 	validateTimeZones,
 } from './Time'
+import clearModule from 'clear-module'
 
 export const TimeCommand = new DBotCommand({
 	label: 'time',
@@ -21,6 +22,9 @@ export const TimeCommand = new DBotCommand({
 				author.id
 			)
 		}
+	},
+	terminate() {
+		clearModule.single('./Time')
 	},
 	commandOptions: {
 		aliases: ['timezone', 'tz'],
