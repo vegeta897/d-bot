@@ -15,6 +15,6 @@ export type TimeConfig = IConfigProp<TimeConfig> & {
 	timeZones: TimeZones
 }
 export type ConfigType = {
-	discord: DiscordConfig
-	time: TimeConfig
+	Discord: DiscordConfig
+	Time: TimeConfig
 }

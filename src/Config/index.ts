@@ -19,8 +19,8 @@ const Config = {
 		Object.values(ConfigProperties).forEach((module) => {
 			module.value = configData.get(module.name as keyof ConfigType)
 		})
-		ConfigProperties.discord.validate()
-		ConfigProperties.time.validate()
+		ConfigProperties.Discord.validate()
+		ConfigProperties.Time.validate()
 	},
 	getModules(): IExportProperty[] {
 		return Object.values(ConfigProperties).map((module) => module.export())

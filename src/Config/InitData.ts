@@ -2,10 +2,10 @@ import type { ConfigType } from '../Types/Config'
 import { MapPropertiesKey } from '../Constants/Config'
 
 const InitData: ConfigType = {
-	discord: {
+	Discord: {
 		defaultChannelID: null,
 	},
-	time: {
+	Time: {
 		[MapPropertiesKey]: ['timeZones'],
 		timeZones: new Map([['Eastern', 'America/New_York']]),
 	},

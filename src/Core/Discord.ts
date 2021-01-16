@@ -21,6 +21,7 @@ export default class Discord {
 				DISCORD_CLIENT_TOKEN,
 				{ intents: Intents },
 				{
+					argsSplitter: Discord.splitArgs,
 					prefix: ']',
 					owner: 'vegeta897#7777',
 					defaultCommandOptions: { caseInsensitive: true },
@@ -52,7 +53,7 @@ export default class Discord {
 	}
 
 	static getDefaultChannel(guild: Guild): TextChannel {
-		const { defaultChannelID } = Config.getModuleData('discord')
+		const { defaultChannelID } = Config.getModuleData('Discord')
 		if (defaultChannelID) {
 			const defaultBotChannel = guild.channels.get(defaultChannelID)
 			if (defaultBotChannel instanceof TextChannel) return defaultBotChannel
@@ -74,7 +75,17 @@ export default class Discord {
 	}
 
 	static stripCommand(messageContent: string): string {
-		return messageContent.substring(messageContent.indexOf(' ') + 1)
+		const firstSpaceIndex = messageContent.indexOf(' ')
+		if (firstSpaceIndex < 0) return ''
+		return messageContent.substring(firstSpaceIndex + 1)
+	}
+
+	static splitArgs(args: string): string[] {
+		return args.split(/\s+/g)
+	}
+
+	static getParams(messageContent: string): string[] {
+		return this.splitArgs(this.stripCommand(messageContent))
 	}
 
 	static get ready(): boolean {

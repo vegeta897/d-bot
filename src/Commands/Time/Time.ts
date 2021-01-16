@@ -16,7 +16,7 @@ const tzData = new JSONFile('tz-users', { initData })
 
 export function validateTimeZones(): void {
 	// Validate time zones in config
-	const { timeZones } = Config.getModuleData('time')
+	const { timeZones } = Config.getModuleData('Time')
 	if (timeZones.size === 0) throw 'No time zones have been defined in config'
 	timeZones.forEach((timeZoneName) => {
 		try {
@@ -30,7 +30,7 @@ export function validateTimeZones(): void {
 export function getTimeZoneUserList({ guild }: TextChannel): string {
 	const tzUsers = tzData.get('users')
 	if (tzUsers.size === 0) throw 'Assign yourself to a time zone'
-	const timeZoneList = [...Config.getModuleData('time').timeZones.entries()]
+	const timeZoneList = [...Config.getModuleData('Time').timeZones.entries()]
 		.map(([tzLabel, tzName]) => {
 			const time = dayjs().tz(tzName)
 			return {
@@ -58,7 +58,7 @@ export function getTimeZoneUserList({ guild }: TextChannel): string {
 }
 
 export function assignUserTimeZone(inputName: string, userID: UserID): string {
-	const { timeZones } = Config.getModuleData('time')
+	const { timeZones } = Config.getModuleData('Time')
 	const [tzLabel, tzName] =
 		[...timeZones.entries()].find(([tzLabel, tzName]) => {
 			return (
