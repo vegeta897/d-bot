@@ -4,6 +4,7 @@ import type { Message } from 'eris'
 import Config from '@src/Config'
 import InitData from '@src/Config/InitData'
 
+jest.mock('@src/Core/Storage/JSONFile')
 jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.Time)
 
 const { execute, init, terminate } = TimeCommand
