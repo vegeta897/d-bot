@@ -1,5 +1,6 @@
 import { assert, Struct } from 'superstruct'
 import deepcopy from 'deepcopy'
+import type { StringRecord } from '../Types/Util'
 
 interface IProperty {
 	name: string
@@ -16,7 +17,7 @@ export interface IExportProperty<T = unknown> extends IProperty {
 export abstract class Property<T = unknown> implements IProperty {
 	name: string
 	description?: string
-	parent?: PropertyParent<Record<string, unknown>>
+	parent?: PropertyParent<StringRecord>
 	protected constructor({ name, description }: IProperty) {
 		this.name = name
 		this.description = description
@@ -80,9 +81,7 @@ export class PropertyValue<T> extends Property {
 	}
 }
 
-export class PropertyParent<
-	T extends Record<string, unknown>
-> extends Property {
+export class PropertyParent<T extends StringRecord> extends Property {
 	properties: Property[]
 	constructor({
 		name,

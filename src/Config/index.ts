@@ -14,7 +14,6 @@ const Config = {
 	init(): void {
 		configData = new JSONFile('config', {
 			initData: InitData,
-			convertAllObjectsToMaps: false,
 		})
 		Object.values(ConfigProperties).forEach((module) => {
 			module.value = configData.get(module.name as keyof ConfigType)
