@@ -13,18 +13,23 @@ export const RemindParser = new Parser({
 	parsers: [
 		(params) => {
 			if (params.length < 2) return
-			let seconds: number | undefined
+			let milliseconds: number | undefined
 			let text: string | undefined
 			for (let i = 1; i < params.length; i++) {
 				try {
-					seconds = timestring(params.slice(0, i).join(' '))
+					milliseconds = timestring(params.slice(0, i).join(' ')) * 1000
 					text = params.slice(i).join(' ')
 				} catch (err) {}
 			}
-			if (!seconds || seconds <= 0 || !text) {
+			if (
+				!milliseconds ||
+				milliseconds <= 0 ||
+				isNaN(milliseconds) ||
+				milliseconds === Infinity ||
+				!text
+			)
 				return
-			}
-			return { time: seconds * 1000, text }
+			return { time: milliseconds, text }
 		},
 	],
 })
@@ -36,8 +41,10 @@ export const RemindCommand = new DBotCommand({
 	},
 	execute: ({ params, message }) => {
 		const { time, text } = RemindParser.parse(params)
+		const date = new Date(Date.now() + time)
+		if (isNaN(date.getTime())) throw 'That is an absurd date'
 		const reminder = new Reminder({
-			time: Date.now() + time,
+			time: date.getTime(),
 			text,
 			creator: message.author.id,
 			channel: message.channel.id,

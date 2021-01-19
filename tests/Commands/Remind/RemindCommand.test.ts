@@ -45,6 +45,7 @@ describe('remind command parsing', () => {
 		expect(() => parse(['1parsec', 'a'])).toThrow(error)
 		expect(() => parse(['0s', 'a'])).toThrow(error)
 		expect(() => parse(['0', 's', 'a'])).toThrow(error)
+		expect(() => parse(['9'.repeat(400), 'ms', 'a'])).toThrow(error)
 	})
 })
 
@@ -57,5 +58,10 @@ describe('remind command execution', () => {
 			message: { author: { id: '123' }, channel: { id: '123' } } as Message,
 		})
 		expect(MockedReminder).toHaveBeenCalledTimes(1)
+	})
+	it('throws with an invalid date', () => {
+		expect(() =>
+			execute({ params: ['999999', 'years', 'a'], message: {} as Message })
+		).toThrow(/absurd date/g)
 	})
 })

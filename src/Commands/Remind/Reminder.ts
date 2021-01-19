@@ -37,12 +37,13 @@ export default class Reminder implements IReminder {
 		if (sendFailed) this.sendFailed = sendFailed
 		this.save()
 		if (Date.now() >= this.time) sendReminder(this).catch(console.error)
-		else
+		else {
 			reminderJobs.push(
 				schedule.scheduleJob(new Date(this.time), async () => {
 					sendReminder(this).catch(console.error)
 				})
 			)
+		}
 	}
 
 	getHumanDuration(): string {
@@ -61,16 +62,14 @@ export default class Reminder implements IReminder {
 	}
 
 	private save(): void {
-		reminderData.set('reminders', [
-			{
-				time: this.time,
-				text: this.text,
-				creator: this.creator,
-				channel: this.channel,
-				sendFailed: this.sendFailed,
-			},
-			...this.getOtherReminders(),
-		])
+		const { time, text, creator, channel, sendFailed } = this
+		reminderData.set(
+			'reminders',
+			[
+				{ time, text, creator, channel, sendFailed },
+				...this.getOtherReminders(),
+			].sort((a, b) => a.time - b.time)
+		)
 	}
 
 	delete(): void {
