@@ -4,14 +4,13 @@ import type { ConfigType, DiscordConfig, TimeConfig } from '../Types/Config'
 import { TimeZoneList } from '../Constants/Time'
 import type { TimeZoneName } from '../Types/Time'
 
-const defaultChannelID = new PropertyValue<
-	ConfigType['Discord']['defaultChannelID']
->({
+const defaultChannelID = new PropertyValue<DiscordConfig['defaultChannelID']>({
 	name: 'defaultChannelID',
-	description: 'A fallback channel ID to send messages to',
+	description:
+		'A fallback channel ID for the bot to send undeliverable messages to',
 	schema: nullable(string()),
 })
-const timeZones = new PropertyValue<ConfigType['Time']['timeZones']>({
+const timeZones = new PropertyValue<TimeConfig['timeZones']>({
 	name: 'timeZones',
 	description: '',
 	schema: map(

@@ -2,7 +2,7 @@
 import * as fse from 'fs-extra'
 import deepCopy from 'deepcopy'
 import { ObjectMapUtil } from '../Util'
-import type { StringRecord } from '../../Types/Util'
+import type { NoNestedMaps, StringMap, StringRecord } from '../../Types/Util'
 
 interface IJSONFileOptions<T> {
 	initData: T
@@ -15,7 +15,7 @@ const JSON_FILE_DEFAULTS = { spaces: '\t', EOL: '\n' } as const
 const PATH = 'storage/' as const
 fse.ensureDirSync(PATH)
 
-export default class JSONFile<T extends StringRecord> {
+export default class JSONFile<T extends StringRecord<NoNestedMaps>> {
 	private readonly data: T
 	private readonly spaces: number | string
 	private readonly EOL: string
@@ -45,10 +45,7 @@ export default class JSONFile<T extends StringRecord> {
 					encoding: 'utf8',
 				})
 				// Convert any objects to maps
-				const convertedData = ObjectMapUtil.convertPropertiesDeep(
-					fileData,
-					this.data
-				)
+				const convertedData = ObjectMapUtil.reviveJSON(fileData, this.data)
 				Object.assign(this.data, convertedData)
 			} catch (err) {
 				// Do not write if invalid JSON found
@@ -64,12 +61,14 @@ export default class JSONFile<T extends StringRecord> {
 		// Prevent redundant save calls with setTimeout
 		setTimeout(async () => {
 			try {
-				// Convert any maps to objects
-				const jsonData = ObjectMapUtil.convertPropertiesDeep(this.data)
 				// Write to temporary file
-				await fse.writeJson(this.path + '.tmp', jsonData, {
+				await fse.writeJson(this.path + '.tmp', this.data, {
 					spaces: this.spaces,
 					EOL: this.EOL,
+					replacer: (key: string, value: unknown) => {
+						if (ObjectMapUtil.isMap(value)) return [...(value as StringMap)]
+						return value
+					},
 				})
 				// Move/rename temporary file into the real one
 				await fse.move(this.path + '.tmp', this.path, {

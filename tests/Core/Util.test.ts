@@ -5,7 +5,7 @@ const {
 	mapToObjectShallow,
 	isObject,
 	isMap,
-	convertPropertiesDeep,
+	reviveJSON,
 } = ObjectMapUtil
 
 const testObject = {
@@ -67,27 +67,29 @@ const otherValueTypes = [
 const testObjectWithMapsAsMaps = {
 	aString: 'test',
 	aMap: new Map([['a', 1]]),
-	aMapInMap: new Map([['b', new Map([['c', 2]])]]),
 	aMapInObject: {
-		d: new Map([['e', 3]]),
+		b: new Map([['c', 2]]),
 	},
-	anObject: { f: 4 },
-	anObjectInObject: { g: { h: 5 } },
-	anObjectInMap: new Map([['i', { j: 6 }]]),
-	aMapInObjectInMap: new Map([['k', { l: new Map([['m', 7]]) }]]),
-	anObjectInMapInObject: { n: new Map([['o', { p: 8 }]]) },
+	anObject: { d: 3 },
+	anObjectInObject: { e: { f: 4 } },
+	anObjectInMap: new Map([['g', { h: 5 }]]),
+	anObjectInMapInObject: { i: new Map([['j', { k: 6 }]]) },
+	anArray: [7],
+	anArrayInObject: { l: [8] },
+	anObjectInArray: [{ m: 9 }],
 }
 
-const testObjectWithMapsAsObjects = {
+const testObjectWithMapsAsArrays = {
 	aString: 'test',
-	aMap: { a: 1 },
-	aMapInMap: { b: { c: 2 } },
-	aMapInObject: { d: { e: 3 } },
-	anObject: { f: 4 },
-	anObjectInObject: { g: { h: 5 } },
-	anObjectInMap: { i: { j: 6 } },
-	aMapInObjectInMap: { k: { l: { m: 7 } } },
-	anObjectInMapInObject: { n: { o: { p: 8 } } },
+	aMap: [['a', 1]],
+	aMapInObject: { b: [['c', 2]] },
+	anObject: { d: 3 },
+	anObjectInObject: { e: { f: 4 } },
+	anObjectInMap: [['g', { h: 5 }]],
+	anObjectInMapInObject: { i: [['j', { k: 6 }]] },
+	anArray: [7],
+	anArrayInObject: { l: [8] },
+	anObjectInArray: [{ m: 9 }],
 }
 
 describe('objectToMapShallow', () => {
@@ -127,17 +129,12 @@ describe('isObject', () => {
 	})
 })
 
-describe('convertPropertiesDeep', () => {
-	it('deeply converts maps to objects with no target object', () => {
-		expect(convertPropertiesDeep(testObjectWithMapsAsMaps)).toMatchObject(
-			testObjectWithMapsAsObjects
-		)
-	})
-	it('deeply converts objects to maps with a target object', () => {
+describe('reviveJSON', () => {
+	it('deeply converts arrays to maps', () => {
 		expect(
-			convertPropertiesDeep(
-				testObjectWithMapsAsObjects,
-				(testObjectWithMapsAsMaps as unknown) as typeof testObjectWithMapsAsObjects
+			reviveJSON(
+				testObjectWithMapsAsArrays,
+				(testObjectWithMapsAsMaps as unknown) as typeof testObjectWithMapsAsArrays
 			)
 		).toStrictEqual(testObjectWithMapsAsMaps)
 	})

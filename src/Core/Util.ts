@@ -1,5 +1,5 @@
 import deepCopy from 'deepcopy'
-import type { StringRecord, StringMap } from '../Types/Util'
+import type { StringRecord, StringMap, NoNestedMaps } from '../Types/Util'
 
 export const ObjectMapUtil = {
 	objectToMapShallow<T extends StringRecord, K extends keyof T & string>(
@@ -26,46 +26,29 @@ export const ObjectMapUtil = {
 	},
 
 	/**
-	 * Returns a copy of inputObject with all properties deeply converted from Map to Object, or Object to Map if a targetObject is provided with corresponding Map properties
+	 * Returns a copy of inputObject with all properties deeply converted from Array to Map if targetObject has corresponding Map properties
 	 * @param inputObject - The object to convert
-	 * @param targetObject - (Optional) An object matching the inputObject that may have Map properties to convert in the inputObject
+	 * @param targetObject - An object matching the inputObject that may have Map properties to convert in the inputObject
 	 */
-	convertPropertiesDeep<I extends StringRecord>(
+	reviveJSON<I extends StringRecord<NoNestedMaps>>(
 		inputObject: I,
-		targetObject?: I
+		targetObject: I
 	): I {
 		const inputObjectCopy = deepCopy(inputObject)
 		function convertKeysInObject<O extends StringRecord, K extends keyof O>(
 			obj: O,
-			target?: O
+			target: O
 		) {
 			Object.keys(obj).forEach((key) => {
-				if (ObjectMapUtil.isMap(obj[key])) {
-					// Convert map to object
-					obj[key as K] = ObjectMapUtil.mapToObjectShallow(
-						obj[key] as StringMap
-					) as O[K]
-				}
 				if (ObjectMapUtil.isObject(obj[key])) {
-					const targetPropertyIsMap =
-						target && ObjectMapUtil.isMap(target[key as K])
-					// If target property is a map, create an object version so it can be enumerated
-					const targetPropertyAsObject =
-						target &&
-						(targetPropertyIsMap
-							? ObjectMapUtil.mapToObjectShallow(target[key as K] as StringMap)
-							: target[key as K])
-					// Convert deep first so we can enumerate object keys before converting to map
 					convertKeysInObject(
 						obj[key as K] as StringRecord,
-						targetPropertyAsObject as StringRecord
+						target[key as K] as StringRecord
 					)
-					// Convert object to map if target is map
-					if (target && targetPropertyIsMap) {
-						obj[key as K] = ObjectMapUtil.objectToMapShallow(
-							obj[key] as StringRecord
-						) as O[K]
-					}
+				} else if (ObjectMapUtil.isMap(target[key])) {
+					obj[key as K] = new Map(
+						obj[key] as Iterable<[unknown, unknown]>
+					) as O[K]
 				}
 			})
 		}

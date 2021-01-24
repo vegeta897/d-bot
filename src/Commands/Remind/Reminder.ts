@@ -11,30 +11,27 @@ import type { ChannelID } from '../../Types/Discord'
 dayjs.extend(duration)
 dayjs.extend(relativeTime)
 
-interface IReminder {
+type ReminderType = {
 	time: number
 	text: string
 	creator: string
 	channel: string
-	sendFailed?: true
 }
 
-const initData: { reminders: IReminder[] } = { reminders: [] }
+const initData: { reminders: ReminderType[] } = { reminders: [] }
 const reminderData = new JSONFile('reminders', { initData })
 
-export default class Reminder implements IReminder {
+export default class Reminder implements ReminderType {
 	time
 	text
 	creator
 	channel
-	sendFailed
 
-	constructor({ time, text, creator, channel, sendFailed }: IReminder) {
+	constructor({ time, text, creator, channel }: ReminderType) {
 		this.time = time
 		this.text = text
 		this.creator = creator
 		this.channel = channel
-		if (sendFailed) this.sendFailed = sendFailed
 		this.save()
 		if (Date.now() >= this.time) sendReminder(this).catch(console.error)
 		else {
@@ -50,25 +47,24 @@ export default class Reminder implements IReminder {
 		return dayjs.duration(this.time - Date.now(), 'ms').humanize()
 	}
 
-	private getOtherReminders(): IReminder[] {
+	private getOtherReminders(): ReminderType[] {
 		return reminderData
 			.get('reminders')
 			.filter((r) => Reminder.hash(r) !== Reminder.hash(this))
 	}
 
-	update(updateObj: Partial<IReminder>): void {
+	update(updateObj: Partial<ReminderType>): void {
 		Object.assign(this, updateObj)
 		this.save()
 	}
 
 	private save(): void {
-		const { time, text, creator, channel, sendFailed } = this
+		const { time, text, creator, channel } = this
 		reminderData.set(
 			'reminders',
-			[
-				{ time, text, creator, channel, sendFailed },
-				...this.getOtherReminders(),
-			].sort((a, b) => a.time - b.time)
+			[{ time, text, creator, channel }, ...this.getOtherReminders()].sort(
+				(a, b) => a.time - b.time
+			)
 		)
 	}
 
@@ -76,7 +72,7 @@ export default class Reminder implements IReminder {
 		reminderData.set('reminders', this.getOtherReminders())
 	}
 
-	static hash(reminder: IReminder): string {
+	static hash(reminder: ReminderType): string {
 		return hash(reminder, {
 			excludeKeys: (key) =>
 				!['time', 'text', 'creator', 'channel'].includes(key),
@@ -107,9 +103,7 @@ async function sendReminder(reminder: Reminder): Promise<void> {
 	if (diff > 5000) {
 		message += `\nSorry for this being ${reminder.getHumanDuration()} late!`
 	}
-	Discord.sendMessage(channel, message)
-		.then(() => reminder.delete())
-		.catch(() => reminder.update({ sendFailed: true }))
+	Discord.sendMessage(channel, message).then(() => reminder.delete())
 }
 
 const reminderJobs: Job[] = []
