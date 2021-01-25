@@ -38,7 +38,7 @@ export class DBotCommand {
 		try {
 			return this.execute({ message, params })
 		} catch (err) {
-			return err + (this.options.usage ? ', try ' + this.options.usage : '')
+			return err + (this.options.usage ? `, try ${this.options.usage}` : '')
 		}
 	}
 	readonly register = (client: CommandClient): void => {

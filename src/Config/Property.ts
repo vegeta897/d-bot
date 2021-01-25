@@ -11,6 +11,7 @@ export interface IExportProperty<T = unknown> extends IProperty {
 	value?: T | null
 	properties?: IExportProperty[]
 	parent?: IExportProperty
+	moduleName: string
 	path: string[]
 }
 
@@ -36,7 +37,7 @@ export abstract class Property<T = unknown> implements IProperty {
 		}
 		return path
 	}
-	get module(): string {
+	get moduleName(): string {
 		return this.path[0] || this.name
 	}
 }
@@ -68,12 +69,13 @@ export class PropertyValue<T> extends Property {
 		if (this.schema) assert(this.value, this.schema)
 	}
 	export(): IExportProperty<T> {
-		const { name, description, value, path, parent } = this
+		const { name, description, value, path, moduleName, parent } = this
 		return {
 			name,
 			description,
 			value,
 			path,
+			moduleName,
 			get parent() {
 				return parent && parent.export()
 			},
@@ -117,11 +119,12 @@ export class PropertyParent<T extends StringRecord> extends Property {
 		this.properties.forEach((prop) => prop.validate())
 	}
 	export(): IExportProperty<never> {
-		const { name, description, path, parent } = this
+		const { name, description, path, moduleName, parent } = this
 		return {
 			name,
 			description,
 			path,
+			moduleName,
 			properties: this.properties.map((prop) => prop.export()),
 			get parent() {
 				return parent && parent.export()
