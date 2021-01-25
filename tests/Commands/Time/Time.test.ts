@@ -3,21 +3,16 @@ import {
 	getTimeZoneUserList,
 	assignUserTimeZone,
 } from '@src/Commands/Time/Time'
-import { mocked } from 'ts-jest/utils'
-import JSONFile from '@src/Core/Storage/JSONFile'
+import JSONData from '@src/Core/Storage/JSONData'
 import Discord from '@src/Core/Discord'
 import Config from '@src/Config'
-import InitData from '@src/Config/InitData'
 import type { TextChannel, CommandClient } from 'eris'
 import type { TimeZoneLabel, TimeZoneName } from '@src/Types/Time'
 import { UserID } from '@src/Types/Discord'
 
+jest.mock('@src/Config')
 jest.mock('@src/Core/Storage/JSONFile')
-const mockedJSONFile = mocked(JSONFile, true).mock.instances[0] as JSONFile<{
-	users: Map<UserID, TimeZoneName>
-}>
-
-jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.Time)
+jest.mock('@src/Core/Storage/JSONData')
 
 function mockConfigTimeZones(timeZones: Map<TimeZoneLabel, TimeZoneName>) {
 	jest.spyOn(Config, 'getModuleData').mockImplementationOnce(() => ({
@@ -27,6 +22,7 @@ function mockConfigTimeZones(timeZones: Map<TimeZoneLabel, TimeZoneName>) {
 
 describe('time zone validation', () => {
 	it('does not throw with at least one valid time zone defined', () => {
+		mockConfigTimeZones(new Map([['Eastern', 'America/New_York']]))
 		expect(() => validateTimeZones()).not.toThrow()
 	})
 	it('throws if no time zones defined', () => {
@@ -46,7 +42,7 @@ describe('time zone validation', () => {
 })
 
 describe('time zone user listing', () => {
-	const mockedGet = jest.spyOn(mockedJSONFile, 'get')
+	const mockedGet = jest.spyOn(JSONData.prototype, 'get')
 
 	it('returns time zone user list', () => {
 		mockConfigTimeZones(
@@ -87,12 +83,15 @@ describe('assigning user time zones', () => {
 	})
 	it('confirms assigned time zone', () => {
 		const confirmation = 'Your time zone is now Eastern'
+		mockConfigTimeZones(new Map([['Eastern', 'America/New_York']]))
 		expect(assignUserTimeZone('eastern', '123')).toBe(confirmation)
+		mockConfigTimeZones(new Map([['Eastern', 'America/New_York']]))
 		expect(assignUserTimeZone('america/new_york', '123')).toBe(confirmation)
 	})
-	const mockedTrans = jest.spyOn(mockedJSONFile, 'trans')
+	const mockedTrans = jest.spyOn(JSONData.prototype, 'trans')
 	it('updates time zone user storage', () => {
 		mockedTrans.mockClear()
+		mockConfigTimeZones(new Map([['Eastern', 'America/New_York']]))
 		assignUserTimeZone('eastern', '123')
 		expect(mockedTrans.mock.calls[0][1](new Map())).toStrictEqual(
 			new Map([['123', 'America/New_York']])
@@ -110,12 +109,14 @@ describe('assigning user time zones', () => {
 				]) as Map<UserID, TimeZoneName>
 			) as Map<UserID, TimeZoneName>
 		})
+		mockConfigTimeZones(new Map([['Eastern', 'America/New_York']]))
 		assignUserTimeZone('eastern', '789')
 		expect(mockedTrans.mock.calls[0][1](new Map())).toStrictEqual(
 			new Map([['789', 'America/New_York']])
 		)
 	})
 	it('returns warning for invalid time zone', () => {
+		mockConfigTimeZones(new Map([['Eastern', 'America/New_York']]))
 		expect(assignUserTimeZone('avalon', '')).toMatch(/^Invalid time zone/)
 	})
 })

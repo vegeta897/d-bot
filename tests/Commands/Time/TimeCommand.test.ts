@@ -2,10 +2,12 @@ import { TimeCommand } from '@src/Commands/Time/TimeCommand'
 import * as TimeFunctions from '@src/Commands/Time/Time'
 import type { Message } from 'eris'
 import Config from '@src/Config'
-import InitData from '@src/Config/InitData'
+import InitDataModel from '@src/Config/InitData'
 
 jest.mock('@src/Core/Storage/JSONFile')
-jest.spyOn(Config, 'getModuleData').mockImplementation(() => InitData.Time)
+jest
+	.spyOn(Config, 'getModuleData')
+	.mockImplementation(() => InitDataModel.data.Time)
 
 const { execute, init, terminate } = TimeCommand
 
@@ -26,11 +28,14 @@ describe('time command execution', () => {
 		const mockedAssignUserTimeZone = jest
 			.spyOn(TimeFunctions, 'assignUserTimeZone')
 			.mockImplementation()
+		const userID = '123'
+		const tz = 'eastern'
 		execute({
 			params: [''],
-			message: { content: '', author: { id: '' } } as Message,
+			message: { content: `/t ${tz}`, author: { id: userID } } as Message,
 		})
 		expect(TimeFunctions.assignUserTimeZone).toHaveBeenCalledTimes(1)
+		expect(TimeFunctions.assignUserTimeZone).toHaveBeenCalledWith(tz, userID)
 		mockedAssignUserTimeZone.mockRestore()
 	})
 })
