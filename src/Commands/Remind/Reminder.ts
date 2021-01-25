@@ -1,5 +1,5 @@
 import hash from 'object-hash'
-import JSONFile from '../../Core/Storage/JSONFile'
+import createJSONFile from '../../Core/Storage/JSONFile'
 import Discord from '../../Core/Discord'
 import schedule, { Job } from 'node-schedule'
 import { Guild, TextChannel } from 'eris'
@@ -11,23 +11,25 @@ import type { ChannelID } from '../../Types/Discord'
 dayjs.extend(duration)
 dayjs.extend(relativeTime)
 
-type ReminderType = {
+type ReminderData = {
 	time: number
 	text: string
 	creator: string
 	channel: string
 }
 
-const initData: { reminders: ReminderType[] } = { reminders: [] }
-const reminderData = new JSONFile('reminders', { initData })
+const reminderData = createJSONFile<{ reminders: ReminderData[] }>(
+	'reminders',
+	{ data: { reminders: [] } }
+)
 
-export default class Reminder implements ReminderType {
+export default class Reminder implements ReminderData {
 	time
 	text
 	creator
 	channel
 
-	constructor({ time, text, creator, channel }: ReminderType) {
+	constructor({ time, text, creator, channel }: ReminderData) {
 		this.time = time
 		this.text = text
 		this.creator = creator
@@ -47,13 +49,13 @@ export default class Reminder implements ReminderType {
 		return dayjs.duration(this.time - Date.now(), 'ms').humanize()
 	}
 
-	private getOtherReminders(): ReminderType[] {
+	private getOtherReminders(): ReminderData[] {
 		return reminderData
 			.get('reminders')
 			.filter((r) => Reminder.hash(r) !== Reminder.hash(this))
 	}
 
-	update(updateObj: Partial<ReminderType>): void {
+	update(updateObj: Partial<ReminderData>): void {
 		Object.assign(this, updateObj)
 		this.save()
 	}
@@ -72,7 +74,7 @@ export default class Reminder implements ReminderType {
 		reminderData.set('reminders', this.getOtherReminders())
 	}
 
-	static hash(reminder: ReminderType): string {
+	static hash(reminder: ReminderData): string {
 		return hash(reminder, {
 			excludeKeys: (key) =>
 				!['time', 'text', 'creator', 'channel'].includes(key),

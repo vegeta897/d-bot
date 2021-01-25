@@ -1,4 +1,4 @@
-import JSONFile from '../../Core/Storage/JSONFile'
+import createJSONFile from '../../Core/Storage/JSONFile'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
@@ -7,12 +7,24 @@ import Discord from '../../Core/Discord'
 import Config from '../../Config'
 import type { TimeZoneName } from '../../Types/Time'
 import type { UserID } from '../../Types/Discord'
+import JSONData from '../../Core/Storage/JSONData'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-const initData: { users: Map<UserID, TimeZoneName> } = { users: new Map() }
-const tzData = new JSONFile('tz-users', { initData })
+const data = new JSONData<{ users: Map<UserID, TimeZoneName> }>({
+	data: { users: new Map() },
+	convertToJSON: function () {
+		return { users: [...this.data.users] }
+	},
+	loadJSON: function (data) {
+		Object.assign(this.data, {
+			users: new Map(data.users as [UserID, TimeZoneName][]),
+		})
+	},
+})
+
+const tzData = createJSONFile('tz-users', { data })
 
 export function validateTimeZones(): void {
 	// Validate time zones in config
