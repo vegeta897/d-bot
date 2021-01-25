@@ -9,6 +9,7 @@ export const ConfigCommand = new DBotCommand({
 	terminate() {
 		terminateConfigurators()
 		clearModule.single('./Configurator')
+		clearModule.single('./ConfigDisplay')
 	},
 	label: 'config',
 	commandOptions: {

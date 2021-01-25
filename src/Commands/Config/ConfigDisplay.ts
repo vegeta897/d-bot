@@ -1,7 +1,8 @@
-import { IExportProperty } from '../../Config/Property'
-import { isMap } from '../../Core/Util'
-import { StringMap } from '../../Types/Util'
+import type { IExportProperty } from '../../Config/Property'
+import { isArray, isMap, isNumber, isObject, isString } from '../../Core/Util'
+import type { StringMap, StringRecord } from '../../Types/Util'
 import Config from '../../Config'
+import { MonospaceDigits } from '../../Constants/Strings'
 
 const MODULES = Config.getModules()
 const MODULE_LIST = MODULES.map(
@@ -35,10 +36,43 @@ export function createDisplay(currentProperty: IExportProperty | null): string {
 	} else {
 		if (currentProperty.description)
 			display += '\n' + currentProperty.description
-		let displayValue = currentProperty.value
-		if (isMap(displayValue))
-			displayValue = Object.fromEntries(displayValue as StringMap)
-		display += '\n```js\n' + JSON.stringify(displayValue) + '```'
+		display += '\n' + displayValue(currentProperty.value)
 	}
 	return display
+}
+
+function displayValue(configValue: unknown) {
+	if (isNumber(configValue) || isString(configValue) || configValue === null)
+		return `\`\`\`js\n${configValue}\`\`\``
+	function displayKeyValuePairs(pairs: [string, unknown][], showIndex = true) {
+		// TODO: Paginate values 1-9, 10-19, 20-29, etc
+		const maxKeyLength = Math.max(...pairs.map(([key]) => key.length))
+		return pairs
+			.map(([key, value], index) => {
+				return (
+					(showIndex ? `${MonospaceDigits[(index + 1) % 10]} ` : '') +
+					`\`${key.padEnd(maxKeyLength)}\` : \`${value}\``
+				)
+			})
+			.join('\n')
+	}
+	if (isArray(configValue)) {
+		return (
+			'**Array**\n' +
+			displayKeyValuePairs(
+				(configValue as []).map((value, index) => [index.toString(), value]),
+				false
+			)
+		)
+	}
+	if (isMap(configValue)) {
+		return '**Map**\n' + displayKeyValuePairs([...(configValue as StringMap)])
+	}
+	if (isObject(configValue)) {
+		return (
+			'**Object**\n' +
+			displayKeyValuePairs([...Object.entries(configValue as StringRecord)])
+		)
+	}
+	throw `Unknown value type ${configValue}`
 }

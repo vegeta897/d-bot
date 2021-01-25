@@ -59,15 +59,15 @@ class Configurator {
 			message.channel.id !== this.channel.id
 		)
 			return
+		if (message.command && message.command.label !== 'config') {
+			this.end(CONFIG_END_REASONS.OTHER_COMMAND)
+			return
+		}
 		this.lastUserReply = message
 		if (deleteMessage) message.delete()
 		else this.messages.push(message)
 		if (['stop', 'exit', 'quit'].includes(message.content.toLowerCase())) {
 			this.end(CONFIG_END_REASONS.BY_USER)
-			return
-		}
-		if (message.command && message.command.label !== 'config') {
-			this.end(CONFIG_END_REASONS.OTHER_COMMAND)
 			return
 		}
 		if (this.endTimer) this.endTimer.refresh()
