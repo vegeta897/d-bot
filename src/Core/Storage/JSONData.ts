@@ -3,19 +3,21 @@ import deepCopy from 'deepcopy'
 
 interface IJSONData<T> {
 	data: T
-	convertToJSON?: () => StringRecord<JSONSafe>
-	loadJSON?: (data: StringRecord) => void
+	convertToJSON?: (data: T) => StringRecord<JSONSafe>
+	loadJSON?: (data: T, jsonData: StringRecord) => void
 }
 
-export default class JSONData<T extends StringRecord> implements IJSONData<T> {
+export default class JSONData<T extends StringRecord> {
 	data: T
 	save: () => void = () => {
 		throw 'Missing save method'
 	}
-	readonly convertToJSON: () => StringRecord<JSONSafe> = () =>
-		this.data as StringRecord<JSONSafe>
-	readonly loadJSON: (data: StringRecord) => void = (data) =>
-		Object.assign(this.data, data)
+	readonly convertToJSON: (data: T) => StringRecord<JSONSafe> = (data) =>
+		data as StringRecord<JSONSafe>
+	readonly loadJSON: (data: T, jsonData: StringRecord) => void = (
+		data,
+		jsonData
+	) => Object.assign(data, jsonData)
 
 	constructor({ data, convertToJSON, loadJSON }: IJSONData<T>) {
 		this.data = data

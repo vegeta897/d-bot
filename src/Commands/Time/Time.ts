@@ -5,26 +5,13 @@ import timezone from 'dayjs/plugin/timezone'
 import type { TextChannel } from 'eris'
 import Discord from '../../Core/Discord'
 import Config from '../../Config'
-import type { TimeZoneName } from '../../Types/Time'
 import type { UserID } from '../../Types/Discord'
-import JSONData from '../../Core/Storage/JSONData'
+import TZUserData from './TimeData'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-const data = new JSONData<{ users: Map<UserID, TimeZoneName> }>({
-	data: { users: new Map() },
-	convertToJSON: function () {
-		return { users: [...this.data.users] }
-	},
-	loadJSON: function (data) {
-		Object.assign(this.data, {
-			users: new Map(data.users as [UserID, TimeZoneName][]),
-		})
-	},
-})
-
-const tzData = createJSONFile('tz-users', { data })
+createJSONFile('tz-users', { data: TZUserData })
 
 export function validateTimeZones(): void {
 	// Validate time zones in config
@@ -40,7 +27,7 @@ export function validateTimeZones(): void {
 }
 
 export function getTimeZoneUserList({ guild }: TextChannel): string {
-	const tzUsers = tzData.get('users')
+	const tzUsers = TZUserData.get('users')
 	if (tzUsers.size === 0) throw 'Assign yourself to a time zone'
 	const timeZoneList = [...Config.getModuleData('Time').timeZones.entries()]
 		.map(([tzLabel, tzName]) => {
@@ -83,7 +70,7 @@ export function assignUserTimeZone(inputName: string, userID: UserID): string {
 			...timeZones.keys(),
 		].join(', ')}`
 	}
-	tzData.trans('users', (users) => {
+	TZUserData.trans('users', (users) => {
 		// Clean up undefined users and time zones
 		const TimeZoneNames = [...timeZones.values()]
 		for (const [tzUserID, timeZone] of users) {
