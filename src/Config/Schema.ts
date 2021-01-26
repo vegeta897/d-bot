@@ -1,7 +1,7 @@
-import { PropertyParent, PropertyValue } from './Property'
+import { PropertyValue, PropertyParent } from './Property'
 import { nullable, refine, string, Struct, map } from 'superstruct'
-import type { ConfigType, DiscordConfig, TimeConfig } from '../Types/Config'
 import { TimeZoneList } from '../Constants/Time'
+import type { ConfigType, DiscordConfig, TimeConfig } from '../Types/Config'
 import type { TimeZoneName } from '../Types/Time'
 
 const defaultChannelID = new PropertyValue<DiscordConfig['defaultChannelID']>({

@@ -1,10 +1,10 @@
 import 'dotenv/config'
 import { assert, size, string } from 'superstruct'
 import createJSONFile from '../Core/Storage/JSONFile'
-import type { PropertyParent, IExportProperty } from './Property'
 import { ConfigProperties } from './Schema'
-import type { ConfigType } from '../Types/Config'
 import InitDataModel from './InitData'
+import type { IExportProperty, PropertyParent } from './Property'
+import type { ConfigType } from '../Types/Config'
 import type JSONData from '../Core/Storage/JSONData'
 
 let configData: JSONData<ConfigType>

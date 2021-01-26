@@ -142,7 +142,7 @@ class Configurator {
 			createDisplay(this.currentProperty, {
 				showValue: this.state === CONFIG_STATE.SHOW_VALUE,
 			})
-		if (this.errorText) this.displayText += `\n⚠️ **Error:** ${this.errorText}`
+		if (this.errorText) this.displayText += `\n⚠️ **Error**: ${this.errorText}`
 		if (!this.currentProperty) this.promptText = CONFIG_PROMPTS.SELECT_MODULE
 		else if (this.currentProperty.properties)
 			this.promptText = CONFIG_PROMPTS.SELECT_PROPERTY
