@@ -1,4 +1,11 @@
-import { isObject, isMap, isArray, isString, isNumber } from '@src/Core/Util'
+import {
+	isObject,
+	isMap,
+	isArray,
+	isString,
+	isNumber,
+	toMonospaceDigits,
+} from '@src/Core/Util'
 
 const objectTypes = [
 	{},
@@ -44,5 +51,19 @@ describe('value type check functions', () => {
 				.filter((type) => !types.includes(type))
 				.forEach((v) => expect(is(v)).toBeFalsy())
 		})
+	})
+})
+
+describe('toMonospaceDigits function', () => {
+	it('returns whole numbers', () => {
+		expect(toMonospaceDigits(0)).toBe('𝟢')
+		expect(toMonospaceDigits(1)).toBe('𝟣')
+		expect(toMonospaceDigits(1234567890)).toBe('𝟣𝟤𝟥𝟦𝟧𝟨𝟩𝟪𝟫𝟢')
+		expect(toMonospaceDigits(-1)).toBe('-𝟣')
+	})
+	it('returns decimal numbers', () => {
+		expect(toMonospaceDigits(0.05)).toBe('𝟢.𝟢𝟧')
+		expect(toMonospaceDigits(123.456)).toBe('𝟣𝟤𝟥.𝟦𝟧𝟨')
+		expect(toMonospaceDigits(-0.05)).toBe('-𝟢.𝟢𝟧')
 	})
 })
