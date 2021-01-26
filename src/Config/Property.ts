@@ -5,6 +5,7 @@ import type { StringRecord } from '../Types/Util'
 interface IProperty {
 	name: string
 	description?: string
+	shortDescription?: string
 }
 
 export interface IExportProperty<T = unknown> extends IProperty {
@@ -12,16 +13,19 @@ export interface IExportProperty<T = unknown> extends IProperty {
 	properties?: IExportProperty[]
 	parent?: IExportProperty
 	moduleName: string
+	example?: string
 	path: string[]
 }
 
 export abstract class Property<T = unknown> implements IProperty {
 	name: string
 	description?: string
+	shortDescription?: string
 	parent?: PropertyParent<StringRecord>
-	protected constructor({ name, description }: IProperty) {
+	protected constructor({ name, description, shortDescription }: IProperty) {
 		this.name = name
 		this.description = description
+		this.shortDescription = shortDescription
 	}
 	abstract validate(): void
 	abstract get value(): T
@@ -44,18 +48,24 @@ export abstract class Property<T = unknown> implements IProperty {
 
 export class PropertyValue<T> extends Property {
 	protected _value: T | null
+	protected readonly example?: string
 	protected readonly schema?: Struct<T>
 	constructor({
 		name,
 		description,
+		shortDescription,
+		example,
 		schema,
 		value,
 	}: IProperty & {
 		schema: Struct<T>
+		type?: string
+		example?: string
 		value?: T
 	}) {
-		super({ name, description })
+		super({ name, description, shortDescription })
 		this._value = value || null
+		this.example = example
 		this.schema = schema as Struct<T>
 	}
 	get value(): T | null {
@@ -69,13 +79,15 @@ export class PropertyValue<T> extends Property {
 		if (this.schema) assert(this.value, this.schema)
 	}
 	export(): IExportProperty<T> {
-		const { name, description, value, path, moduleName, parent } = this
+		const { parent } = this
 		return {
-			name,
-			description,
-			value,
-			path,
-			moduleName,
+			name: this.name,
+			description: this.description,
+			shortDescription: this.shortDescription,
+			example: this.example,
+			value: this.value,
+			path: this.path,
+			moduleName: this.moduleName,
 			get parent() {
 				return parent && parent.export()
 			},
@@ -88,11 +100,12 @@ export class PropertyParent<T extends StringRecord> extends Property {
 	constructor({
 		name,
 		description,
+		shortDescription,
 		properties,
 	}: IProperty & {
 		properties: Property[]
 	}) {
-		super({ name, description })
+		super({ name, description, shortDescription })
 		this.properties = properties
 		this.properties.forEach((prop) => (prop.parent = this))
 	}
@@ -119,12 +132,13 @@ export class PropertyParent<T extends StringRecord> extends Property {
 		this.properties.forEach((prop) => prop.validate())
 	}
 	export(): IExportProperty<never> {
-		const { name, description, path, moduleName, parent } = this
+		const { parent } = this
 		return {
-			name,
-			description,
-			path,
-			moduleName,
+			name: this.name,
+			description: this.description,
+			shortDescription: this.shortDescription,
+			path: this.path,
+			moduleName: this.moduleName,
 			properties: this.properties.map((prop) => prop.export()),
 			get parent() {
 				return parent && parent.export()
