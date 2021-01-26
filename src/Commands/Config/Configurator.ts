@@ -2,8 +2,15 @@ import Config from '../../Config'
 import type { IExportProperty } from '../../Config/Property'
 import type { Message, TextableChannel, User } from 'eris'
 import Discord from '../../Core/Discord'
-import Timeout = NodeJS.Timeout
 import { createDisplay } from './ConfigDisplay'
+import {
+	CONFIG_COMMAND,
+	CONFIG_END_REASONS,
+	CONFIG_PROMPTS,
+	CONFIG_QUIT_COMMANDS,
+	CONFIG_SUBCOMMANDS,
+} from './ConfigStrings'
+import Timeout = NodeJS.Timeout
 
 const MODULES = Config.getModules()
 
@@ -11,16 +18,13 @@ const CONFIG_TIMEOUT = 5 * 60 * 1000
 
 const configurators: Configurator[] = []
 
-enum CONFIG_END_REASONS {
-	INACTIVE = '💤 Config session ended due to inactivity',
-	OTHER_COMMAND = '💬 Config session ended because you used another command',
-	BY_USER = '☑️ Config session ended by user',
-	RELOAD = '🔄 Config session ended due to script reload',
+enum CONFIG_STATE {
+	INIT,
+	SHOW_VALUE,
+	VIEW_PROPERTY,
 }
 
 /* TODO: Design notes
-
-Don't show JSON-style object literals. Display a simple list of key > value pairs with literals wrapped in inline-code spans
 
 Show examples for everything. How to add, remove, or edit a key/value
 
@@ -36,6 +40,7 @@ export function terminateConfigurators(): void {
 }
 
 class Configurator {
+	state: CONFIG_STATE = CONFIG_STATE.INIT
 	currentProperty: IExportProperty | null = null
 	user: User
 	channel: TextableChannel
@@ -44,6 +49,7 @@ class Configurator {
 	displayMessage: Message | null = null
 	displayText: string | null = null
 	errorText: string | null = null
+	promptText: string | null = null
 	endTimer: Timeout | null = null
 	boundOnMessage: (message: Message) => void
 	constructor(commandMessage: Message) {
@@ -59,14 +65,18 @@ class Configurator {
 			message.channel.id !== this.channel.id
 		)
 			return
-		if (message.command && message.command.label !== 'config') {
-			this.end(CONFIG_END_REASONS.OTHER_COMMAND)
+		if (message.command && message.command.label !== CONFIG_COMMAND) {
+			this.end(
+				message.command.label === 'reload'
+					? CONFIG_END_REASONS.RELOAD
+					: CONFIG_END_REASONS.OTHER_COMMAND
+			)
 			return
 		}
 		this.lastUserReply = message
 		if (deleteMessage) message.delete()
 		else this.messages.push(message)
-		if (['stop', 'exit', 'quit'].includes(message.content.toLowerCase())) {
+		if (CONFIG_QUIT_COMMANDS.includes(message.content.toLowerCase())) {
 			this.end(CONFIG_END_REASONS.BY_USER)
 			return
 		}
@@ -77,10 +87,16 @@ class Configurator {
 				CONFIG_TIMEOUT
 			)
 		this.errorText = null
-		try {
-			this.processMessage(message)
-		} catch (processError) {
-			this.errorText = processError
+		if (message.content.toLowerCase() === CONFIG_SUBCOMMANDS.SHOW) {
+			this.state = CONFIG_STATE.SHOW_VALUE
+		} else if (message.content.toLowerCase() === CONFIG_SUBCOMMANDS.INFO) {
+			this.state = CONFIG_STATE.VIEW_PROPERTY
+		} else {
+			try {
+				this.processMessage(message)
+			} catch (processError) {
+				this.errorText = processError
+			}
 		}
 		this.updateDisplay()
 	}
@@ -118,10 +134,23 @@ class Configurator {
 			else
 				throw `\`${pathNode}\` does not exist on \`${this.currentProperty.name}\``
 		})
+		this.state = CONFIG_STATE.VIEW_PROPERTY
 	}
 	private updateDisplay() {
-		this.displayText = createDisplay(this.currentProperty)
+		this.displayText =
+			'**__Configuration__**\n' +
+			createDisplay(this.currentProperty, {
+				showValue: this.state === CONFIG_STATE.SHOW_VALUE,
+			})
 		if (this.errorText) this.displayText += `\n⚠️ **Error:** ${this.errorText}`
+		if (!this.currentProperty) this.promptText = CONFIG_PROMPTS.SELECT_MODULE
+		else if (this.currentProperty.properties)
+			this.promptText = CONFIG_PROMPTS.SELECT_PROPERTY
+		else if (this.state === CONFIG_STATE.VIEW_PROPERTY)
+			this.promptText = CONFIG_PROMPTS.SHOW_VALUE
+		else if (this.state === CONFIG_STATE.SHOW_VALUE)
+			this.promptText = CONFIG_PROMPTS.SHOW_INFO
+		if (this.promptText) this.displayText += '\n\n' + this.promptText
 		if (!this.displayMessage) {
 			this.channel
 				.createMessage(this.displayText)
@@ -138,7 +167,8 @@ class Configurator {
 			clearTimeout(this.endTimer)
 			this.endTimer = null
 		}
-		if (this.displayMessage) this.displayMessage.edit(reason)
+		if (this.displayMessage)
+			this.displayMessage.edit('**__Configuration__**\n' + reason)
 		Promise.all(this.messages.map((m) => m.delete()))
 		configurators.splice(configurators.indexOf(this), 1)
 	}
