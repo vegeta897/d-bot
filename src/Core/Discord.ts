@@ -96,6 +96,9 @@ export default class Discord {
 let ready = false
 Discord.bot.on('ready', () => (ready = true))
 Discord.bot.on('disconnect', () => (ready = false))
+Discord.bot.on('error', (error) => {
+	console.error(error)
+})
 
 function compareStrings(a: string, b: string, matchCase = false): boolean {
 	if (matchCase) return a === b
