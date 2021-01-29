@@ -19,4 +19,4 @@ export enum CONFIG_PROMPTS {
 	SHOW_INFO = 'Type `info` to view information about this property',
 }
 
-export const CONFIG_QUIT_COMMANDS = ['stop', 'exit', 'quit']
+export const CONFIG_QUIT_COMMANDS = ['stop', 'exit', 'quit', 'end']

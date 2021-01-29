@@ -1,8 +1,6 @@
-import Config from '../../Config'
-import type { IExportProperty } from '../../Config/Property'
 import type { Message, TextableChannel, User } from 'eris'
 import Discord from '../../Core/Discord'
-import { createDisplay } from './ConfigDisplay'
+import type { IExportProperty } from '../../Config/Property'
 import {
 	CONFIG_COMMAND,
 	CONFIG_END_REASONS,
@@ -10,9 +8,9 @@ import {
 	CONFIG_QUIT_COMMANDS,
 	CONFIG_SUBCOMMANDS,
 } from './ConfigStrings'
+import { traversePath } from './TraversePath'
+import { createDisplay } from './ConfigDisplay'
 import Timeout = NodeJS.Timeout
-
-const MODULES = Config.getModules()
 
 const CONFIG_TIMEOUT = 5 * 60 * 1000
 
@@ -29,6 +27,8 @@ enum CONFIG_STATE {
 Show examples for everything. How to add, remove, or edit a key/value
 
 */
+
+// TODO: Use this for viewing/editing storage json files too
 
 export function addConfigurator(message: Message): void {
 	if (!configurators.find((c) => c.user.id === message.author.id))
@@ -106,34 +106,7 @@ class Configurator {
 			: message.content
 		const pathArr = Discord.splitArgs(pathString)
 		if (!pathArr[0]) return
-		pathArr.forEach((pathNode) => {
-			if (!this.currentProperty) {
-				const module = MODULES.find(
-					(prop) => prop.name.toLowerCase() === pathNode.toLowerCase()
-				)
-				const indexedModule = MODULES[parseInt(pathNode) - 1]
-				if (module || indexedModule)
-					this.currentProperty = module || indexedModule
-				else throw `Invalid module \`${pathNode}\``
-				return
-			}
-			if (pathNode === '..') {
-				this.currentProperty = this.currentProperty?.parent || null
-				return
-			}
-			if (!this.currentProperty.properties)
-				throw `\`${this.currentProperty.name}\` has no child properties`
-			const childProperty = this.currentProperty.properties.find(
-				(p) => p.name.toLowerCase() === pathNode.toLowerCase()
-			)
-			const indexedChildProperty = this.currentProperty.properties[
-				parseInt(pathNode) - 1
-			]
-			if (childProperty || indexedChildProperty)
-				this.currentProperty = childProperty || indexedChildProperty
-			else
-				throw `\`${pathNode}\` does not exist on \`${this.currentProperty.name}\``
-		})
+		this.currentProperty = traversePath(this.currentProperty, pathArr)
 		this.state = CONFIG_STATE.VIEW_PROPERTY
 	}
 	private updateDisplay() {
