@@ -10,6 +10,7 @@ export enum CONFIG_END_REASONS {
 export enum CONFIG_SUBCOMMANDS {
 	SHOW = 'show',
 	INFO = 'info',
+	EDIT = 'edit',
 }
 
 export enum CONFIG_PROMPTS {
@@ -17,6 +18,7 @@ export enum CONFIG_PROMPTS {
 	SELECT_PROPERTY = 'Type the number or name of a property to view it',
 	SHOW_VALUE = 'Type `show` to view the value of this property',
 	SHOW_INFO = 'Type `info` to view information about this property',
+	EDIT_VALUE = 'Type `edit` to change the value of this property',
 }
 
 export const CONFIG_QUIT_COMMANDS = ['stop', 'exit', 'quit', 'end']

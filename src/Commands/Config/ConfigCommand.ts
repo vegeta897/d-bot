@@ -11,6 +11,8 @@ export const ConfigCommand = new DBotCommand({
 		terminateConfigurators()
 		clearModule.single('./Configurator')
 		clearModule.single('./ConfigDisplay')
+		clearModule.single('./ConfigState')
+		clearModule.single('./TraversePath')
 		clearModule.single('./ConfigStrings')
 	},
 	label: CONFIG_COMMAND,

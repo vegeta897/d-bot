@@ -8,6 +8,7 @@ import {
 	toMonospaceDigits,
 } from '../../Core/Util'
 import type { StringMap, StringRecord } from '../../Types/Util'
+import type { ConfigState } from './ConfigState'
 import Config from '../../Config'
 
 const MODULE_LIST = displayKeyValuePairs(
@@ -16,15 +17,19 @@ const MODULE_LIST = displayKeyValuePairs(
 
 export function createDisplay(
 	currentProperty: IExportProperty | null,
-	{ showValue }: { showValue?: boolean } = { showValue: false }
+	{
+		showInfo = false,
+		showValue = false,
+		editValue = false,
+	}: ConfigState['display']
 ): string {
 	if (!currentProperty) return `**Modules**:\n${MODULE_LIST}`
 	let display = `**Module**: \`${currentProperty.moduleName}\``
 	const subPath = currentProperty.path.slice(1)
 	if (subPath.length > 0) display += `\n**Property**: \`${subPath.join('.')}\``
-	if (currentProperty.description && !showValue)
+	if (currentProperty.description && showInfo)
 		display += '\n\n**Description**: ' + currentProperty.description
-	if (currentProperty.example && !showValue)
+	if (currentProperty.example && showInfo)
 		display += '\n\n**Example**: ' + currentProperty.example
 	if (currentProperty.properties) {
 		// Display properties
@@ -39,6 +44,8 @@ export function createDisplay(
 	} else if (showValue) {
 		// Display value
 		display += '\n\n**Value**:\n' + displayValue(currentProperty.value)
+	} else if (editValue) {
+		display += 'Edit mode!'
 	}
 	return display
 }
