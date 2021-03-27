@@ -2,7 +2,7 @@ import type { StringRecord } from '../../Types/Util'
 import type { IExportProperty, IProperty } from './Property'
 import { Property } from './Property'
 
-export class PropertyParent<T extends StringRecord> extends Property {
+export class PropertyParent<T extends StringRecord> extends Property<T> {
 	properties: Property[]
 	constructor({
 		name,
@@ -38,7 +38,7 @@ export class PropertyParent<T extends StringRecord> extends Property {
 	validate(): void {
 		this.properties.forEach((prop) => prop.validate())
 	}
-	export(): IExportProperty<never> {
+	export(): IExportProperty {
 		const { parent } = this
 		return {
 			name: this.name,

@@ -1,5 +1,6 @@
 import type { StringRecord } from '../../Types/Util'
 import type { PropertyParent } from './PropertyParent'
+import type { Describe } from 'superstruct'
 
 export interface IProperty {
 	name: string
@@ -7,12 +8,14 @@ export interface IProperty {
 	shortDescription?: string
 }
 
-export interface IExportProperty<T = unknown> extends IProperty {
-	value?: T | null
+export interface IExportProperty extends IProperty {
+	value?: unknown
 	properties?: IExportProperty[]
 	parent?: IExportProperty
 	moduleName: string
 	example?: string
+	listValue?: boolean
+	schema?: Describe<unknown>
 	path: string[]
 }
 
@@ -27,7 +30,7 @@ export abstract class Property<T = unknown> implements IProperty {
 		this.shortDescription = shortDescription
 	}
 	abstract validate(): void
-	abstract value: T
+	abstract value: T | null
 	abstract export(): IExportProperty
 	get path(): string[] {
 		const path = [this.name]
@@ -40,6 +43,6 @@ export abstract class Property<T = unknown> implements IProperty {
 		return path
 	}
 	get moduleName(): string {
-		return this.path[0] || this.name
+		return this.path[0]
 	}
 }

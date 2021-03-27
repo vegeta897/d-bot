@@ -1,12 +1,6 @@
 import type { Message, TextableChannel, User } from 'eris'
 import Discord from '../../Core/Discord'
-import type { IExportProperty } from '../../Config/Property'
-import {
-	CONFIG_COMMAND,
-	CONFIG_END_REASONS,
-	CONFIG_QUIT_COMMANDS,
-} from './ConfigStrings'
-import { traversePath } from './TraversePath'
+import { CONFIG_COMMAND, CONFIG_END_REASONS } from './ConfigStrings'
 import { createDisplay } from './ConfigDisplay'
 import { ConfigState } from './ConfigState'
 
@@ -21,8 +15,7 @@ Show examples for everything. How to add, remove, or edit a key/value
 // TODO: Use this for viewing/editing storage json files too
 
 class Configurator {
-	state: ConfigState = new ConfigState()
-	currentProperty: IExportProperty | null = null
+	state = new ConfigState()
 	user: User
 	channel: TextableChannel
 	lastUserReply: Message | null = null
@@ -56,9 +49,15 @@ class Configurator {
 		}
 		this.lastUserReply = message
 		if (deleteMessage) message.delete()
-		if (CONFIG_QUIT_COMMANDS.includes(message.content.toLowerCase())) {
-			this.end(CONFIG_END_REASONS.BY_USER)
-			return
+		this.errorText = null
+		try {
+			this.state.processCommand(message)
+			if (this.state.end) {
+				this.end(CONFIG_END_REASONS.BY_USER)
+				return
+			}
+		} catch (error) {
+			this.errorText = error
 		}
 		if (this.endTimer) this.endTimer.refresh()
 		else
@@ -66,34 +65,15 @@ class Configurator {
 				() => this.end(CONFIG_END_REASONS.INACTIVE),
 				CONFIG_TIMEOUT
 			)
-		this.errorText = null
-		const processedCommand = this.state.processCommand(
-			message.content.toLowerCase()
-		)
-		if (!processedCommand) {
-			try {
-				const pathString = message.command
-					? Discord.stripCommand(message.content)
-					: message.content
-				const pathArr = Discord.splitArgs(pathString)
-				if (pathArr[0]) {
-					this.currentProperty = traversePath(this.currentProperty, pathArr)
-					this.state.afterTraverse(this.currentProperty)
-				}
-			} catch (processError) {
-				this.errorText = processError
-			}
-		}
 		this.updateDisplay()
 	}
 
 	private updateDisplay() {
-		this.displayText =
-			'**__Configuration__**\n' +
-			createDisplay(this.currentProperty, this.state.display)
-		if (this.errorText) this.displayText += `\n⚠️ **Error**: ${this.errorText}`
-		if (this.state.prompts.length > 0)
-			this.displayText += '\n\n' + this.state.prompts.join('\n')
+		this.displayText = '**__Configuration__**\n' + createDisplay(this.state)
+		if (this.errorText)
+			this.displayText += `\n\n⚠️ **Error**: ${this.errorText}`
+		const prompts = this.state.prompts
+		if (prompts.length > 0) this.displayText += '\n\n' + prompts.join('\n')
 		if (!this.displayMessage) {
 			this.channel
 				.createMessage(this.displayText)

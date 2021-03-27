@@ -1,20 +1,22 @@
-export function isObject(maybeObject: unknown): boolean {
+export function isObject(
+	maybeObject: unknown
+): maybeObject is Record<string, unknown> {
 	return Object.prototype.toString.call(maybeObject) === '[object Object]'
 }
 
-export function isMap(maybeMap: unknown): boolean {
+export function isMap(maybeMap: unknown): maybeMap is Map<unknown, unknown> {
 	return Object.prototype.toString.call(maybeMap) === '[object Map]'
 }
 
-export function isArray(maybeArray: unknown): boolean {
+export function isArray(maybeArray: unknown): maybeArray is [] {
 	return Object.prototype.toString.call(maybeArray) === '[object Array]'
 }
 
-export function isString(maybeString: unknown): boolean {
+export function isString(maybeString: unknown): maybeString is string {
 	return Object.prototype.toString.call(maybeString) === '[object String]'
 }
 
-export function isNumber(maybeNumber: unknown): boolean {
+export function isNumber(maybeNumber: unknown): maybeNumber is number {
 	return Object.prototype.toString.call(maybeNumber) === '[object Number]'
 }
 
