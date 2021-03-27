@@ -4,11 +4,11 @@ import { TimeZoneName } from '../../Types/Time'
 
 const TZUserData = new JSONData<{ users: Map<UserID, TimeZoneName> }>({
 	data: { users: new Map() },
-	convertToJSON: function (data) {
-		return { users: [...data.users] }
+	convertToJSON: function () {
+		return { users: [...this.data.users] }
 	},
-	loadJSON: function (data, jsonData) {
-		Object.assign(data, {
+	loadJSON: function (jsonData) {
+		Object.assign(this.data, {
 			users: new Map(jsonData.users as [UserID, TimeZoneName][]),
 		})
 	},

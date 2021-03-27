@@ -11,7 +11,7 @@ describe('convertToJSON', () => {
 	it('returns this.data by default', () => {
 		const dataObject = {}
 		const data = new JSONData({ data: dataObject })
-		expect(data.convertToJSON(data.data)).toBe(dataObject)
+		expect(data.convertToJSON()).toBe(dataObject)
 	})
 })
 
@@ -20,7 +20,7 @@ describe('loadJSON', () => {
 		const dataObject = { foo: 123 }
 		const jsonData = { bar: 456 }
 		const data = new JSONData({ data: dataObject })
-		data.loadJSON(data.data, jsonData)
+		data.loadJSON(jsonData)
 		expect(data.data).toStrictEqual({
 			...dataObject,
 			...jsonData,

@@ -3,8 +3,8 @@ import deepCopy from 'deepcopy'
 
 interface IJSONData<T> {
 	data: T
-	convertToJSON?: (data: T) => StringRecord<JSONSafe>
-	loadJSON?: (data: T, jsonData: StringRecord) => void
+	convertToJSON?: () => StringRecord<JSONSafe>
+	loadJSON?: (jsonData: StringRecord) => void
 }
 
 export default class JSONData<T extends StringRecord> {
@@ -12,12 +12,10 @@ export default class JSONData<T extends StringRecord> {
 	save: () => void = () => {
 		throw 'Missing save method'
 	}
-	readonly convertToJSON: (data: T) => StringRecord<JSONSafe> = (data) =>
-		data as StringRecord<JSONSafe>
-	readonly loadJSON: (data: T, jsonData: StringRecord) => void = (
-		data,
-		jsonData
-	) => Object.assign(data, jsonData)
+	readonly convertToJSON: () => StringRecord<JSONSafe> = () =>
+		this.data as StringRecord<JSONSafe>
+	readonly loadJSON: (jsonData: StringRecord) => void = (jsonData) =>
+		Object.assign(this.data, jsonData)
 
 	constructor({ data, convertToJSON, loadJSON }: IJSONData<T>) {
 		this.data = data

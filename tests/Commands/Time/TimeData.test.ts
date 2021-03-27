@@ -10,11 +10,11 @@ describe('TZUserData', () => {
 		const data: { users: Map<UserID, TimeZoneName> } = {
 			users: new Map(values),
 		}
-		expect(convertToJSON(data)).toStrictEqual({ users: values })
+		expect(convertToJSON.bind({ data })()).toStrictEqual({ users: values })
 	})
 	it('converts array to map', () => {
 		const values: [string, string][] = [['123', 'America/New_York']]
-		loadJSON(TZUserData.data, { users: values })
+		loadJSON.bind(TZUserData)({ users: values })
 		expect(TZUserData.data).toStrictEqual({ users: new Map(values) })
 	})
 })

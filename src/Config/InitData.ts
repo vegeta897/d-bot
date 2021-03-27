@@ -12,15 +12,15 @@ const InitData: ConfigType = {
 }
 const InitDataModel = new JSONData<ConfigType>({
 	data: InitData,
-	convertToJSON: function (data) {
+	convertToJSON: function () {
 		return {
-			...data,
-			Time: { timeZones: [...data.Time.timeZones] },
+			...this.data,
+			Time: { timeZones: [...this.data.Time.timeZones] },
 		}
 	},
-	loadJSON: function (data, jsonData) {
+	loadJSON: function (jsonData) {
 		const Time = jsonData.Time as { timeZones: MapToTuple<TimeZones> }
-		Object.assign(data, {
+		Object.assign(this.data, {
 			...jsonData,
 			Time: { timeZones: new Map(Time.timeZones) },
 		})

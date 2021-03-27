@@ -27,11 +27,9 @@ export default function createJSONFile<T extends StringRecord>(
 		console.log(`Creating new JSON file "${filename}"`)
 	}
 	if (fileExists) {
-		let jsonData
 		// Try to load file as JSON
 		try {
-			jsonData = fse.readJSONSync(path, { encoding: 'utf8' })
-			dataModel.loadJSON(dataModel.data, jsonData)
+			dataModel.loadJSON(fse.readJSONSync(path, { encoding: 'utf8' }))
 		} catch (err) {
 			// Do not write if invalid JSON found
 			throw `Invalid JSON file "${filename}"`
@@ -45,14 +43,10 @@ export default function createJSONFile<T extends StringRecord>(
 		setTimeout(async () => {
 			try {
 				// Write to temporary file
-				await fse.writeJson(
-					path + '.tmp',
-					dataModel.convertToJSON(dataModel.data),
-					{
-						spaces,
-						EOL,
-					}
-				)
+				await fse.writeJson(path + '.tmp', dataModel.convertToJSON(), {
+					spaces,
+					EOL,
+				})
 				// Move/rename temporary file into the real one
 				await fse.move(path + '.tmp', path, {
 					overwrite: true,
