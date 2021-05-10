@@ -15,7 +15,7 @@
 		"object-hash": "^2.1.1",
 		"random": "^3.0.3",
 		"remove-markdown": "^0.3.0",
-		"superstruct": "^0.14.2",
+		"superstruct": "^0.15.2",
 		"timestring": "^6.0.0"
 	},
 	"devDependencies": {
